@@ -1,17 +1,9 @@
 version: '3'
 
 services:
-  mongo:
-    container_name: mongo
-    image: mongo:4.2.1-bionic
-    restart: always
-    ports:
-      - "27018:27017"
-    networks:
-      - backend
   app:
-    container_name: ts-node-app
-    build: 
+    container_name: consize-backend
+    build:
       context: .
       dockerfile: Dockerfile
       target: base
@@ -21,16 +13,3 @@ services:
       - ${PORT}
     ports:
       - ${PORT}:${PORT}
-    environment: 
-      - MONGODB_URL=mongodb://mongo:27017/node-boilerplate
-      - CLIENT_URL=${CLIENT_URL}
-    links: 
-      - mongo  
-    depends_on:
-      - mongo  
-    networks:
-      - backend
-
-networks:
-  backend:
-    driver: bridge    

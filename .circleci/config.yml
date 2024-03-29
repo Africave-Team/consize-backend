@@ -3,29 +3,27 @@ version: 2.1
 jobs:
   build_and_deploy:
     docker:
-      - image: docker:19.03.12
+      - image: circleci/node:14
 
     steps:
       - checkout
-      
-      # Build Docker image
+
+      # SSH into the server
       - run:
-          name: Build Docker image
-          command: |
-            docker build -t "${DOCKER_USERNAME}/${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" .
-      
-      # Push Docker image to Docker Hub
+          name: SSH into the server
+          command: ssh ${SSH_USERNAME}@${SERVER_ADDRESS}
+
+      # Pull the latest changes from Git
       - run:
-          name: Push Docker image to Docker Hub
+          name: Pull latest changes from Git
           command: |
-            echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-            docker push "${DOCKER_USERNAME}/${DOCKER_IMAGE}:${CIRCLE_SHA1}"
-      
-      # SSH into the server and update Docker image
-      - add_ssh_keys:
-          fingerprints:
-            - "${SSH_KEY_FINGERPRINT}"
+            cd /consize-backend
+            git checkout main
+            git pull
+
+      # Run the build command
       - run:
-          name: SSH into the server and update Docker image
+          name: Run build command
           command: |
-            ssh "${SSH_USERNAME}@${SERVER_ADDRESS}" "docker pull ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${CIRCLE_SHA1} && docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d"
+            npm install
+            npm run start:build

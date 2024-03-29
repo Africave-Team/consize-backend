@@ -1,14 +1,6 @@
 version: '3'
 
 services:
-  mongo:
-    volumes:
-      - ./data:/data/db
-  
   app:
-    container_name: ts-node-app-dev
+    container_name: consize-backend-dev
     command: yarn dev -L
-
-volumes:
-  mongo-data:
-    driver: local
