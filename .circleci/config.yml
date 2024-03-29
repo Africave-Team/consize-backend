@@ -9,6 +9,9 @@ jobs:
       - checkout
       # SSH into the server
       - run:
+          name: Add server fingerprint
+          command: echo '${SERVER_ADDRESS} ${SSH_PUBLIC_KEY}' >> ~/.ssh/known_hosts
+      - run:
           name: SSH into the server
           command: ssh ${SSH_USERNAME}@${SERVER_ADDRESS}
 
