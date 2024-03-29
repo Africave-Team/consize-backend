@@ -1,0 +1,31 @@
+version: 2.1
+
+jobs:
+  build_and_deploy:
+    docker:
+      - image: docker:19.03.12
+
+    steps:
+      - checkout
+      
+      # Build Docker image
+      - run:
+          name: Build Docker image
+          command: |
+            docker build -t "${DOCKER_USERNAME}/${DOCKER_IMAGE_NAME}:${CIRCLE_SHA1}" .
+      
+      # Push Docker image to Docker Hub
+      - run:
+          name: Push Docker image to Docker Hub
+          command: |
+            echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+            docker push "${DOCKER_USERNAME}/${DOCKER_IMAGE}:${CIRCLE_SHA1}"
+      
+      # SSH into the server and update Docker image
+      - add_ssh_keys:
+          fingerprints:
+            - "${SSH_KEY_FINGERPRINT}"
+      - run:
+          name: SSH into the server and update Docker image
+          command: |
+            ssh "${SSH_USERNAME}@${SERVER_ADDRESS}" "docker pull ${DOCKER_USERNAME}/${DOCKER_IMAGE}:${CIRCLE_SHA1} && docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d"
