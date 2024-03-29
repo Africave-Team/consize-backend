@@ -10,7 +10,7 @@ jobs:
       # SSH into the server
       - run:
           name: SSH into the server
-          command: ssh o StrictHostKeyChecking=no ${SSH_USERNAME}@${SERVER_ADDRESS}
+          command: ssh -o StrictHostKeyChecking=no ${SSH_USERNAME}@${SERVER_ADDRESS}
 
       # Pull the latest changes from Git
       - run:
