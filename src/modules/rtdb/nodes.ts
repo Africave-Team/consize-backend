@@ -1,0 +1,1 @@
+export const COURSE_STATS = "'course-statistics'"
