@@ -10,22 +10,7 @@ jobs:
       # SSH into the server
       - run:
           name: SSH into the server
-          command: ssh -o StrictHostKeyChecking=no ${SSH_USERNAME}@${SERVER_ADDRESS}
-
-      # Pull the latest changes from Git
-      - run:
-          name: Pull latest changes from Git
-          command: |
-            cd /consize-backend
-            git checkout main
-            git pull
-
-      # Run the build command
-      - run:
-          name: Run build command
-          command: |
-            npm install
-            npm run start:build
+          command: ssh -o StrictHostKeyChecking=no ${SSH_USERNAME}@${SERVER_ADDRESS} "cd /consize-backend && git pull && npm i && npm run start:build"
 workflows:
   build_and_deploy_work:
     jobs:
