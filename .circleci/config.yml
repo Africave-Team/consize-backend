@@ -7,9 +7,6 @@ jobs:
 
     steps:
       - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - "SHA256:jc1Yy8ilEa0QQY34o8hQDrO8aPa3YwMJ+IUXWZ6kmyI"
       # SSH into the server
       - run:
           name: SSH into the server
