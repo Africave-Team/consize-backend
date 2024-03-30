@@ -9,6 +9,7 @@ yarn-error.log
 !.env*.example
 
 src/gcp-creds.json
+src/gcp-details.json
 
 # Code coverage
 coverage

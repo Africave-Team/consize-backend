@@ -57,6 +57,10 @@ const CourseSchema = new Schema<CourseInterface, CourseInterfaceModel>(
         price: {
             type: Number
         },
+        settings: {
+            type: String,
+            ref: "Settings"
+        },
         courses: {
             type: [String],
             default: [],

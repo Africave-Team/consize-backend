@@ -15,7 +15,7 @@ interface Block {
 export interface CreateBlockPyaload {
   title: string
   content: string
-  quiz: string
+  quiz?: string
   bodyMedia?: Media
 }
 
