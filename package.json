@@ -11,7 +11,7 @@
   "author": "Emmanuel Onoja Ahman <ahmanemmanuel@gmail.com>",
   "license": "MIT",
   "engines": {
-    "node": ">=14.20.1 <19"
+    "node": ">=14.20.1 <21"
   },
   "scripts": {
     "start": "pm2 start ecosystem.config.json --no-daemon",
