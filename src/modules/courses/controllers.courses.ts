@@ -101,3 +101,10 @@ export const fetchSingleCourseLesson = catchAsync(async (req: Request, res: Resp
     res.status(httpStatus.CREATED).send({ data: lessons, message: "Here you are" })
   }
 })
+
+export const deleteCourselesson = catchAsync(async (req: Request, res: Response) => {
+  if (req.params['lesson']) {
+    await courseService.deleteLesson(req.params['lesson'])
+    res.status(httpStatus.NO_CONTENT)
+  }
+})
