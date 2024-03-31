@@ -2,6 +2,7 @@ import express, { Request, Response, Router } from 'express'
 import authRoute from './auth.route'
 import userRoute from './user.route'
 import teamRoute from './team.route'
+import uploadRoute from './upload.route'
 import coursesRoute from './courses.route'
 import permissionRoute from './permissions.route'
 import config from '../../config/config'
@@ -17,6 +18,10 @@ const defaultIRoute: IRoute[] = [
   {
     path: '/auth',
     route: authRoute,
+  },
+  {
+    path: '/upload',
+    route: uploadRoute,
   },
   {
     path: '/users',

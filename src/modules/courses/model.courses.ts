@@ -7,8 +7,7 @@ import { paginate } from '../paginate'
 export const MediaSchema = new Schema<Media>(
     {
         awsFileKey: {
-            type: String,
-            required: true
+            type: String
         },
         url: {
             type: String,
@@ -56,6 +55,10 @@ const CourseSchema = new Schema<CourseInterface, CourseInterfaceModel>(
         },
         price: {
             type: Number
+        },
+        settings: {
+            type: String,
+            ref: "Settings"
         },
         courses: {
             type: [String],

@@ -20,15 +20,12 @@ export const updateCourse = catchAsync(async (req: Request, res: Response) => {
 })
 
 export const fetchTeamCourses = catchAsync(async (req: Request, res: Response) => {
-  const { page, pageSize, search } = req.query
+  const { page, pageSize, filter } = req.query
   const parsedPage = parseInt(page as string, 10) || 1
   const parsedPageSize = parseInt(pageSize as string, 10) || 20
-  const searchKey = search as string
+  const filterkey = filter as string
 
-  const query: any = { teamId: req.user.team, page: parsedPage, pageSize: parsedPageSize }
-  if (search) {
-    query['search'] = searchKey
-  }
+  const query: any = { teamId: req.user.team, page: parsedPage, pageSize: parsedPageSize, filter: filterkey }
   let results: QueryResult<CourseInterface>
   const queryString = JSON.stringify(query)
   if (redisClient.isReady) {
@@ -50,6 +47,24 @@ export const fetchTeamCourses = catchAsync(async (req: Request, res: Response) =
 
 
   res.status(httpStatus.OK).send({ ...results, message: "Here they are." })
+})
+
+
+export const searchTeamCourses = catchAsync(async (req: Request, res: Response) => {
+  const { page, search } = req.query
+  const parsedPage = parseInt(page as string, 10) || 1
+
+  const searchKey = search as string
+  const query: any = { teamId: req.user.team, page: parsedPage }
+
+  if (search) {
+    query['search'] = searchKey
+  }
+  let results: CourseInterface[]
+  results = await courseService.searchTeamCourses(query)
+
+
+  res.status(httpStatus.OK).send({ data: results, message: "Here they are." })
 })
 
 
@@ -99,5 +114,12 @@ export const fetchSingleCourseLesson = catchAsync(async (req: Request, res: Resp
   if (req.params['lesson']) {
     const lessons = await courseService.fetchSingleLesson({ lesson: req.params['lesson'] })
     res.status(httpStatus.CREATED).send({ data: lessons, message: "Here you are" })
+  }
+})
+
+export const deleteCourselesson = catchAsync(async (req: Request, res: Response) => {
+  if (req.params['lesson']) {
+    await courseService.deleteLesson(req.params['lesson'])
+    res.status(httpStatus.NO_CONTENT)
   }
 })

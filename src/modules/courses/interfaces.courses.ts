@@ -33,6 +33,7 @@ interface Course {
     headerMedia: Media
     status: CourseStatus
     free: boolean
+    settings: string
     bundle: boolean
     private: boolean
     source: Sources
