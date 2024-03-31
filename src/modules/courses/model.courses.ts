@@ -7,8 +7,7 @@ import { paginate } from '../paginate'
 export const MediaSchema = new Schema<Media>(
     {
         awsFileKey: {
-            type: String,
-            required: true
+            type: String
         },
         url: {
             type: String,

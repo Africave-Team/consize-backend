@@ -10,7 +10,7 @@ export interface EnrollmentField {
 }
 
 export interface CourseMetadata {
-  idealLessonTime: number
+  idealLessonTime: Period
   courseCompletionDays: number
   maxLessonsPerDay: number
   minLessonsPerDay: number
@@ -67,7 +67,6 @@ export interface CourseSettings {
   // How many hours of learner inactivity before the next reminder (to continue) gets sent out?
   inactivityPeriod: Period
   dropoutEvent: DropoutEvents
-  idealLessonTime: Period
 }
 
 export interface CourseSettingsInterface extends CourseSettings, Document {

@@ -5,7 +5,7 @@ import { QueryResult } from '../paginate/paginate'
 import db from "../rtdb"
 import { CourseStatistics } from '../rtdb/interfaces.rtdb'
 import { COURSE_STATS } from '../rtdb/nodes'
-import { CourseInterface, CreateCoursePyaload } from './interfaces.courses'
+import { CourseInterface, CourseStatus, CreateCoursePyaload } from './interfaces.courses'
 import Course from './model.courses'
 import { CreateLessonPyaload, LessonInterface } from './interfaces.lessons'
 import Lessons from './model.lessons'
@@ -15,6 +15,13 @@ import { CreateQuizPyaload, QuizInterface } from './interfaces.quizzes'
 import Quizzes from './model.quizzes'
 import Settings from './model.settings'
 import { DropoutEvents, PeriodTypes } from './interfaces.settings'
+
+enum PageType {
+  ALL = 'all',
+  COURSE = 'course',
+  BUNDLE = 'bundle',
+  DRAFT = 'draft'
+}
 
 
 export const createCourse = async (coursePayload: CreateCoursePyaload, teamId: string): Promise<CourseInterface> => {
@@ -105,11 +112,7 @@ const setInitialCourseSettings = async function (id: string) {
       value: 1,
       type: PeriodTypes.DAYS
     },
-    dropoutEvent: DropoutEvents.LESSON_COMPLETION,
-    idealLessonTime: {
-      value: 1,
-      type: PeriodTypes.HOURS
-    },
+    dropoutEvent: DropoutEvents.LESSON_COMPLETION
   })
   await Course.findByIdAndUpdate(id, { $set: { settings: setting.id } })
   await setting.save()
@@ -121,13 +124,36 @@ export const updateCourse = async (coursePayload: Partial<CreateCoursePyaload>, 
   return course
 }
 
-export const fetchTeamCourses = async ({ teamId, page, pageSize, search }: { teamId: string, page: number, pageSize: number, search?: string }): Promise<QueryResult<CourseInterface>> => {
-  if (search) {
-    const regex = new RegExp(search, "i")
-    return Course.paginate({ owner: teamId, $or: [{ title: { $regex: regex } }, { description: { $regex: regex } }] }, { page, limit: pageSize, populate: 'lessons,courses' })
-  } else {
-    return Course.paginate({ owner: teamId }, { page, limit: pageSize, populate: 'lessons,courses' })
+export const fetchTeamCourses = async ({ teamId, page, pageSize, filter }: { teamId: string, page: number, pageSize: number, filter?: PageType }): Promise<QueryResult<CourseInterface>> => {
+  const q: any = { owner: teamId }
+  console.log(filter, teamId)
+  if (filter) {
+    switch (filter) {
+      case PageType.ALL:
+        q['$or'] = [{ status: CourseStatus.COMPLETED }, { status: CourseStatus.PUBLISHED }]
+        break
+      case PageType.BUNDLE:
+        q['bundle'] = true
+        q['$or'] = [{ status: CourseStatus.COMPLETED }, { status: CourseStatus.PUBLISHED }]
+        break
+      case PageType.COURSE:
+        q['bundle'] = false
+        q['$or'] = [{ status: CourseStatus.COMPLETED }, { status: CourseStatus.PUBLISHED }]
+        break
+      case PageType.DRAFT:
+        q['status'] = CourseStatus.DRAFT
+        break
+      default:
+        break
+    }
   }
+  return Course.paginate(q, { page, limit: pageSize, populate: 'lessons,courses' })
+
+}
+
+export const searchTeamCourses = async ({ teamId, search }: { teamId: string, search: string }): Promise<CourseInterface[]> => {
+  const regex = new RegExp(search, "i")
+  return Course.find({ owner: teamId, $or: [{ title: { $regex: regex } }, { description: { $regex: regex } }] }).limit(16)
 
 }
 

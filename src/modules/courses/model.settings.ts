@@ -26,9 +26,23 @@ const EnrollFieldSchema = new Schema<EnrollmentField>({
   timestamps: false
 })
 
+
+const PeriodSchema = new Schema<Period>({
+  value: {
+    type: Number
+  },
+  type: {
+    type: String,
+    enum: Object.values(PeriodTypes)
+  }
+}, {
+  _id: false,
+  timestamps: false
+})
+
 const MetadataSchema = new Schema<CourseMetadata>({
   idealLessonTime: {
-    type: Number
+    type: PeriodSchema
   },
   courseCompletionDays: {
     type: Number
@@ -93,18 +107,6 @@ const CourseMaterialSchema = new Schema<CourseMaterial>({
   timestamps: false
 })
 
-const PeriodSchema = new Schema<Period>({
-  value: {
-    type: Number
-  },
-  type: {
-    type: String,
-    enum: Object.values(PeriodTypes)
-  }
-}, {
-  _id: false,
-  timestamps: false
-})
 
 
 const SettingSchema = new Schema<CourseSettingsInterface, CourseSettingsInterfaceModel>(
@@ -138,9 +140,7 @@ const SettingSchema = new Schema<CourseSettingsInterface, CourseSettingsInterfac
       type: String,
       enum: Object.values(DropoutEvents)
     },
-    idealLessonTime: {
-      type: PeriodSchema
-    }
+
   },
   {
     collection: 'settings',
