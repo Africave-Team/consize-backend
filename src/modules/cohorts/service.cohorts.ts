@@ -6,3 +6,8 @@ export const createCohort = async (cohortPayload: CreateCohortInterface): Promis
     await cohort.save()
     return cohort
 }
+
+export const fetchCohorts = async (courseId: string): Promise<CohortsInterface[]> => {
+    const cohorts = await Cohorts.find({ courseId: courseId })
+    return cohorts
+}

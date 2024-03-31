@@ -8,5 +8,7 @@ const router: Router = express.Router();
 router.use(auth());
 
 router.post("/", validate(cohortsValidator), cohortsControllers.createCohort);
+router.get("/:course", cohortsControllers.getCohorts);
+
 
 export default router
