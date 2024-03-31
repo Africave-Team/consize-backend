@@ -4,6 +4,7 @@ import userRoute from './user.route'
 import teamRoute from './team.route'
 import uploadRoute from './upload.route'
 import coursesRoute from './courses.route'
+import cohortsRoute from './cohorts.route'
 import permissionRoute from './permissions.route'
 import config from '../../config/config'
 
@@ -38,6 +39,10 @@ const defaultIRoute: IRoute[] = [
   {
     path: '/courses',
     route: coursesRoute
+  },
+  {
+    path: '/cohorts',
+    route: cohortsRoute
   }
 ]
 

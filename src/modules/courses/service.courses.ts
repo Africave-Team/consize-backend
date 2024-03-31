@@ -5,11 +5,11 @@ import { QueryResult } from '../paginate/paginate'
 import db from "../rtdb"
 import { CourseStatistics } from '../rtdb/interfaces.rtdb'
 import { COURSE_STATS } from '../rtdb/nodes'
-import { CourseInterface, CourseStatus, CreateCoursePyaload } from './interfaces.courses'
+import { CourseInterface,CourseStatus, CreateCoursePayload } from './interfaces.courses'
 import Course from './model.courses'
-import { CreateLessonPyaload, LessonInterface } from './interfaces.lessons'
+import { CreateLessonPayload, LessonInterface } from './interfaces.lessons'
 import Lessons from './model.lessons'
-import { BlockInterface, CreateBlockPyaload } from './interfaces.blocks'
+import { BlockInterface, CreateBlockPayload } from './interfaces.blocks'
 import Blocks from './model.blocks'
 import { CreateQuizPyaload, QuizInterface } from './interfaces.quizzes'
 import Quizzes from './model.quizzes'
@@ -24,7 +24,7 @@ enum PageType {
 }
 
 
-export const createCourse = async (coursePayload: CreateCoursePyaload, teamId: string): Promise<CourseInterface> => {
+export const createCourse = async (coursePayload: CreateCoursePayload, teamId: string): Promise<CourseInterface> => {
   const course = new Course({ ...coursePayload, owner: teamId })
   await course.save()
   setInitialCourseStats(course.id)
@@ -118,7 +118,7 @@ const setInitialCourseSettings = async function (id: string) {
   await setting.save()
 }
 
-export const updateCourse = async (coursePayload: Partial<CreateCoursePyaload>, courseId: string, teamId: string): Promise<CourseInterface> => {
+export const updateCourse = async (coursePayload: Partial<CreateCoursePayload>, courseId: string, teamId: string): Promise<CourseInterface> => {
   const course = await Course.findOneAndUpdate({ _id: courseId, owner: teamId }, { $set: { ...coursePayload } }, { new: true })
   if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Could not update the specified course')
   return course
@@ -163,7 +163,7 @@ export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: stri
 
 // lessons
 
-export const createLesson = async (lessonPayload: CreateLessonPyaload, course: string): Promise<LessonInterface> => {
+export const createLesson = async (lessonPayload: CreateLessonPayload, course: string): Promise<LessonInterface> => {
   const lesson = new Lessons({ ...lessonPayload, course })
   await Course.findByIdAndUpdate(course, { $push: { lessons: lesson.id } })
   await lesson.save()
@@ -171,7 +171,7 @@ export const createLesson = async (lessonPayload: CreateLessonPyaload, course: s
 }
 
 
-export const updateLesson = async (lessonPayload: Partial<CreateLessonPyaload>, lesson: string): Promise<LessonInterface> => {
+export const updateLesson = async (lessonPayload: Partial<CreateLessonPayload>, lesson: string): Promise<LessonInterface> => {
   const updatedLesson = await Lessons.findByIdAndUpdate(lesson, { $set: lessonPayload }, { new: true })
   if (!updatedLesson) throw new ApiError(httpStatus.NOT_FOUND, "Could not find this lesson to update")
   return updatedLesson
@@ -195,14 +195,14 @@ export const deleteLesson = async function (lesson: string) {
 // blocks
 
 
-export const createBlock = async (blockPayload: CreateBlockPyaload, lesson: string, course: string): Promise<BlockInterface> => {
+export const createBlock = async (blockPayload: CreateBlockPayload, lesson: string, course: string): Promise<BlockInterface> => {
   const block = new Blocks({ ...blockPayload, lesson, course })
   await Lessons.findByIdAndUpdate(lesson, { $push: { blocks: block.id } })
   await block.save()
   return block
 }
 
-export const updateBlock = async (blockPayload: Partial<CreateBlockPyaload>, block: string): Promise<BlockInterface> => {
+export const updateBlock = async (blockPayload: Partial<CreateBlockPayload>, block: string): Promise<BlockInterface> => {
   const updatedBlock = await Blocks.findByIdAndUpdate(block, { $set: blockPayload }, { new: true })
   if (!updatedBlock) throw new ApiError(httpStatus.NOT_FOUND, "Could not find this block to update")
   return updatedBlock
