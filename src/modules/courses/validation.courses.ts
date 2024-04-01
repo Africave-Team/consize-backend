@@ -4,7 +4,7 @@ import { CreateLessonPyaload } from './interfaces.lessons'
 import { CreateBlockPyaload } from './interfaces.blocks'
 import { CreateQuizPyaload } from './interfaces.quizzes'
 
-const createCourseRequest: Record<keyof CreateCoursePyaload, any> = {
+const createCourseRequest: Record<keyof CreateCoursePayload, any> = {
   free: Joi.boolean(),
   bundle: Joi.boolean(),
   private: Joi.boolean(),
@@ -17,13 +17,14 @@ const createCourseRequest: Record<keyof CreateCoursePyaload, any> = {
   description: Joi.string().required(),
   price: Joi.number().optional(),
   audiences: Joi.string().optional(),
+  currentCohort: Joi.string().optional()
 }
 
 export const createCourse = {
   body: Joi.object().keys(createCourseRequest),
 }
 export const updateCourse = {
-  body: Joi.object<Partial<CreateCoursePyaload>>().keys({
+  body: Joi.object<Partial<CreateCoursePayload>>().keys({
     free: Joi.boolean(),
     bundle: Joi.boolean(),
     private: Joi.boolean(),
@@ -43,7 +44,7 @@ export const updateCourse = {
 }
 
 export const createLesson = {
-  body: Joi.object<CreateLessonPyaload>().keys({
+  body: Joi.object<CreateLessonPayload>().keys({
     title: Joi.string().required(),
     description: Joi.string().optional()
   }),
@@ -53,7 +54,7 @@ export const createLesson = {
 }
 
 export const updateLesson = {
-  body: Joi.object<CreateLessonPyaload>().keys({
+  body: Joi.object<CreateLessonPayload>().keys({
     title: Joi.string().required(),
     description: Joi.string().optional()
   }),
@@ -69,7 +70,7 @@ export const updateLesson = {
 // create and update blocks
 
 export const createBlock = {
-  body: Joi.object<CreateBlockPyaload>().keys({
+  body: Joi.object<CreateBlockPayload>().keys({
     title: Joi.string().required(),
     content: Joi.string().required(),
     bodyMedia: Joi.object<Media>().keys({
@@ -86,7 +87,7 @@ export const createBlock = {
 }
 
 export const updateBlock = {
-  body: Joi.object<CreateBlockPyaload>().keys({
+  body: Joi.object<CreateBlockPayload>().keys({
     title: Joi.string().required(),
     content: Joi.string().required(),
     bodyMedia: Joi.object<Media>().keys({

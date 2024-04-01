@@ -12,7 +12,7 @@ interface Block {
   course: string
 }
 
-export interface CreateBlockPyaload {
+export interface CreateBlockPayload {
   title: string
   content: string
   quiz?: string 
