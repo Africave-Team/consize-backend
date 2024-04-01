@@ -42,7 +42,7 @@ interface Course {
     audiences?: string
 }
 
-export interface CreateCoursePyaload {
+export interface CreateCoursePayload {
     free: boolean
     bundle: boolean
     private: boolean
@@ -51,6 +51,7 @@ export interface CreateCoursePyaload {
     description: string
     price?: number
     audiences?: string
+    currentCohort?: string
 }
 
 export interface CourseInterface extends Course, Document {

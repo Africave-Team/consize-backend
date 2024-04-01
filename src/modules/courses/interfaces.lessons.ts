@@ -10,7 +10,7 @@ interface Lesson {
   description?: string
 }
 
-export interface CreateLessonPyaload {
+export interface CreateLessonPayload {
   title: string
   description?: string
 }
