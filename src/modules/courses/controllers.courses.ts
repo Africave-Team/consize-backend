@@ -117,9 +117,50 @@ export const fetchSingleCourseLesson = catchAsync(async (req: Request, res: Resp
   }
 })
 
-export const deleteCourselesson = catchAsync(async (req: Request, res: Response) => {
+export const deleteCourseLesson = catchAsync(async (req: Request, res: Response) => {
   if (req.params['lesson']) {
     await courseService.deleteLesson(req.params['lesson'])
     res.status(httpStatus.NO_CONTENT)
+  }
+})
+
+export const updateCourseLesson = catchAsync(async (req: Request, res: Response) => {
+  const { lesson } = req.params
+   if (lesson) {
+    const updatedLesson = await courseService.updateLesson(req.body, lesson)
+    res.status(httpStatus.OK).send({ lesson: updatedLesson, message: "Your lesson has been updated successfully" })
+  }
+})
+
+export const addBlockToLesson = catchAsync(async (req:Request, res: Response) => {
+  const { lesson, course } = req.params
+
+  if (lesson && course) {
+    const createdBlock = await courseService.createBlock(req.body, lesson, course)
+    res.status(httpStatus.OK).send({ lesson: createdBlock, message: "Your block has been created successfully" })
+  }
+})
+
+export const deleteBlockFromLesson = catchAsync(async (req: Request, res: Response) => {
+  const { block, lesson } = req.params
+  if (block && lesson) {
+    await courseService.deleteBlockFromLesson(block, lesson)
+  }
+  res.status(httpStatus.NO_CONTENT)
+})
+
+export const updateBlock = catchAsync( async (req:Request, res: Response) => {
+  const { block } = req.params
+  if (block) {
+    const updatedBlock = courseService.updateBlock(req.body, block)
+    res.status(httpStatus.OK).send({ data: updatedBlock, message: "Block Updated successfully" })
+  }
+})
+
+export const fetchLessonsBlocks = catchAsync(async (req: Request, res: Response) => {
+  const { course,lesson } = req.params
+  if (lesson && course) {
+    const blocks = await courseService.fetchLessonsBlocks({ course: course, lesson: lesson })
+    res.status(httpStatus.OK).send({data: blocks, message:"block retrieved successfully" })
   }
 })

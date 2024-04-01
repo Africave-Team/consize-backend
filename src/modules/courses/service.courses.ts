@@ -214,7 +214,8 @@ export const fetchLessonsBlocks = async ({ course, lesson }: { course: string, l
   return results
 }
 
-export const deleteBlock = async function (block: string) {
+export const deleteBlockFromLesson = async function (block: string, lesson: string) {
+  await Lessons.findByIdAndUpdate(lesson, { $push: { blocks: block } })
   await Blocks.findByIdAndDelete(block)
 }
 

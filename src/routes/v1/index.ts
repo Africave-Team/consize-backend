@@ -5,6 +5,7 @@ import teamRoute from './team.route'
 import uploadRoute from './upload.route'
 import coursesRoute from './courses.route'
 import permissionRoute from './permissions.route'
+import blocksRoute from './blocks.route'
 import config from '../../config/config'
 
 const router = express.Router()
@@ -38,6 +39,10 @@ const defaultIRoute: IRoute[] = [
   {
     path: '/courses',
     route: coursesRoute
+  },
+  {
+    path: '/block',
+    route: blocksRoute
   }
 ]
 

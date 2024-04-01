@@ -8,6 +8,8 @@ router.use(auth())
 router.post('/:course', validate(courseValidators.createLesson), courseControllers.addLessonToCourse)
 router.get('/:course', courseControllers.fetchCourseLessons)
 router.get('/:course/:lesson', courseControllers.fetchSingleCourseLesson)
-router.delete('/:lesson', courseControllers.deleteCourselesson)
+router.delete('/:lesson', courseControllers.deleteCourseLesson)
+router.put('/:lesson', validate(courseValidators.updateLesson), courseControllers.updateCourseLesson)
+router.get('/blocks/:course/:lesson', courseControllers.fetchLessonsBlocks)
 
 export default router

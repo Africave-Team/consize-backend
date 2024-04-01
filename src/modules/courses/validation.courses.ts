@@ -51,7 +51,6 @@ export const createLesson = {
   })
 }
 
-
 export const updateLesson = {
   body: Joi.object<CreateLessonPyaload>().keys({
     title: Joi.string().required(),
@@ -85,7 +84,6 @@ export const createBlock = {
   })
 }
 
-
 export const updateBlock = {
   body: Joi.object<CreateBlockPyaload>().keys({
     title: Joi.string().required(),
@@ -103,3 +101,7 @@ export const updateBlock = {
     block: Joi.string().required(),
   })
 }
+
+
+//quiz
+export const createQuiz = {}
