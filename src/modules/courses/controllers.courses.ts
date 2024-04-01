@@ -27,23 +27,25 @@ export const fetchTeamCourses = catchAsync(async (req: Request, res: Response) =
 
   const query: any = { teamId: req.user.team, page: parsedPage, pageSize: parsedPageSize, filter: filterkey }
   let results: QueryResult<CourseInterface>
-  const queryString = JSON.stringify(query)
-  if (redisClient.isReady) {
-    const redisDataExists = await redisClient.get(queryString)
-    if (redisDataExists) {
-      results = JSON.parse(redisDataExists) as QueryResult<CourseInterface>
-    } else {
-      results = await courseService.fetchTeamCourses(query)
-      if (redisClient.isReady) {
-        await redisClient.set(queryString, JSON.stringify(results), { EX: 100 })
-      }
-    }
-  } else {
-    results = await courseService.fetchTeamCourses(query)
-    if (redisClient.isReady) {
-      await redisClient.set(queryString, JSON.stringify(results), { EX: 100 })
-    }
-  }
+  // const queryString = JSON.stringify(query)
+  // if (redisClient.isReady) {
+  //   const redisDataExists = await redisClient.get(queryString)
+  //   if (redisDataExists) {
+  //     results = JSON.parse(redisDataExists) as QueryResult<CourseInterface>
+  //   } else {
+  //     results = await courseService.fetchTeamCourses(query)
+  //     if (redisClient.isReady) {
+  //       await redisClient.set(queryString, JSON.stringify(results), { EX: 100 })
+  //     }
+  //   }
+  // } else {
+  //   results = await courseService.fetchTeamCourses(query)
+  //   if (redisClient.isReady) {
+  //     await redisClient.set(queryString, JSON.stringify(results), { EX: 100 })
+  //   }
+  // }
+
+  results = await courseService.fetchTeamCourses(query)
 
 
   res.status(httpStatus.OK).send({ ...results, message: "Here they are." })
