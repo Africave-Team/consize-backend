@@ -92,3 +92,7 @@ export const sendVerificationEmail = async (to: string, firstName: string, token
 export const sendTeamInvitationEmail = async (to: string, firstName: string, teamName: string, token: string): Promise<void> => {
   await sendEmail({ to, templateVariables: { firstName, url: `${config.clientUrl}/auth/team-invitation?token=${token}` }, template: "invite", subject: "You have been invited to " + teamName })
 }
+
+export const sendSignatureNotificationEmail = async (to: string, firstName: string, teamName: string, token: string, id:string): Promise<void> => {
+  await sendEmail({ to, templateVariables: { firstName, url: `${config.clientUrl}/signatories/${id}/?=${token}` }, template: "signature", subject: "You have been invited as a signatory to " +teamName})
+}

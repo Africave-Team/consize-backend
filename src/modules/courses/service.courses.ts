@@ -11,7 +11,7 @@ import { CreateLessonPayload, LessonInterface } from './interfaces.lessons'
 import Lessons from './model.lessons'
 import { BlockInterface, CreateBlockPayload } from './interfaces.blocks'
 import Blocks from './model.blocks'
-import { CreateQuizPyaload, QuizInterface } from './interfaces.quizzes'
+import { CreateQuizPayload, QuizInterface } from './interfaces.quizzes'
 import Quizzes from './model.quizzes'
 import Settings from './model.settings'
 import { DropoutEvents, PeriodTypes } from './interfaces.settings'
@@ -226,14 +226,14 @@ export const fetchSingleLessonBlock = async ({ block }: { block: string }): Prom
 }
 
 // Quizzes
-export const addLessonQuiz = async (quizPayload: CreateQuizPyaload, lesson: string, course: string): Promise<QuizInterface> => {
+export const addLessonQuiz = async (quizPayload: CreateQuizPayload, lesson: string, course: string): Promise<QuizInterface> => {
   const quiz = new Quizzes({ ...quizPayload, lesson, course })
   await Lessons.findByIdAndUpdate(lesson, { $push: { quizzes: quiz.id } })
   await quiz.save()
   return quiz
 }
 
-export const addBlockQuiz = async (quizPayload: CreateQuizPyaload, lesson: string, course: string, block: string): Promise<QuizInterface> => {
+export const addBlockQuiz = async (quizPayload: CreateQuizPayload, lesson: string, course: string, block: string): Promise<QuizInterface> => {
   const quiz = new Quizzes({ ...quizPayload, lesson, course, block })
   await Blocks.findByIdAndUpdate(block, { $set: { quiz: quiz.id } })
   await quiz.save()
@@ -244,7 +244,7 @@ export const deleteQuiz = async (quiz: string): Promise<void> => {
   await Quizzes.findByIdAndDelete(quiz)
 }
 
-export const deleteQuizFromBlock = async (quiz: string, block: string): Promise<void> => {
+export const deleteQuizFromBlock = async (_: string, block: string): Promise<void> => {
   await Blocks.findByIdAndUpdate(block, { $set: { quiz: undefined } })
 }
 

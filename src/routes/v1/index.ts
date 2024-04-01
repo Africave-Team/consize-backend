@@ -7,6 +7,7 @@ import coursesRoute from './courses.route'
 import cohortsRoute from './cohorts.route'
 import permissionRoute from './permissions.route'
 import blocksRoute from './blocks.route'
+import signaturesRoute from './signatures.route'
 import config from '../../config/config'
 
 const router = express.Router()
@@ -48,6 +49,10 @@ const defaultIRoute: IRoute[] = [
   {
     path: '/blocks',
     route: blocksRoute
+  },
+  {
+    path: '/signatures',
+    route: signaturesRoute
   }
 ]
 
