@@ -191,7 +191,9 @@ export const deleteLesson = async function (lesson: string) {
   await Lessons.findByIdAndDelete(lesson)
 }
 
-
+export const fetchLessonsQuiz = async (lesson:string): Promise<QuizInterface[]> => {
+  return await Quizzes.find({lesson: lesson})
+}
 // blocks
 
 
@@ -215,7 +217,7 @@ export const fetchLessonsBlocks = async ({ course, lesson }: { course: string, l
 }
 
 export const deleteBlockFromLesson = async function (block: string, lesson: string) {
-  await Lessons.findByIdAndUpdate(lesson, { $push: { blocks: block } })
+  await Lessons.findByIdAndUpdate(lesson, { $pull: { blocks: block } })
   await Blocks.findByIdAndDelete(block)
 }
 
@@ -240,4 +242,12 @@ export const addBlockQuiz = async (quizPayload: CreateQuizPyaload, lesson: strin
 
 export const deleteQuiz = async (quiz: string): Promise<void> => {
   await Quizzes.findByIdAndDelete(quiz)
+}
+
+export const deleteQuizFromBlock = async (quiz: string, block: string): Promise<void> => {
+  await Blocks.findByIdAndUpdate(block, { $set: { quiz: undefined } })
+}
+
+export const deleteQuizFromLesson = async (quiz: string, lesson: string): Promise<void> => {
+  await Lessons.findByIdAndUpdate(lesson, { $pull: { quiz: quiz } })
 }

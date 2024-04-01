@@ -9,6 +9,7 @@ router.use(auth())
 router.post('/:course/:lesson', validate(courseValidators.createBlock), courseControllers.addBlockToLesson)
 router.delete('/:block', courseControllers.deleteBlockFromLesson)
 router.put('/:block', validate(courseValidators.createBlock), courseControllers.updateBlock)
-router.post('/quiz', validate(courseValidators.))
+router.post('/quiz/:course/:lesson/:block', validate(courseValidators.createQuiz), courseControllers.addQuizToBlock)
+router.delete('/quiz/:block/:quiz', courseControllers.deleteQuizFromBlock)
 
 export default router

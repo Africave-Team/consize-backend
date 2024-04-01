@@ -6,7 +6,7 @@ import { Media } from './interfaces.courses'
 interface Block {
   title: string
   content: string
-  quiz: string
+  quiz?: string
   bodyMedia?: Media
   lesson: string
   course: string
@@ -15,7 +15,7 @@ interface Block {
 export interface CreateBlockPyaload {
   title: string
   content: string
-  quiz?: string
+  quiz?: string 
   bodyMedia?: Media
 }
 
