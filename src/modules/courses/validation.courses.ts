@@ -1,7 +1,8 @@
 import Joi from 'joi'
-import { CreateCoursePayload, Media, MediaType } from './interfaces.courses'
-import { CreateLessonPayload } from './interfaces.lessons'
-import { CreateBlockPayload } from './interfaces.blocks'
+import { CreateCoursePyaload, Media, MediaType } from './interfaces.courses'
+import { CreateLessonPyaload } from './interfaces.lessons'
+import { CreateBlockPyaload } from './interfaces.blocks'
+import { CreateQuizPyaload } from './interfaces.quizzes'
 
 const createCourseRequest: Record<keyof CreateCoursePayload, any> = {
   free: Joi.boolean(),
@@ -52,7 +53,6 @@ export const createLesson = {
   })
 }
 
-
 export const updateLesson = {
   body: Joi.object<CreateLessonPayload>().keys({
     title: Joi.string().required(),
@@ -86,7 +86,6 @@ export const createBlock = {
   })
 }
 
-
 export const updateBlock = {
   body: Joi.object<CreateBlockPayload>().keys({
     title: Joi.string().required(),
@@ -103,4 +102,16 @@ export const updateBlock = {
     lesson: Joi.string().required(),
     block: Joi.string().required(),
   })
+}
+
+
+//quiz
+export const createQuiz: Record<keyof CreateQuizPyaload, any> = {
+  question: Joi.string().required(),
+  correctAnswerContext: Joi.string().required(),
+  wrongAnswerContext: Joi.string().required(),
+  choices: Joi.array().items(Joi.string()).required(),
+  correctAnswerIndex: Joi.number().required(),
+  revisitChunk: Joi.string().required(),
+  hint: Joi.string().optional(),
 }
