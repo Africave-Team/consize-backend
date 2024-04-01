@@ -5,7 +5,7 @@ import { QueryResult } from '../paginate/paginate'
 import db from "../rtdb"
 import { CourseStatistics } from '../rtdb/interfaces.rtdb'
 import { COURSE_STATS } from '../rtdb/nodes'
-import { CourseInterface,CourseStatus, CreateCoursePayload } from './interfaces.courses'
+import { CourseInterface, CourseStatus, CreateCoursePayload } from './interfaces.courses'
 import Course from './model.courses'
 import { CreateLessonPayload, LessonInterface } from './interfaces.lessons'
 import Lessons from './model.lessons'
@@ -27,12 +27,12 @@ enum PageType {
 export const createCourse = async (coursePayload: CreateCoursePayload, teamId: string): Promise<CourseInterface> => {
   const course = new Course({ ...coursePayload, owner: teamId })
   await course.save()
-  setInitialCourseStats(course.id)
+  setInitialCourseStats(course.id, teamId)
   setInitialCourseSettings(course.id)
   return course
 }
 
-const setInitialCourseStats = async (id: string) => {
+const setInitialCourseStats = async (id: string, teamId: string) => {
 
   const dbRef = db.ref(COURSE_STATS)
   const initialStats: CourseStatistics = {
@@ -52,7 +52,7 @@ const setInitialCourseStats = async (id: string) => {
     averageBlockDurationMinutes: 0,
     averageBlockDurationSeconds: 0
   }
-  await dbRef.child(id).set(initialStats)
+  await dbRef.child(teamId).child(id).set(initialStats)
 }
 
 const setInitialCourseSettings = async function (id: string) {
