@@ -5,7 +5,7 @@ import { QueryResult } from '../paginate/paginate'
 import db from "../rtdb"
 import { CourseStatistics } from '../rtdb/interfaces.rtdb'
 import { COURSE_STATS } from '../rtdb/nodes'
-import { CourseInterface,CourseStatus, CreateCoursePayload } from './interfaces.courses'
+import { CourseInterface, CourseStatus, CreateCoursePayload } from './interfaces.courses'
 import Course from './model.courses'
 import { CreateLessonPayload, LessonInterface } from './interfaces.lessons'
 import Lessons from './model.lessons'
@@ -27,12 +27,12 @@ enum PageType {
 export const createCourse = async (coursePayload: CreateCoursePayload, teamId: string): Promise<CourseInterface> => {
   const course = new Course({ ...coursePayload, owner: teamId })
   await course.save()
-  setInitialCourseStats(course.id)
+  setInitialCourseStats(course.id, teamId)
   setInitialCourseSettings(course.id)
   return course
 }
 
-const setInitialCourseStats = async (id: string) => {
+const setInitialCourseStats = async (id: string, teamId: string) => {
 
   const dbRef = db.ref(COURSE_STATS)
   const initialStats: CourseStatistics = {
@@ -52,7 +52,7 @@ const setInitialCourseStats = async (id: string) => {
     averageBlockDurationMinutes: 0,
     averageBlockDurationSeconds: 0
   }
-  await dbRef.child(id).set(initialStats)
+  await dbRef.child(teamId).child(id).set(initialStats)
 }
 
 const setInitialCourseSettings = async function (id: string) {
@@ -191,7 +191,9 @@ export const deleteLesson = async function (lesson: string) {
   await Lessons.findByIdAndDelete(lesson)
 }
 
-
+export const fetchLessonsQuiz = async (lesson: string): Promise<QuizInterface[]> => {
+  return await Quizzes.find({ lesson: lesson })
+}
 // blocks
 
 
@@ -214,7 +216,8 @@ export const fetchLessonsBlocks = async ({ course, lesson }: { course: string, l
   return results
 }
 
-export const deleteBlock = async function (block: string) {
+export const deleteBlockFromLesson = async function (block: string, lesson: string) {
+  await Lessons.findByIdAndUpdate(lesson, { $pull: { blocks: block } })
   await Blocks.findByIdAndDelete(block)
 }
 
@@ -239,4 +242,12 @@ export const addBlockQuiz = async (quizPayload: CreateQuizPyaload, lesson: strin
 
 export const deleteQuiz = async (quiz: string): Promise<void> => {
   await Quizzes.findByIdAndDelete(quiz)
+}
+
+export const deleteQuizFromBlock = async (block: string): Promise<void> => {
+  await Blocks.findByIdAndUpdate(block, { $set: { quiz: undefined } })
+}
+
+export const deleteQuizFromLesson = async (quiz: string, lesson: string): Promise<void> => {
+  await Lessons.findByIdAndUpdate(lesson, { $pull: { quiz: quiz } })
 }
