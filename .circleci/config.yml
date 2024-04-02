@@ -16,6 +16,6 @@ workflows:
     jobs:
       - build_and_deploy
         filters:
-            branches:
-              only:
-                - main
+          branches:
+            only:
+              - main
