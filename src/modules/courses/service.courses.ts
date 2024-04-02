@@ -191,8 +191,8 @@ export const deleteLesson = async function (lesson: string) {
   await Lessons.findByIdAndDelete(lesson)
 }
 
-export const fetchLessonsQuiz = async (lesson:string): Promise<QuizInterface[]> => {
-  return await Quizzes.find({lesson: lesson})
+export const fetchLessonsQuiz = async (lesson: string): Promise<QuizInterface[]> => {
+  return await Quizzes.find({ lesson: lesson })
 }
 // blocks
 
@@ -244,7 +244,7 @@ export const deleteQuiz = async (quiz: string): Promise<void> => {
   await Quizzes.findByIdAndDelete(quiz)
 }
 
-export const deleteQuizFromBlock = async (quiz: string, block: string): Promise<void> => {
+export const deleteQuizFromBlock = async (block: string): Promise<void> => {
   await Blocks.findByIdAndUpdate(block, { $set: { quiz: undefined } })
 }
 

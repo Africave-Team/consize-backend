@@ -1,7 +1,7 @@
 import Joi from 'joi'
-import { CreateCoursePyaload, Media, MediaType } from './interfaces.courses'
-import { CreateLessonPyaload } from './interfaces.lessons'
-import { CreateBlockPyaload } from './interfaces.blocks'
+import { CreateCoursePayload, Media, MediaType } from './interfaces.courses'
+import { CreateLessonPayload } from './interfaces.lessons'
+import { CreateBlockPayload } from './interfaces.blocks'
 import { CreateQuizPyaload } from './interfaces.quizzes'
 
 const createCourseRequest: Record<keyof CreateCoursePayload, any> = {

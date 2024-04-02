@@ -128,13 +128,13 @@ export const deleteCourseLesson = catchAsync(async (req: Request, res: Response)
 
 export const updateCourseLesson = catchAsync(async (req: Request, res: Response) => {
   const { lesson } = req.params
-   if (lesson) {
+  if (lesson) {
     const updatedLesson = await courseService.updateLesson(req.body, lesson)
     res.status(httpStatus.OK).send({ lesson: updatedLesson, message: "Your lesson has been updated successfully" })
   }
 })
 
-export const addBlockToLesson = catchAsync(async (req:Request, res: Response) => {
+export const addBlockToLesson = catchAsync(async (req: Request, res: Response) => {
   const { lesson, course } = req.params
 
   if (lesson && course) {
@@ -151,7 +151,7 @@ export const deleteBlockFromLesson = catchAsync(async (req: Request, res: Respon
   res.status(httpStatus.NO_CONTENT)
 })
 
-export const updateBlock = catchAsync( async (req:Request, res: Response) => {
+export const updateBlock = catchAsync(async (req: Request, res: Response) => {
   const { block } = req.params
   if (block) {
     const updatedBlock = courseService.updateBlock(req.body, block)
@@ -160,50 +160,50 @@ export const updateBlock = catchAsync( async (req:Request, res: Response) => {
 })
 
 export const fetchLessonsBlocks = catchAsync(async (req: Request, res: Response) => {
-  const { course,lesson } = req.params
+  const { course, lesson } = req.params
   if (lesson && course) {
     const blocks = await courseService.fetchLessonsBlocks({ course: course, lesson: lesson })
-    res.status(httpStatus.OK).send({data: blocks, message:"block retrieved successfully" })
+    res.status(httpStatus.OK).send({ data: blocks, message: "block retrieved successfully" })
   }
 })
 
 export const fetchLessonsQuiz = catchAsync(async (req: Request, res: Response) => {
   const { lesson } = req.params
-  if ( lesson ) {
-    const quizzes = await courseService.fetchLessonsQuiz(lesson )
-    res.status(httpStatus.OK).send({data: quizzes, message:"quizzes retrieved successfully" })
+  if (lesson) {
+    const quizzes = await courseService.fetchLessonsQuiz(lesson)
+    res.status(httpStatus.OK).send({ data: quizzes, message: "quizzes retrieved successfully" })
   }
 })
 
-export const addQuizToBlock = catchAsync(async (req:Request, res: Response) => {
+export const addQuizToBlock = catchAsync(async (req: Request, res: Response) => {
   const { block, lesson, course } = req.params
 
-  if ( block && lesson && course) {
-    const quiz = await courseService.addBlockQuiz(req.body,lesson, course, block)
+  if (block && lesson && course) {
+    const quiz = await courseService.addBlockQuiz(req.body, lesson, course, block)
     res.status(httpStatus.CREATED).send({ lesson: quiz, message: "Your quiz has been created successfully" })
   }
 })
 
 export const deleteQuizFromBlock = catchAsync(async (req: Request, res: Response) => {
-  const { block, quiz } = req.params
-  if (block && quiz ) {
-    await courseService.deleteQuizFromBlock(block, quiz)
+  const { block } = req.params
+  if (block) {
+    await courseService.deleteQuizFromBlock(block)
   }
   res.status(httpStatus.NO_CONTENT)
 })
 
-export const addQuizToLesson = catchAsync(async (req:Request, res: Response) => {
+export const addQuizToLesson = catchAsync(async (req: Request, res: Response) => {
   const { lesson, course } = req.params
 
-  if ( lesson && course) {
-    const quiz = await courseService.addLessonQuiz(req.body,lesson, course)
+  if (lesson && course) {
+    const quiz = await courseService.addLessonQuiz(req.body, lesson, course)
     res.status(httpStatus.CREATED).send({ lesson: quiz, message: "Your quiz has been created successfully" })
   }
 })
 
 export const deleteQuizFromLesson = catchAsync(async (req: Request, res: Response) => {
   const { lesson, quiz } = req.params
-  if (lesson && quiz ) {
+  if (lesson && quiz) {
     await courseService.deleteQuizFromLesson(lesson, quiz)
   }
   res.status(httpStatus.NO_CONTENT)
