@@ -7,8 +7,8 @@ const router: Router = express.Router()
 router.use(auth())
 
 router.post('/:course/:lesson', validate(courseValidators.createBlock), courseControllers.addBlockToLesson)
-router.delete('/:block', courseControllers.deleteBlockFromLesson)
-router.put('/:block', validate(courseValidators.createBlock), courseControllers.updateBlock)
+router.delete('/:lesson/:block', courseControllers.deleteBlockFromLesson)
+router.put('/:block', courseControllers.updateBlock)
 router.post('/quiz/:course/:lesson/:block', validate(courseValidators.createQuiz), courseControllers.addQuizToBlock)
 router.delete('/quiz/:block/:quiz', courseControllers.deleteQuizFromBlock)
 

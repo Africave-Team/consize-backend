@@ -11,13 +11,16 @@ export const MediaSchema = new Schema<Media>(
         },
         url: {
             type: String,
-            required: true
         },
         mediaType: {
             type: String,
             enum: Object.values(MediaType),
             default: MediaType.IMAGE
         }
+    },
+    {
+        _id: false,
+        timestamps: false
     }
 )
 

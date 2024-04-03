@@ -5,8 +5,10 @@ import teamRoute from './team.route'
 import uploadRoute from './upload.route'
 import coursesRoute from './courses.route'
 import cohortsRoute from './cohorts.route'
+import lessonsRoute from './lessons.route'
 import permissionRoute from './permissions.route'
 import blocksRoute from './blocks.route'
+import quizzesRoute from './quizzes.route'
 import config from '../../config/config'
 
 const router = express.Router()
@@ -42,12 +44,20 @@ const defaultIRoute: IRoute[] = [
     route: coursesRoute
   },
   {
+    path: '/lessons',
+    route: lessonsRoute
+  },
+  {
     path: '/cohorts',
     route: cohortsRoute
   },
   {
     path: '/blocks',
     route: blocksRoute
+  },
+  {
+    path: '/quiz',
+    route: quizzesRoute
   }
 ]
 
