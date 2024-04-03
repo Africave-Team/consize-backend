@@ -158,7 +158,7 @@ export const searchTeamCourses = async ({ teamId, search }: { teamId: string, se
 }
 
 export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: string, courseId: string }): Promise<CourseInterface | null> => {
-  return Course.findOne({ owner: teamId, _id: courseId }).populate("lessons").populate("courses")
+  return Course.findOne({ owner: teamId, _id: courseId }).populate("lessons").populate("courses").populate("settings")
 }
 
 // lessons
@@ -184,10 +184,16 @@ export const fetchCourseLessons = async ({ course }: { course: string }): Promis
 }
 
 export const fetchSingleLesson = async ({ lesson }: { lesson: string }): Promise<LessonInterface | null> => {
-  return Lessons.findById(lesson).populate("blocks").populate("course")
+  return Lessons.findById(lesson).populate({
+    path: "blocks",
+    populate: {
+      path: "quiz"
+    }
+  }).populate("course").populate("quizzes")
 }
 
-export const deleteLesson = async function (lesson: string) {
+export const deleteLesson = async function (lesson: string, course: string) {
+  await Course.findByIdAndUpdate(course, { $pull: { lessons: lesson } })
   await Lessons.findByIdAndDelete(lesson)
 }
 
@@ -217,7 +223,7 @@ export const fetchLessonsBlocks = async ({ course, lesson }: { course: string, l
 }
 
 export const deleteBlockFromLesson = async function (block: string, lesson: string) {
-  await Lessons.findByIdAndUpdate(lesson, { $pull: { blocks: block } })
+  await Lessons.findByIdAndUpdate(lesson, { $pull: { blocks: block } }, { new: true })
   await Blocks.findByIdAndDelete(block)
 }
 
@@ -244,10 +250,17 @@ export const deleteQuiz = async (quiz: string): Promise<void> => {
   await Quizzes.findByIdAndDelete(quiz)
 }
 
-export const deleteQuizFromBlock = async (block: string): Promise<void> => {
-  await Blocks.findByIdAndUpdate(block, { $set: { quiz: undefined } })
+
+export const updateQuiz = async (quiz: string, body: any): Promise<void> => {
+  await Quizzes.findByIdAndUpdate(quiz, { $set: { ...body } })
 }
 
-export const deleteQuizFromLesson = async (quiz: string, lesson: string): Promise<void> => {
-  await Lessons.findByIdAndUpdate(lesson, { $pull: { quiz: quiz } })
+export const deleteQuizFromBlock = async (block: string, quiz: string): Promise<void> => {
+  await Blocks.findByIdAndUpdate(block, { $set: { quiz: null } }, { new: true })
+  await Quizzes.findByIdAndDelete(quiz)
+}
+
+export const deleteQuizFromLesson = async (lesson: string, quiz: string): Promise<void> => {
+  await Lessons.findByIdAndUpdate(lesson, { $pull: { quizzes: quiz } }, { new: true })
+  await Quizzes.findByIdAndDelete(quiz)
 }

@@ -2,7 +2,7 @@ import { Request, Response } from 'express'
 import catchAsync from '../utils/catchAsync'
 import * as courseService from './service.courses'
 import httpStatus from 'http-status'
-import { redisClient } from '../redis'
+// import { redisClient } from '../redis'
 import { CourseInterface } from './interfaces.courses'
 import { QueryResult } from '../paginate/paginate'
 // import { agenda } from '../scheduler'
@@ -75,23 +75,25 @@ export const fetchTeamSingleCourse = catchAsync(async (req: Request, res: Respon
 
   const query: any = { teamId: req.user.team, courseId: course }
   let results: CourseInterface | null
-  const queryString = JSON.stringify(query)
-  if (redisClient.isReady) {
-    const redisDataExists = await redisClient.get(queryString)
-    if (redisDataExists) {
-      results = JSON.parse(redisDataExists) as CourseInterface
-    } else {
-      results = await courseService.fetchSingleTeamCourse(query)
-      if (redisClient.isReady) {
-        await redisClient.set(queryString, JSON.stringify(results), { EX: 100 })
-      }
-    }
-  } else {
-    results = await courseService.fetchSingleTeamCourse(query)
-    if (redisClient.isReady) {
-      await redisClient.set(queryString, JSON.stringify(results), { EX: 100 })
-    }
-  }
+  // const queryString = JSON.stringify(query)
+  // if (redisClient.isReady) {
+  //   const redisDataExists = await redisClient.get(queryString)
+  //   if (redisDataExists) {
+  //     results = JSON.parse(redisDataExists) as CourseInterface
+  //   } else {
+  //     results = await courseService.fetchSingleTeamCourse(query)
+  //     if (redisClient.isReady) {
+  //       await redisClient.set(queryString, JSON.stringify(results), { EX: 100 })
+  //     }
+  //   }
+  // } else {
+  //   results = await courseService.fetchSingleTeamCourse(query)
+  //   if (redisClient.isReady) {
+  //     await redisClient.set(queryString, JSON.stringify(results), { EX: 100 })
+  //   }
+  // }
+
+  results = await courseService.fetchSingleTeamCourse(query)
 
 
   res.status(httpStatus.OK).send({ data: results, message: "Here you are." })
@@ -100,8 +102,8 @@ export const fetchTeamSingleCourse = catchAsync(async (req: Request, res: Respon
 // lessons
 export const addLessonToCourse = catchAsync(async (req: Request, res: Response) => {
   if (req.params['course']) {
-    const createdCourse = await courseService.createCourse(req.body, req.user.team)
-    res.status(httpStatus.CREATED).send({ data: createdCourse, message: "Your lesson has been added successfully" })
+    const createdLesson = await courseService.createLesson(req.body, req.params["course"])
+    res.status(httpStatus.CREATED).send({ data: createdLesson, message: "Your lesson has been added successfully" })
   }
 })
 
@@ -120,9 +122,9 @@ export const fetchSingleCourseLesson = catchAsync(async (req: Request, res: Resp
 })
 
 export const deleteCourseLesson = catchAsync(async (req: Request, res: Response) => {
-  if (req.params['lesson']) {
-    await courseService.deleteLesson(req.params['lesson'])
-    res.status(httpStatus.NO_CONTENT)
+  if (req.params['lesson'] && req.params['course']) {
+    await courseService.deleteLesson(req.params['lesson'], req.params['course'])
+    res.status(httpStatus.NO_CONTENT).send()
   }
 })
 
@@ -130,7 +132,7 @@ export const updateCourseLesson = catchAsync(async (req: Request, res: Response)
   const { lesson } = req.params
   if (lesson) {
     const updatedLesson = await courseService.updateLesson(req.body, lesson)
-    res.status(httpStatus.OK).send({ lesson: updatedLesson, message: "Your lesson has been updated successfully" })
+    res.status(httpStatus.OK).send({ data: updatedLesson, message: "Your lesson has been updated successfully" })
   }
 })
 
@@ -139,7 +141,7 @@ export const addBlockToLesson = catchAsync(async (req: Request, res: Response) =
 
   if (lesson && course) {
     const createdBlock = await courseService.createBlock(req.body, lesson, course)
-    res.status(httpStatus.OK).send({ lesson: createdBlock, message: "Your block has been created successfully" })
+    res.status(httpStatus.OK).send({ data: createdBlock, message: "Your block has been created successfully" })
   }
 })
 
@@ -148,7 +150,7 @@ export const deleteBlockFromLesson = catchAsync(async (req: Request, res: Respon
   if (block && lesson) {
     await courseService.deleteBlockFromLesson(block, lesson)
   }
-  res.status(httpStatus.NO_CONTENT)
+  res.status(httpStatus.NO_CONTENT).send()
 })
 
 export const updateBlock = catchAsync(async (req: Request, res: Response) => {
@@ -180,16 +182,16 @@ export const addQuizToBlock = catchAsync(async (req: Request, res: Response) => 
 
   if (block && lesson && course) {
     const quiz = await courseService.addBlockQuiz(req.body, lesson, course, block)
-    res.status(httpStatus.CREATED).send({ lesson: quiz, message: "Your quiz has been created successfully" })
+    res.status(httpStatus.CREATED).send({ data: quiz, message: "Your quiz has been created successfully" })
   }
 })
 
 export const deleteQuizFromBlock = catchAsync(async (req: Request, res: Response) => {
-  const { block } = req.params
-  if (block) {
-    await courseService.deleteQuizFromBlock(block)
+  const { block, quiz } = req.params
+  if (block && quiz) {
+    await courseService.deleteQuizFromBlock(block, quiz)
   }
-  res.status(httpStatus.NO_CONTENT)
+  res.status(httpStatus.NO_CONTENT).send()
 })
 
 export const addQuizToLesson = catchAsync(async (req: Request, res: Response) => {
@@ -197,7 +199,16 @@ export const addQuizToLesson = catchAsync(async (req: Request, res: Response) =>
 
   if (lesson && course) {
     const quiz = await courseService.addLessonQuiz(req.body, lesson, course)
-    res.status(httpStatus.CREATED).send({ lesson: quiz, message: "Your quiz has been created successfully" })
+    res.status(httpStatus.CREATED).send({ data: quiz, message: "Your quiz has been created successfully" })
+  }
+})
+
+export const updateQuiz = catchAsync(async (req: Request, res: Response) => {
+  const { quiz } = req.params
+
+  if (quiz) {
+    await courseService.updateQuiz(quiz, req.body)
+    res.status(httpStatus.OK).send({ message: "Your quiz has been updated successfully" })
   }
 })
 
@@ -206,5 +217,5 @@ export const deleteQuizFromLesson = catchAsync(async (req: Request, res: Respons
   if (lesson && quiz) {
     await courseService.deleteQuizFromLesson(lesson, quiz)
   }
-  res.status(httpStatus.NO_CONTENT)
+  res.status(httpStatus.NO_CONTENT).send()
 })
