@@ -1,4 +1,5 @@
 import express, { Request, Response, Router } from 'express'
+import "../../modules/students"
 import authRoute from './auth.route'
 import userRoute from './user.route'
 import teamRoute from './team.route'

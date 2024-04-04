@@ -14,7 +14,7 @@ import Blocks from './model.blocks'
 import { CreateQuizPyaload, QuizInterface } from './interfaces.quizzes'
 import Quizzes from './model.quizzes'
 import Settings from './model.settings'
-import { DropoutEvents, PeriodTypes } from './interfaces.settings'
+import { CourseSettings, DropoutEvents, PeriodTypes } from './interfaces.settings'
 
 enum PageType {
   ALL = 'all',
@@ -158,7 +158,12 @@ export const searchTeamCourses = async ({ teamId, search }: { teamId: string, se
 }
 
 export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: string, courseId: string }): Promise<CourseInterface | null> => {
-  return Course.findOne({ owner: teamId, _id: courseId }).populate("lessons").populate("courses").populate("settings")
+  return Course.findOne({ owner: teamId, _id: courseId }).populate("lessons").populate("courses").populate({
+    path: "settings",
+    populate: {
+      path: "learnerGroups.members"
+    }
+  })
 }
 
 // lessons
@@ -263,4 +268,9 @@ export const deleteQuizFromBlock = async (block: string, quiz: string): Promise<
 export const deleteQuizFromLesson = async (lesson: string, quiz: string): Promise<void> => {
   await Lessons.findByIdAndUpdate(lesson, { $pull: { quizzes: quiz } }, { new: true })
   await Quizzes.findByIdAndDelete(quiz)
+}
+
+// settings
+export const updateCourseSettings = async (id: string, payload: Partial<CourseSettings>): Promise<void> => {
+  await Settings.findByIdAndUpdate(id, { $set: payload })
 }

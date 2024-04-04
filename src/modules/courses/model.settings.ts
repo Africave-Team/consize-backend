@@ -78,7 +78,8 @@ const LearnerGroupSchema = new Schema<LearnerGroup>({
     type: String
   },
   members: {
-    type: [String]
+    type: [String],
+    ref: "Students"
   },
   launchTimes: {
     type: LaunchTimeSchema

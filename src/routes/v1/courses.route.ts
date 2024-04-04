@@ -11,4 +11,6 @@ router.post('/', validate(courseValidators.createCourse), courseControllers.crea
 router.put('/:course', validate(courseValidators.updateCourse), courseControllers.updateCourse)
 router.get('/:course', courseControllers.fetchTeamSingleCourse)
 
+router.put('/settings/:id', courseControllers.updateCourseSetting)
+
 export default router
