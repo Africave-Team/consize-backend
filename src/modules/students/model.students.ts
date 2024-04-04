@@ -17,7 +17,10 @@ const StudentSchema = new Schema<StudentInterface>({
   },
   email: {
     type: String
-  }
+  },
+  custom: {
+    type: Object
+  },
 }, {
   collection: "students"
 })

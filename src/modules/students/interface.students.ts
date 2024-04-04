@@ -6,6 +6,7 @@ export interface Student {
   otherNames: string
   phoneNumber: string
   email: string
+  custom?: any
 }
 
 export interface StudentInterface extends Student, Document {
