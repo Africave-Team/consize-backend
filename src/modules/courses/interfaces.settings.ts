@@ -1,4 +1,5 @@
 import { Document, Model } from 'mongoose'
+import { Student } from '../students/interface.students'
 
 export interface EnrollmentField {
   fieldName: string
@@ -21,6 +22,13 @@ export interface LearnerGroup extends Document {
   name: string
   id: string
   members: string[]
+  launchTimes: LearnerGroupLaunchTime | null
+}
+
+export interface LearnerGroupMembers {
+  name: string
+  id: string
+  members: Student[]
   launchTimes: LearnerGroupLaunchTime | null
 }
 
