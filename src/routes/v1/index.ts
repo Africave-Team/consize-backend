@@ -10,6 +10,7 @@ import lessonsRoute from './lessons.route'
 import permissionRoute from './permissions.route'
 import blocksRoute from './blocks.route'
 import quizzesRoute from './quizzes.route'
+import studentsRoute from './students'
 import config from '../../config/config'
 
 const router = express.Router()
@@ -59,6 +60,10 @@ const defaultIRoute: IRoute[] = [
   {
     path: '/quiz',
     route: quizzesRoute
+  },
+  {
+    path: '/students',
+    route: studentsRoute
   }
 ]
 

@@ -5,7 +5,7 @@ import { toJSON } from '../toJSON'
 import { paginate } from '../paginate'
 
 const StudentSchema = new Schema<StudentInterface>({
-  id: { type: String, default: () => v4() },
+  _id: { type: String, default: () => v4() },
   firstName: {
     type: String
   },

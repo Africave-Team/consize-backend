@@ -12,5 +12,9 @@ router.put('/:course', validate(courseValidators.updateCourse), courseController
 router.get('/:course', courseControllers.fetchTeamSingleCourse)
 
 router.put('/settings/:id', courseControllers.updateCourseSetting)
+router.post('/settings/add-learner-group/:id', courseControllers.addLearnerGroup)
+router.delete('/settings/remove-learner-group/:id/:groupId', courseControllers.removeLearnerGroup)
+
+router.patch('/settings/launchtimes/:id/:groupId', courseControllers.setLearnerGroupLaunchTime)
 
 export default router

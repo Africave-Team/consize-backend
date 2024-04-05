@@ -37,7 +37,7 @@ export const updateCourse = {
     description: Joi.string(),
     price: Joi.number().optional(),
     audiences: Joi.string().optional(),
-  }),
+  }).unknown(true),
   params: Joi.object().keys({
     course: Joi.string().required()
   })

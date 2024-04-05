@@ -14,7 +14,9 @@ import Blocks from './model.blocks'
 import { CreateQuizPyaload, QuizInterface } from './interfaces.quizzes'
 import Quizzes from './model.quizzes'
 import Settings from './model.settings'
-import { CourseSettings, DropoutEvents, PeriodTypes } from './interfaces.settings'
+import { CourseSettings, DropoutEvents, LearnerGroup, LearnerGroupLaunchTime, PeriodTypes } from './interfaces.settings'
+import Students from '../students/model.students'
+// import Students from '../students/model.students'
 
 enum PageType {
   ALL = 'all',
@@ -158,12 +160,8 @@ export const searchTeamCourses = async ({ teamId, search }: { teamId: string, se
 }
 
 export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: string, courseId: string }): Promise<CourseInterface | null> => {
-  return Course.findOne({ owner: teamId, _id: courseId }).populate("lessons").populate("courses").populate({
-    path: "settings",
-    populate: {
-      path: "learnerGroups.members"
-    }
-  })
+  const course = await Course.findOne({ owner: teamId, _id: courseId }).populate("lessons").populate("courses").lean()
+  return course
 }
 
 // lessons
@@ -272,5 +270,43 @@ export const deleteQuizFromLesson = async (lesson: string, quiz: string): Promis
 
 // settings
 export const updateCourseSettings = async (id: string, payload: Partial<CourseSettings>): Promise<void> => {
+
   await Settings.findByIdAndUpdate(id, { $set: payload })
+}
+
+export const fetchSingleSettings = async function (id: string): Promise<CourseSettings | null> {
+  return Settings.findById(id).lean()
+}
+
+export const initiateGroupScheduleAgenda = async function (): Promise<void> {
+
+}
+
+export const addLearnerGroup = async (id: string, payload: Partial<LearnerGroup>): Promise<void> => {
+  await Settings.findByIdAndUpdate(id, { $push: { learnerGroups: payload } })
+  if (payload.launchTimes) {
+    initiateGroupScheduleAgenda()
+  }
+}
+
+export const setLearnerGroupLaunchTime = async (groupId: string, settingsId: string, launchTime: LearnerGroupLaunchTime): Promise<void> => {
+  await Settings.findOneAndUpdate({ _id: settingsId, 'learnerGroups._id': groupId }, { $set: { 'learnerGroups.$.launchTimes': launchTime } })
+  initiateGroupScheduleAgenda()
+}
+
+export const removeLearnerGroup = async (id: string, groupId: string): Promise<void> => {
+  const settings = await Settings.findById(id)
+  if (settings) {
+    let groups = [...settings?.learnerGroups]
+    let index = groups.findIndex(e => e.id === groupId)
+    if (index >= 0) {
+      let group = groups[index]
+      await Settings.findByIdAndUpdate(id, { $pull: { learnerGroups: group } }).lean()
+    }
+  }
+}
+
+
+export const fetchLearnerGroupMembers = async (members: string[]) => {
+  return Students.find({ _id: { $in: members } })
 }

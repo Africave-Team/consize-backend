@@ -95,8 +95,33 @@ export const fetchTeamSingleCourse = catchAsync(async (req: Request, res: Respon
 
   results = await courseService.fetchSingleTeamCourse(query)
 
+  if (!results) return res.status(httpStatus.NOT_FOUND).send({ message: "Course not found" })
+  const settings = await courseService.fetchSingleSettings(results.settings)
+  const groups: any[] = []
+  if (settings) {
+    for (let group of settings.learnerGroups) {
+      const mems = await courseService.fetchLearnerGroupMembers(group.members)
+      groups.push({
+        id: group._id,
+        launchTimes: group.launchTimes,
+        name: group.name,
+        members: mems
+      })
+    }
+  }
 
-  res.status(httpStatus.OK).send({ data: results, message: "Here you are." })
+  return res.status(httpStatus.OK).send({
+    data: {
+      ...results,
+      id: results._id,  //@ts-ignore
+      lessons: results.lessons.map((e) => ({ ...e, id: e._id })),
+      settings: {
+        ...settings, //@ts-ignore
+        id: settings?._id,
+        learnerGroups: groups
+      }
+    }, message: "Here you are."
+  })
 })
 
 // lessons
@@ -229,3 +254,31 @@ export const updateCourseSetting = catchAsync(async (req: Request, res: Response
   }
   res.status(200).send({ message: "Settings updated" })
 })
+
+export const addLearnerGroup = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params
+  if (id) {
+    const { id: groupId, name, members, launchTimes } = req.body
+    await courseService.addLearnerGroup(id, { id: groupId, name, members, launchTimes })
+  }
+  res.status(200).send({ message: "Settings updated" })
+})
+
+
+export const removeLearnerGroup = catchAsync(async (req: Request, res: Response) => {
+  const { id, groupId } = req.params
+  if (id && groupId) {
+    await courseService.removeLearnerGroup(id, groupId)
+  }
+  res.status(200).send({ message: "Settings updated" })
+})
+
+export const setLearnerGroupLaunchTime = catchAsync(async (req: Request, res: Response) => {
+  const { id, groupId } = req.params
+  if (id && groupId) {
+    await courseService.setLearnerGroupLaunchTime(groupId, id, req.body)
+  }
+  res.status(200).send({ message: "Settings updated" })
+})
+
+
