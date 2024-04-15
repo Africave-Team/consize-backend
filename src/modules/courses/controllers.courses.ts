@@ -51,6 +51,37 @@ export const fetchTeamCourses = catchAsync(async (req: Request, res: Response) =
   res.status(httpStatus.OK).send({ ...results, message: "Here they are." })
 })
 
+export const fetchPublishedCourses = catchAsync(async (req: Request, res: Response) => {
+  const { page, pageSize } = req.query
+  const parsedPage = parseInt(page as string, 10) || 1
+  const parsedPageSize = parseInt(pageSize as string, 10) || 20
+
+  const query: any = { page: parsedPage, pageSize: parsedPageSize }
+  let results: QueryResult<CourseInterface>
+
+  results = await courseService.fetchPublishedCourses(query)
+
+
+  res.status(httpStatus.OK).send({ ...results, message: "Here they are." })
+})
+
+
+
+export const fetchSingleCourse = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+
+  const query: any = { courseId: course }
+  let results: CourseInterface | null
+
+  results = await courseService.fetchSingleCourse(query)
+
+  if (!results) return res.status(httpStatus.NOT_FOUND).send({ message: "Course not found" })
+
+  return res.status(httpStatus.OK).send({
+    data: results, message: "Here you are."
+  })
+})
+
 
 export const searchTeamCourses = catchAsync(async (req: Request, res: Response) => {
   const { page, search } = req.query

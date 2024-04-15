@@ -154,6 +154,12 @@ export const fetchTeamCourses = async ({ teamId, page, pageSize, filter }: { tea
 
 }
 
+
+export const fetchPublishedCourses = async ({ page, pageSize }: { page: number, pageSize: number }): Promise<QueryResult<CourseInterface>> => {
+  return Course.paginate({ status: CourseStatus.PUBLISHED }, { page, limit: pageSize, populate: 'lessons,courses' })
+
+}
+
 export const searchTeamCourses = async ({ teamId, search }: { teamId: string, search: string }): Promise<CourseInterface[]> => {
   const regex = new RegExp(search, "i")
   return Course.find({ owner: teamId, $or: [{ title: { $regex: regex } }, { description: { $regex: regex } }] }).limit(16)
@@ -162,6 +168,12 @@ export const searchTeamCourses = async ({ teamId, search }: { teamId: string, se
 
 export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: string, courseId: string }): Promise<CourseInterface | null> => {
   const course = await Course.findOne({ owner: teamId, _id: courseId }).populate("lessons").populate("courses").lean()
+  return course
+}
+
+
+export const fetchSingleCourse = async ({ courseId }: { courseId: string }): Promise<CourseInterface | null> => {
+  const course = await Course.findOne({ _id: courseId }).populate("lessons").populate("courses").populate('settings').populate('owner')
   return course
 }
 

@@ -48,7 +48,8 @@ const CourseSchema = new Schema<CourseInterface, CourseInterfaceModel>(
             type: MediaSchema
         },
         owner: {
-            type: String
+            type: String,
+            ref: "Teams"
         },
         free: {
             type: Boolean
