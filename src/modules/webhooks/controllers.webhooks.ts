@@ -34,6 +34,8 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
     const type = messageBody[0].type
     let enrollments: CourseEnrollment[] = await fetchEnrollments(destination)
     let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
+    console.log(enrollment, "student enrollment")
+    console.log(enrollments, "all enrollments")
     if (type === "interactive") {
       const response = messageBody[0].interactive.button_reply.id
       const [btnId, messageId] = response.split('|')
@@ -199,6 +201,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       }
     } else if (type === "button") {
       const response = messageBody[0].button.payload
+      console.log(response, "button response")
       if (response === "Start") {
         if (enrollment) {
           let msgId = v4()
