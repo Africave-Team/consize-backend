@@ -8,7 +8,7 @@ import { fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz } f
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
-// import { logger } from '../logger'
+import { logger } from '../logger'
 
 export const whatsappWebhookSubscriber = catchAsync(async (req: Request, res: Response) => {
   if (
@@ -26,7 +26,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
   if (reqBody.field !== "messages") {
     return res.status(400)
   }
-  // logger.info(JSON.stringify(reqBody.value))
+  logger.info(JSON.stringify(reqBody.value))
   const messageBody = reqBody.value.messages
   if (messageBody) {
     const destination = messageBody[0].from
