@@ -8,7 +8,7 @@ import { fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz } f
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
-import { logger } from '../logger'
+// import { logger } from '../logger'
 
 export const whatsappWebhookSubscriber = catchAsync(async (req: Request, res: Response) => {
   if (
@@ -26,11 +26,11 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
   if (reqBody.field !== "messages") {
     return res.status(400)
   }
-  logger.info(JSON.stringify(reqBody.value))
+  console.info(JSON.stringify(reqBody.value.messages), "messages")
   const messageBody = reqBody.value.messages
   if (messageBody) {
     const destination = messageBody[0].from
-    logger.info(destination, messageBody[0])
+    console.info(destination, messageBody[0], "single message")
     const type = messageBody[0].type
     let enrollments: CourseEnrollment[] = await fetchEnrollments(destination)
     let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
