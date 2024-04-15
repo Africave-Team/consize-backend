@@ -4,6 +4,8 @@ import { auth } from '../../modules/auth'
 import { courseControllers, courseValidators } from "../../modules/courses"
 
 const router: Router = express.Router()
+router.route('/public/all').get(courseControllers.fetchPublishedCourses)
+router.route('/public/single/:course').get(courseControllers.fetchSingleCourse)
 router.use(auth())
 router.get('/', courseControllers.fetchTeamCourses)
 router.get('/search', courseControllers.searchTeamCourses)
