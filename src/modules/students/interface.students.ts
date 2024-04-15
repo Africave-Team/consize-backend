@@ -2,6 +2,7 @@ import { Document, Model } from 'mongoose'
 import { QueryResult } from '../paginate/paginate'
 
 export interface Student {
+  verified: boolean
   firstName: string
   otherNames: string
   phoneNumber: string
@@ -17,4 +18,32 @@ export interface StudentInterface extends Student, Document {
 
 export interface StudentInterfaceModel extends Model<StudentInterface> {
   paginate (filter: Record<string, any>, options: Record<string, any>): Promise<QueryResult<StudentInterface>>
+}
+
+
+export interface CreateStudentPayload {
+  email: string
+  phoneNumber: string
+  firstName: string
+  otherNames: string
+  custom?: any
+}
+
+export interface StudentCourseStats {
+  lessons: {
+    [lessonId: string]: {
+      duration: number
+      blocks: {
+        [blockId: string]: {
+          duration: number
+        }
+      },
+      quizzes: {
+        [quizId: string]: {
+          duration: number
+          retakes: number
+        }
+      }
+    }
+  }
 }

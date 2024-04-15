@@ -1,3 +1,5 @@
+import { StudentCourseStats } from '../students/interface.students'
+
 export interface CourseStatistics {
   enrolled: number
   active: number
@@ -14,4 +16,7 @@ export interface CourseStatistics {
   averageLessonDurationMinutes: number
   averageBlockDurationMinutes: number
   averageBlockDurationSeconds: number
+  students?: {
+    [studentId: string]: StudentCourseStats
+  }
 }

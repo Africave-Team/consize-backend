@@ -4,6 +4,7 @@ import catchAsync from '../utils/catchAsync'
 import { uploadFileToCloudStorage } from '../upload/service.upload'
 import Busboy from 'busboy'
 import { Readable } from 'stream'
+import { logger } from '../logger'
 
 // Define a function to convert file stream to buffer
 async function streamToBuffer (fileStream: Readable): Promise<Buffer> {
@@ -43,7 +44,7 @@ export const uploadFile = catchAsync(async (req: Request, res: Response) => {
       const url = await uploadFileToCloudStorage(buffer, destination)
       return res.send({ data: url, message: "File uploaded successfully" })
     } catch (error) {
-      console.log(error)
+      logger.info(error)
       throw new ApiError(503, "Could not upload this file")
     }
   })

@@ -11,6 +11,7 @@ import permissionRoute from './permissions.route'
 import blocksRoute from './blocks.route'
 import quizzesRoute from './quizzes.route'
 import studentsRoute from './students'
+import whatsappRoute from './whatsapp.route'
 import config from '../../config/config'
 
 const router = express.Router()
@@ -64,6 +65,10 @@ const defaultIRoute: IRoute[] = [
   {
     path: '/students',
     route: studentsRoute
+  },
+  {
+    path: "/whatsapp",
+    route: whatsappRoute
   }
 ]
 
