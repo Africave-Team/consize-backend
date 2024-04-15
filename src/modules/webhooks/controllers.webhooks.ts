@@ -30,7 +30,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
   const messageBody = reqBody.value.messages
   if (messageBody) {
     const destination = messageBody[0].from
-    // logger.info(destination, messageBody[0])
+    logger.info(destination, messageBody[0])
     const type = messageBody[0].type
     let enrollments: CourseEnrollment[] = await fetchEnrollments(destination)
     let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
