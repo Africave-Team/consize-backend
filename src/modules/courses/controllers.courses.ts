@@ -281,4 +281,3 @@ export const setLearnerGroupLaunchTime = catchAsync(async (req: Request, res: Re
   res.status(200).send({ message: "Settings updated" })
 })
 
-

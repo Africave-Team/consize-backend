@@ -2,6 +2,7 @@
 // import ApiError from '../errors/ApiError'
 import { Storage } from '@google-cloud/storage'
 import serviceAccount from '../../gcp-details.json'
+import { logger } from '../logger'
 
 export const uploadFileToCloudStorage = async (file: Buffer, destination: string): Promise<string> => {
   const storage = new Storage({
@@ -25,7 +26,7 @@ export const uploadFileToCloudStorage = async (file: Buffer, destination: string
     })
 
     fileStream.on('finish', () => {
-      console.log(`${destination} uploaded successfully.`)
+      logger.info(`${destination} uploaded successfully.`)
       fileStream.end()
       resolve(encodeURI(`https://storage.googleapis.com/kippa-cdn-public/${destination}`))
     })

@@ -5,7 +5,12 @@ const envVarsSchema = Joi.object()
   .keys({
     NODE_ENV: Joi.string().valid('production', 'development', 'test').required(),
     REDIS_HOST: Joi.string().required().description('REDIS Host url'),
+    WHATSAPP_PHONENUMBER_ID: Joi.string().required().description("phone number ID for whatsapp"),
+    WHATSAPP_AUTH_TEMPLATE_NAME: Joi.string().required().description("Authentication template for first time student enrollment"),
+    REDIS_BASE_KEY: Joi.string().required().description("Base key string for redis store"),
+    WHATSAPP_TOKEN: Joi.string().required().description("Whatsapp api token"),
     PORT: Joi.number().default(3000),
+    FACEBOOK_SECRET: Joi.string().required().description("Facebook subscription key"),
     MONGODB_URL: Joi.string().required().description('Mongo DB url'),
     JWT_SECRET: Joi.string().required().description('JWT secret key'),
     JWT_ACCESS_EXPIRATION_MINUTES: Joi.number().default(30).description('minutes after which access tokens expire'),
@@ -34,6 +39,14 @@ if (error) {
 const config = {
   env: envVars.NODE_ENV,
   port: envVars.PORT,
+  whatsapp: {
+    authTemplateName: envVars.WHATSAPP_AUTH_TEMPLATE_NAME,
+    subscriptionKey: envVars.FACEBOOK_SECRET,
+    token: envVars.WHATSAPP_TOKEN,
+    phoneNumberId: envVars.WHATSAPP_PHONENUMBER_ID
+  },
+  whatsappSubscriptionKey: envVars.FACEBOOK_SECRET,
+  whatsappToken: envVars.WHATSAPP_TOKEN,
   mongoose: {
     url: envVars.MONGODB_URL + (envVars.NODE_ENV === 'test' ? '-test' : ''),
     options: {
@@ -66,6 +79,7 @@ const config = {
     from: envVars.EMAIL_FROM,
   },
   redis: envVars.REDIS_HOST,
+  redisBaseKey: envVars.REDIS_BASE_KEY,
   clientUrl: envVars.CLIENT_URL,
 }
 

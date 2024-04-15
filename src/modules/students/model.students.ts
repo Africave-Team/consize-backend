@@ -6,6 +6,10 @@ import { paginate } from '../paginate'
 
 const StudentSchema = new Schema<StudentInterface>({
   _id: { type: String, default: () => v4() },
+  verified: {
+    type: Boolean,
+    default: false
+  },
   firstName: {
     type: String
   },
@@ -21,6 +25,7 @@ const StudentSchema = new Schema<StudentInterface>({
   custom: {
     type: Object
   },
+
 }, {
   collection: "students"
 })

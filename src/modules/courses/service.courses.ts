@@ -52,7 +52,8 @@ const setInitialCourseStats = async (id: string, teamId: string) => {
     averageMcqRetakeRate: 0,
     averageLessonDurationMinutes: 0,
     averageBlockDurationMinutes: 0,
-    averageBlockDurationSeconds: 0
+    averageBlockDurationSeconds: 0,
+
   }
   await dbRef.child(teamId).child(id).set(initialStats)
 }

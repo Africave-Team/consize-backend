@@ -1,109 +1,109 @@
 #!/usr/bin/env node
-const util = require('util');
-const path = require('path');
-const fs = require('fs');
-const { execSync } = require('child_process');
+const util = require('util')
+const path = require('path')
+const fs = require('fs')
+const { execSync } = require('child_process')
 
 // Utility functions
-const exec = util.promisify(require('child_process').exec);
-async function runCmd(command) {
+const exec = util.promisify(require('child_process').exec)
+async function runCmd (command) {
   try {
-    const { stdout, stderr } = await exec(command);
-    console.log(stdout);
-    console.log(stderr);
+    const { stdout, stderr } = await exec(command)
+    logger.info(stdout)
+    logger.info(stderr)
   } catch {
     (error) => {
-      console.log(error);
-    };
+      logger.info(error)
+    }
   }
 }
 
-async function hasYarn() {
+async function hasYarn () {
   try {
-    await execSync('yarnpkg --version', { stdio: 'ignore' });
-    return true;
+    await execSync('yarnpkg --version', { stdio: 'ignore' })
+    return true
   } catch {
-    return false;
+    return false
   }
 }
 
 // Validate arguments
 if (process.argv.length < 3) {
-  console.log('Please specify the target project directory.');
-  console.log('For example:');
-  console.log('    npx create-nodejs-app my-app');
-  console.log('    OR');
-  console.log('    npm init nodejs-app my-app');
-  process.exit(1);
+  logger.info('Please specify the target project directory.')
+  logger.info('For example:')
+  logger.info('    npx create-nodejs-app my-app')
+  logger.info('    OR')
+  logger.info('    npm init nodejs-app my-app')
+  process.exit(1)
 }
 
 // Define constants
-const ownPath = process.cwd();
-const folderName = process.argv[2];
-const appPath = path.join(ownPath, folderName);
-const repo = 'https://github.com/saisilinus/node-express-mongoose-typescript-boilerplate.git';
+const ownPath = process.cwd()
+const folderName = process.argv[2]
+const appPath = path.join(ownPath, folderName)
+const repo = 'https://github.com/saisilinus/node-express-mongoose-typescript-boilerplate.git'
 
 // Check if directory already exists
 try {
-  fs.mkdirSync(appPath);
+  fs.mkdirSync(appPath)
 } catch (err) {
   if (err.code === 'EEXIST') {
-    console.log('Directory already exists. Please choose another name for the project.');
+    logger.info('Directory already exists. Please choose another name for the project.')
   } else {
-    console.log(err);
+    logger.info(err)
   }
-  process.exit(1);
+  process.exit(1)
 }
 
-async function setup() {
+async function setup () {
   try {
     // Clone repo
-    console.log(`Downloading files from repo ${repo}`);
-    await runCmd(`git clone --depth 1 ${repo} ${folderName}`);
-    console.log('Cloned successfully.');
-    console.log('');
+    logger.info(`Downloading files from repo ${repo}`)
+    await runCmd(`git clone --depth 1 ${repo} ${folderName}`)
+    logger.info('Cloned successfully.')
+    logger.info('')
 
     // Change directory
-    process.chdir(appPath);
+    process.chdir(appPath)
 
     // Install dependencies
-    const useYarn = await hasYarn();
-    console.log('Installing dependencies...');
+    const useYarn = await hasYarn()
+    logger.info('Installing dependencies...')
     if (useYarn) {
-      await runCmd('yarn install');
+      await runCmd('yarn install')
     } else {
-      await runCmd('npm install');
+      await runCmd('npm install')
     }
-    console.log('Dependencies installed successfully.');
-    console.log();
+    logger.info('Dependencies installed successfully.')
+    logger.info()
 
     // Copy envornment variables
-    fs.copyFileSync(path.join(appPath, '.env.example'), path.join(appPath, '.env'));
-    console.log('Environment files copied.');
+    fs.copyFileSync(path.join(appPath, '.env.example'), path.join(appPath, '.env'))
+    logger.info('Environment files copied.')
 
     // Delete .git folder
-    await runCmd('npx rimraf ./.git');
+    await runCmd('npx rimraf ./.git')
 
     // Remove extra files
-    fs.unlinkSync(path.join(appPath, 'CHANGELOG.md'));
-    fs.unlinkSync(path.join(appPath, 'CODE_OF_CONDUCT.md'));
-    fs.unlinkSync(path.join(appPath, 'CONTRIBUTING.md'));
+    fs.unlinkSync(path.join(appPath, 'CHANGELOG.md'))
+    fs.unlinkSync(path.join(appPath, 'CODE_OF_CONDUCT.md'))
+    fs.unlinkSync(path.join(appPath, 'CONTRIBUTING.md'))
     if (!useYarn) {
-      fs.unlinkSync(path.join(appPath, 'yarn.lock'));
+      fs.unlinkSync(path.join(appPath, 'yarn.lock'))
     }
 
-    console.log('Installation is now complete!');
-    console.log();
+    logger.info('Installation is now complete!')
+    logger.info()
 
-    console.log('We suggest that you start by typing:');
-    console.log(`    cd ${folderName}`);
-    console.log(useYarn ? '    yarn dev' : '    npm run dev');
-    console.log();
-    console.log('Enjoy your production-ready Node.js app, which already supports a large number of ready-made features!');
-    console.log('Check README.md for more info.');
+    logger.info('We suggest that you start by typing:')
+    logger.info(`    cd ${folderName}`)
+    logger.info(useYarn ? '    yarn dev' : '    npm run dev')
+    logger.info()
+    logger.info('Enjoy your production-ready Node.js app, which already supports a large number of ready-made features!')
+    logger.info('Check README.md for more info.')
   } catch (error) {
-    console.log(error);
+    logger.info(error)
   }
 }
 
-setup();
+setup()
