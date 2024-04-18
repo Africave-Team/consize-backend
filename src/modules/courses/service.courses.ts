@@ -14,7 +14,9 @@ import Blocks from './model.blocks'
 import { CreateQuizPayload, QuizInterface } from './interfaces.quizzes'
 import Quizzes from './model.quizzes'
 import Settings from './model.settings'
-import { DropoutEvents, PeriodTypes } from './interfaces.settings'
+import { CourseSettings, DropoutEvents, LearnerGroup, LearnerGroupLaunchTime, PeriodTypes } from './interfaces.settings'
+import Students from '../students/model.students'
+// import Students from '../students/model.students'
 
 enum PageType {
   ALL = 'all',
@@ -50,7 +52,8 @@ const setInitialCourseStats = async (id: string, teamId: string) => {
     averageMcqRetakeRate: 0,
     averageLessonDurationMinutes: 0,
     averageBlockDurationMinutes: 0,
-    averageBlockDurationSeconds: 0
+    averageBlockDurationSeconds: 0,
+
   }
   await dbRef.child(teamId).child(id).set(initialStats)
 }
@@ -151,6 +154,12 @@ export const fetchTeamCourses = async ({ teamId, page, pageSize, filter }: { tea
 
 }
 
+
+export const fetchPublishedCourses = async ({ page, pageSize }: { page: number, pageSize: number }): Promise<QueryResult<CourseInterface>> => {
+  return Course.paginate({ status: CourseStatus.PUBLISHED }, { page, limit: pageSize, populate: 'lessons,courses' })
+
+}
+
 export const searchTeamCourses = async ({ teamId, search }: { teamId: string, search: string }): Promise<CourseInterface[]> => {
   const regex = new RegExp(search, "i")
   return Course.find({ owner: teamId, $or: [{ title: { $regex: regex } }, { description: { $regex: regex } }] }).limit(16)
@@ -158,7 +167,14 @@ export const searchTeamCourses = async ({ teamId, search }: { teamId: string, se
 }
 
 export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: string, courseId: string }): Promise<CourseInterface | null> => {
-  return Course.findOne({ owner: teamId, _id: courseId }).populate("lessons").populate("courses")
+  const course = await Course.findOne({ owner: teamId, _id: courseId }).populate("lessons").populate("courses").lean()
+  return course
+}
+
+
+export const fetchSingleCourse = async ({ courseId }: { courseId: string }): Promise<CourseInterface | null> => {
+  const course = await Course.findOne({ _id: courseId }).populate("lessons").populate("courses").populate('settings').populate('owner')
+  return course
 }
 
 // lessons
@@ -184,15 +200,21 @@ export const fetchCourseLessons = async ({ course }: { course: string }): Promis
 }
 
 export const fetchSingleLesson = async ({ lesson }: { lesson: string }): Promise<LessonInterface | null> => {
-  return Lessons.findById(lesson).populate("blocks").populate("course")
+  return Lessons.findById(lesson).populate({
+    path: "blocks",
+    populate: {
+      path: "quiz"
+    }
+  }).populate("course").populate("quizzes")
 }
 
-export const deleteLesson = async function (lesson: string) {
+export const deleteLesson = async function (lesson: string, course: string) {
+  await Course.findByIdAndUpdate(course, { $pull: { lessons: lesson } })
   await Lessons.findByIdAndDelete(lesson)
 }
 
-export const fetchLessonsQuiz = async (lesson:string): Promise<QuizInterface[]> => {
-  return await Quizzes.find({lesson: lesson})
+export const fetchLessonsQuiz = async (lesson: string): Promise<QuizInterface[]> => {
+  return await Quizzes.find({ lesson: lesson })
 }
 // blocks
 
@@ -217,7 +239,7 @@ export const fetchLessonsBlocks = async ({ course, lesson }: { course: string, l
 }
 
 export const deleteBlockFromLesson = async function (block: string, lesson: string) {
-  await Lessons.findByIdAndUpdate(lesson, { $pull: { blocks: block } })
+  await Lessons.findByIdAndUpdate(lesson, { $pull: { blocks: block } }, { new: true })
   await Blocks.findByIdAndDelete(block)
 }
 
@@ -248,6 +270,60 @@ export const deleteQuizFromBlock = async (_: string, block: string): Promise<voi
   await Blocks.findByIdAndUpdate(block, { $set: { quiz: undefined } })
 }
 
-export const deleteQuizFromLesson = async (quiz: string, lesson: string): Promise<void> => {
-  await Lessons.findByIdAndUpdate(lesson, { $pull: { quiz: quiz } })
+
+export const updateQuiz = async (quiz: string, body: any): Promise<void> => {
+  await Quizzes.findByIdAndUpdate(quiz, { $set: { ...body } })
+}
+
+export const deleteQuizFromBlock = async (block: string, quiz: string): Promise<void> => {
+  await Blocks.findByIdAndUpdate(block, { $set: { quiz: null } }, { new: true })
+  await Quizzes.findByIdAndDelete(quiz)
+}
+
+export const deleteQuizFromLesson = async (lesson: string, quiz: string): Promise<void> => {
+  await Lessons.findByIdAndUpdate(lesson, { $pull: { quizzes: quiz } }, { new: true })
+  await Quizzes.findByIdAndDelete(quiz)
+}
+
+// settings
+export const updateCourseSettings = async (id: string, payload: Partial<CourseSettings>): Promise<void> => {
+
+  await Settings.findByIdAndUpdate(id, { $set: payload })
+}
+
+export const fetchSingleSettings = async function (id: string): Promise<CourseSettings | null> {
+  return Settings.findById(id).lean()
+}
+
+export const initiateGroupScheduleAgenda = async function (): Promise<void> {
+
+}
+
+export const addLearnerGroup = async (id: string, payload: Partial<LearnerGroup>): Promise<void> => {
+  await Settings.findByIdAndUpdate(id, { $push: { learnerGroups: payload } })
+  if (payload.launchTimes) {
+    initiateGroupScheduleAgenda()
+  }
+}
+
+export const setLearnerGroupLaunchTime = async (groupId: string, settingsId: string, launchTime: LearnerGroupLaunchTime): Promise<void> => {
+  await Settings.findOneAndUpdate({ _id: settingsId, 'learnerGroups._id': groupId }, { $set: { 'learnerGroups.$.launchTimes': launchTime } })
+  initiateGroupScheduleAgenda()
+}
+
+export const removeLearnerGroup = async (id: string, groupId: string): Promise<void> => {
+  const settings = await Settings.findById(id)
+  if (settings) {
+    let groups = [...settings?.learnerGroups]
+    let index = groups.findIndex(e => e.id === groupId)
+    if (index >= 0) {
+      let group = groups[index]
+      await Settings.findByIdAndUpdate(id, { $pull: { learnerGroups: group } }).lean()
+    }
+  }
+}
+
+
+export const fetchLearnerGroupMembers = async (members: string[]) => {
+  return Students.find({ _id: { $in: members } })
 }

@@ -72,19 +72,19 @@ const LaunchTimeSchema = new Schema<LearnerGroupLaunchTime>({
   _id: false,
   timestamps: false
 })
-const LearnerGroupSchema = new Schema<LearnerGroup>({
-  id: { type: String, default: () => v4() },
+export const LearnerGroupSchema = new Schema<LearnerGroup>({
+  _id: { type: String, default: () => v4() },
   name: {
     type: String
   },
   members: {
-    type: [String]
+    type: [String],
+    ref: "Students"
   },
   launchTimes: {
     type: LaunchTimeSchema
   },
 }, {
-  _id: false,
   timestamps: false
 })
 

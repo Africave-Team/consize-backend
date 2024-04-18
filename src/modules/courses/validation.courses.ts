@@ -29,15 +29,15 @@ export const updateCourse = {
     bundle: Joi.boolean(),
     private: Joi.boolean(),
     headerMedia: Joi.object<Media>().keys({
-      awsFileKey: Joi.string().required(),
+      awsFileKey: Joi.string().optional(),
       mediaType: Joi.string().valid(...Object.values(MediaType)),
       url: Joi.string().required()
-    }),
+    }).unknown(true),
     title: Joi.string(),
     description: Joi.string(),
     price: Joi.number().optional(),
     audiences: Joi.string().optional(),
-  }),
+  }).unknown(true),
   params: Joi.object().keys({
     course: Joi.string().required()
   })
@@ -46,7 +46,7 @@ export const updateCourse = {
 export const createLesson = {
   body: Joi.object<CreateLessonPayload>().keys({
     title: Joi.string().required(),
-    description: Joi.string().optional()
+    description: Joi.string().optional().allow("")
   }),
   params: Joi.object().keys({
     course: Joi.string().required()
@@ -56,7 +56,7 @@ export const createLesson = {
 export const updateLesson = {
   body: Joi.object<CreateLessonPayload>().keys({
     title: Joi.string().required(),
-    description: Joi.string().optional()
+    description: Joi.string().optional().allow("")
   }),
   params: Joi.object().keys({
     course: Joi.string().required(),
@@ -74,9 +74,9 @@ export const createBlock = {
     title: Joi.string().required(),
     content: Joi.string().required(),
     bodyMedia: Joi.object<Media>().keys({
-      awsFileKey: Joi.string().required(),
+      awsFileKey: Joi.string().optional(),
       mediaType: Joi.string().valid(...Object.values(MediaType)),
-      url: Joi.string().required()
+      url: Joi.string().optional().allow("")
     }).optional(),
     quiz: Joi.string().optional()
   }),

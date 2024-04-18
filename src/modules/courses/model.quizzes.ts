@@ -28,7 +28,6 @@ const QuizSchema = new Schema<QuizInterface, QuizInterfaceModel>(
     },
     revisitChunk: {
       type: String,
-      required: true
     },
     hint: {
       type: String

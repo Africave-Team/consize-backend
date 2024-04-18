@@ -1,7 +1,9 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
-import { SEND_VERIFICATION_EMAIL, SEND_FORGOT_PASSWORD_EMAIL, SEND_TEAM_INVITATION } from '../MessageTypes'
+import { SEND_VERIFICATION_EMAIL, SEND_FORGOT_PASSWORD_EMAIL, SEND_TEAM_INVITATION, SEND_WHATSAPP_MESSAGE } from '../MessageTypes'
 import { emailService } from '../../../modules/email'
+import { sendMessage } from '../../../modules/webhooks/service.webhooks'
+import { Message } from '@/modules/webhooks/interfaces.webhooks'
 
 export interface SEND_VERIFICATION_MESSAGE {
   email: string
@@ -43,10 +45,21 @@ const handleTeamInviteEmail: Processor<SEND_VERIFICATION_MESSAGE> = async (job: 
   }
 }
 
+const handleSendWhatsappMessage: Processor<Message> = async (job: Job<Message>) => {
+  try {
+    if (AppConfig.env !== "test") {
+      await sendMessage(job.attrs.data)
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
 module.exports = (agenda: Agenda) => {
   agenda.define<SEND_VERIFICATION_MESSAGE>(SEND_VERIFICATION_EMAIL, verifyEmailProcessor)
   agenda.define<SEND_VERIFICATION_MESSAGE>(SEND_TEAM_INVITATION, handleTeamInviteEmail)
 
 
   agenda.define<SEND_VERIFICATION_MESSAGE>(SEND_FORGOT_PASSWORD_EMAIL, forgotPasswordprocessor)
+  agenda.define<Message>(SEND_WHATSAPP_MESSAGE, handleSendWhatsappMessage)
 }

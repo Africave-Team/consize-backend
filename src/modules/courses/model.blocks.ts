@@ -3,11 +3,16 @@ import mongoose, { Schema } from 'mongoose'
 import { v4 } from "uuid"
 import { toJSON } from '../toJSON'
 import { paginate } from '../paginate'
+import { MediaSchema } from './model.courses'
 
 const BlockSchema = new Schema<BlockInterface, BlockInterfaceModel>(
   {
     _id: { type: String, default: () => v4() },
     title: {
+      type: String,
+      required: true
+    },
+    content: {
       type: String,
       required: true
     },
@@ -22,6 +27,9 @@ const BlockSchema = new Schema<BlockInterface, BlockInterfaceModel>(
     course: {
       type: String,
       ref: "Courses"
+    },
+    bodyMedia: {
+      type: MediaSchema
     }
   },
   {

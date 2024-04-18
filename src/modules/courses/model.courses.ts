@@ -11,13 +11,16 @@ export const MediaSchema = new Schema<Media>(
         },
         url: {
             type: String,
-            required: true
         },
         mediaType: {
             type: String,
             enum: Object.values(MediaType),
             default: MediaType.IMAGE
         }
+    },
+    {
+        _id: false,
+        timestamps: false
     }
 )
 
@@ -45,7 +48,8 @@ const CourseSchema = new Schema<CourseInterface, CourseInterfaceModel>(
             type: MediaSchema
         },
         owner: {
-            type: String
+            type: String,
+            ref: "Teams"
         },
         free: {
             type: Boolean

@@ -1,13 +1,18 @@
 import express, { Request, Response, Router } from 'express'
+import "../../modules/students"
 import authRoute from './auth.route'
 import userRoute from './user.route'
 import teamRoute from './team.route'
 import uploadRoute from './upload.route'
 import coursesRoute from './courses.route'
 import cohortsRoute from './cohorts.route'
+import lessonsRoute from './lessons.route'
 import permissionRoute from './permissions.route'
 import blocksRoute from './blocks.route'
 import signaturesRoute from './signatures.route'
+import quizzesRoute from './quizzes.route'
+import studentsRoute from './students'
+import whatsappRoute from './whatsapp.route'
 import config from '../../config/config'
 
 const router = express.Router()
@@ -43,6 +48,10 @@ const defaultIRoute: IRoute[] = [
     route: coursesRoute
   },
   {
+    path: '/lessons',
+    route: lessonsRoute
+  },
+  {
     path: '/cohorts',
     route: cohortsRoute
   },
@@ -53,6 +62,18 @@ const defaultIRoute: IRoute[] = [
   {
     path: '/signatures',
     route: signaturesRoute
+  },
+  {
+    path: '/quiz',
+    route: quizzesRoute
+  },
+  {
+    path: '/students',
+    route: studentsRoute
+  },
+  {
+    path: "/whatsapp",
+    route: whatsappRoute
   }
 ]
 

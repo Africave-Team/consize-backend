@@ -2,7 +2,7 @@ import express, { Express } from 'express'
 import helmet from 'helmet'
 import xss from 'xss-clean'
 import { agenda } from "./modules/scheduler"
-import ExpressMongoSanitize from 'express-mongo-sanitize'
+// import ExpressMongoSanitize from 'express-mongo-sanitize'
 import compression from 'compression'
 import cors from 'cors'
 import passport from 'passport'
@@ -16,7 +16,6 @@ import './modules/redis'
 import routes from './routes/v1'
 
 var Agendash = require("agendash")
-
 const app: Express = express()
 
 if (config.env !== 'test') {
@@ -39,7 +38,7 @@ app.use(express.urlencoded({ extended: true }))
 
 // sanitize request data
 app.use(xss())
-app.use(ExpressMongoSanitize())
+// app.use(ExpressMongoSanitize())
 
 // gzip compression
 app.use(compression())
@@ -51,6 +50,7 @@ passport.use('jwt', jwtStrategy)
 // limit repeated failed requests to auth endpoints
 if (config.env === 'production') {
   app.use('/v1/auth', authLimiter)
+  app.use('/v1/students', authLimiter)
 }
 
 app.use("/agendash", Agendash(agenda))
