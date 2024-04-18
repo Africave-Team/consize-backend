@@ -26,7 +26,6 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
   if (reqBody.field !== "messages") {
     return res.status(400)
   }
-  console.info(JSON.stringify(reqBody.value.messages), "messages")
   const messageBody = reqBody.value.messages
   if (messageBody) {
     const destination = messageBody[0].from

@@ -15,12 +15,13 @@ import Lessons from '../courses/model.lessons'
 import Blocks from '../courses/model.blocks'
 import Quizzes from '../courses/model.quizzes'
 import { agenda } from '../scheduler'
-import { SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import { logger } from '../logger'
 import moment from 'moment'
 import { LessonInterface } from '../courses/interfaces.lessons'
 import { saveBlockDuration, saveQuizDuration } from '../students/students.service'
+import { delay } from '../generators/generator.service'
 
 enum CourseFlowMessageType {
   WELCOME = 'welcome',
@@ -334,15 +335,18 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
 
 export async function fetchEnrollments (phoneNumber: string): Promise<CourseEnrollment[]> {
   const enrollments: CourseEnrollment[] = []
-  const pattern = `${config.redisBaseKey}enrollments:${phoneNumber}:*`
-  const { keys } = await redisClient.scan(0, {
-    COUNT: 100,
-    MATCH: pattern
-  })
-  for (let key of keys) {
-    const dt = await redisClient.get(key)
-    if (dt) {
-      enrollments.push(JSON.parse(dt))
+  if (redisClient.isReady) {
+    const pattern = `${config.redisBaseKey}enrollments:${phoneNumber}:*`
+    console.log(pattern)
+    const { keys } = await redisClient.scan(0, {
+      COUNT: 100,
+      MATCH: pattern
+    })
+    for (let key of keys) {
+      const dt = await redisClient.get(key)
+      if (dt) {
+        enrollments.push(JSON.parse(dt))
+      }
     }
   }
   return enrollments
@@ -547,6 +551,10 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 body: item.content.replace('{progress}', Math.ceil(progress).toString()).replace('{score}', score)
               }
             })
+            await delay(10000)
+            agenda.now<CourseEnrollment>(SEND_LEADERBOARD, {
+              ...updatedData
+            })
             break
 
           case CourseFlowMessageType.ENDCOURSE:
@@ -558,6 +566,11 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               text: {
                 body: item.content
               }
+            })
+            // if no survey for this course, then send the certificate
+            await delay(10000)
+            agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
+              ...updatedData
             })
             break
           case CourseFlowMessageType.ENDLESSON:

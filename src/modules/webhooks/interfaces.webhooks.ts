@@ -58,10 +58,19 @@ export interface Message {
   messaging_product: string
   recipient_type: string
   to: string
-  type: "interactive" | "text" | "template"
+  type: "interactive" | "text" | "template" | "image" | "video" | "audio"
   interactive?: InteractiveMessage["interactive"]
   text?: {
     body: string
+  },
+  video?: {
+    link: string
+  },
+  image?: {
+    link: string
+  },
+  audio?: {
+    link: string
   },
   template?: Template
 }
