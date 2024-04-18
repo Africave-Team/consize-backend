@@ -5,6 +5,8 @@ export interface Message {
   templateVariables: {
     name?: string,
     firstName?: string,
-    url?: string
+    url?: string,
+    teamName?: string,
+    id?:string
   }
 }

@@ -14,7 +14,7 @@ interface Quiz {
   course: string
 }
 
-export interface CreateQuizPyaload {
+export interface CreateQuizPayload {
   question: string
   correctAnswerContext: string
   wrongAnswerContext: string

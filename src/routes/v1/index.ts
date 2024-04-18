@@ -9,6 +9,7 @@ import cohortsRoute from './cohorts.route'
 import lessonsRoute from './lessons.route'
 import permissionRoute from './permissions.route'
 import blocksRoute from './blocks.route'
+import signaturesRoute from './signatures.route'
 import quizzesRoute from './quizzes.route'
 import studentsRoute from './students'
 import whatsappRoute from './whatsapp.route'
@@ -57,6 +58,10 @@ const defaultIRoute: IRoute[] = [
   {
     path: '/blocks',
     route: blocksRoute
+  },
+  {
+    path: '/signatures',
+    route: signaturesRoute
   },
   {
     path: '/quiz',

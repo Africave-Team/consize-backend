@@ -2,7 +2,7 @@ import Joi from 'joi'
 import { CreateCoursePayload, Media, MediaType } from './interfaces.courses'
 import { CreateLessonPayload } from './interfaces.lessons'
 import { CreateBlockPayload } from './interfaces.blocks'
-import { CreateQuizPyaload } from './interfaces.quizzes'
+import { CreateQuizPayload } from './interfaces.quizzes'
 
 const createCourseRequest: Record<keyof CreateCoursePayload, any> = {
   free: Joi.boolean(),
@@ -106,7 +106,7 @@ export const updateBlock = {
 
 
 //quiz
-export const createQuiz: Record<keyof CreateQuizPyaload, any> = {
+export const createQuiz: Record<keyof CreateQuizPayload, any> = {
   question: Joi.string().required(),
   correctAnswerContext: Joi.string().required(),
   wrongAnswerContext: Joi.string().required(),
