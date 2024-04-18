@@ -326,6 +326,17 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
           nextBlock: 1,
           totalBlocks: courseFlowData.length
         }
+        let enrollments: CourseEnrollment[] = await fetchEnrollments(phoneNumber)
+        let active: CourseEnrollment[] = enrollments.filter(e => e.active)
+        if (active.length > 0) {
+          // mark it as not active
+          for (let act of active) {
+            let copy = { ...act }
+            copy.active = false
+            const keyOld = `${config.redisBaseKey}enrollments:${phoneNumber}:${act.id}`
+            await redisClient.set(keyOld, JSON.stringify(copy))
+          }
+        }
         await redisClient.set(key, JSON.stringify(redisData))
       }
     }
@@ -397,7 +408,7 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
   }
 }
 
-export const sendWelcome = async (currentIndex: string, phoneNumber: string, firstName: string, teamName: string, title: string): Promise<void> => {
+export const sendWelcome = async (currentIndex: string, phoneNumber: string): Promise<void> => {
   try {
     if (redisClient.isReady) {
       const courseKey = `${config.redisBaseKey}courses:${currentIndex}`
@@ -413,22 +424,7 @@ export const sendWelcome = async (currentIndex: string, phoneNumber: string, fir
             "type": "template",
             "template": {
               "language": { "code": "en_US" },
-              "name": "successful_optin_marketing",
-              "components": [
-                {
-                  "type": "header",
-                  "parameters": [
-                    { "type": "text", "text": firstName },
-                  ],
-                },
-                {
-                  "type": "body",
-                  "parameters": [
-                    { "type": "text", "text": title },
-                    { "type": "text", "text": teamName },
-                  ],
-                },
-              ],
+              "name": "successful_optin_no_variable"
             },
           }
           agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)

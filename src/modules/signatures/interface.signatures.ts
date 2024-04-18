@@ -6,14 +6,15 @@ export enum SignaturesStatus {
     SIGNED = "signed"
 }
 
-export interface SignatureInterface extends Document{
+export interface SignatureInterface extends Document {
     "_id": string,
     "name": string,
     "email": string,
+    owner: string
     "position"?: string,
     "signature"?: string,
     "status"?: SignaturesStatus
-} 
+}
 
 export interface CreateSignatureInterface {
     "name": string,

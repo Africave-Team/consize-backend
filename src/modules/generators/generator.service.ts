@@ -15,6 +15,7 @@ import config from '../../config/config'
 import { handleContinue } from '../webhooks/service.webhooks'
 import { CourseEnrollment, Message } from '../webhooks/interfaces.webhooks'
 import { SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { fetchSignatures } from '../signatures/service.signatures'
 
 
 export function delay (ms: number) {
@@ -154,6 +155,8 @@ export const generateCourseCertificate = async (course: CourseInterface, student
   const browser = await puppeteer.launch({
     args: ['--no-sandbox']
   })
+  // get the signatories
+  const signatories = await fetchSignatures(owner.id)
   const timestamp = new Date().getTime()
   const page = await browser.newPage()
   let payload: GenerateCertificatePayload = {
@@ -164,6 +167,19 @@ export const generateCourseCertificate = async (course: CourseInterface, student
     signatory2: "Ifeanyi Perry",
     signature1: "Pelumi Ogboye",
     signature2: "Ifeanyi Perry"
+  }
+  if (signatories.length > 0) {
+    let first = signatories[0]
+    let second = signatories[1]
+    if (first) {
+      payload.signatory1 = first.name
+      payload.signature1 = first.name
+    }
+
+    if (second) {
+      payload.signatory2 = second.name
+      payload.signature2 = second.name
+    }
   }
   const query = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
   await page.goto(`https://consize.com/templates/certificate?data=${query}`, { waitUntil: "networkidle0" })

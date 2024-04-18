@@ -29,12 +29,9 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
   const messageBody = reqBody.value.messages
   if (messageBody) {
     const destination = messageBody[0].from
-    console.info(destination, messageBody[0], "single message")
     const type = messageBody[0].type
     let enrollments: CourseEnrollment[] = await fetchEnrollments(destination)
     let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
-    console.log(enrollment, "student enrollment")
-    console.log(enrollments, "all enrollments")
     if (type === "interactive") {
       const response = messageBody[0].interactive.button_reply.id
       const [btnId, messageId] = response.split('|')
@@ -108,7 +105,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               recipient_type: "individual",
               interactive: {
                 body: {
-                  text: `*${enrollment.title}*\n\n${enrollment.description}`
+                  text: `*${enrollment.title}*\n\n${enrollment.description}\n\n*Progress*: ${((enrollment.nextBlock / enrollment.totalBlocks) * 100).toFixed(0)}%`
                 },
                 type: "button",
                 action: {
@@ -200,7 +197,6 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       }
     } else if (type === "button") {
       const response = messageBody[0].button.payload
-      console.log(response, "button response")
       if (response === "Start") {
         if (enrollment) {
           let msgId = v4()
@@ -209,6 +205,17 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           redisClient.set(key, JSON.stringify({ ...enrollment, currentBlock: enrollment.currentBlock + 1, lastMessageId: msgId, nextBlock: enrollment.nextBlock + 1 }))
         }
       }
+
+      if (response === "Begin now") {
+        if (enrollment) {
+          let msgId = v4()
+          await handleContinue(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, enrollment)
+          const key = `${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`
+          redisClient.set(key, JSON.stringify({ ...enrollment, currentBlock: enrollment.currentBlock + 1, lastMessageId: msgId, nextBlock: enrollment.nextBlock + 1 }))
+        }
+      }
+
+
     }
 
   }

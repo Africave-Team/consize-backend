@@ -158,7 +158,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
   }
   await generateCourseFlow(courseId)
   await startCourse(student.phoneNumber, courseId, student.id)
-  await sendWelcome(courseId, student.phoneNumber, student.firstName, owner.name, course.title)
+  await sendWelcome(courseId, student.phoneNumber)
 
   let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
   dbRef.child("students").child(studentId).set({

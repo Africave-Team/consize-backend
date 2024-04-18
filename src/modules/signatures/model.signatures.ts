@@ -1,12 +1,14 @@
 import mongoose, { Schema } from 'mongoose'
 import { v4 } from "uuid"
-import { toJSON } from '../toJSON'
-import { paginate } from '../paginate'
 import { SignatureInterface, SignatureInterfaceModel, SignaturesStatus } from './interface.signatures'
 
-const CohortSchema = new Schema<SignatureInterface, SignatureInterfaceModel>(
+const SignatureSchema = new Schema<SignatureInterface, SignatureInterfaceModel>(
     {
         _id: { type: String, default: () => v4() },
+        owner: {
+            type: String,
+            ref: "Teams"
+        },
         name: {
             type: String
         },
@@ -31,10 +33,7 @@ const CohortSchema = new Schema<SignatureInterface, SignatureInterfaceModel>(
         timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' }
     }
 )
-CohortSchema.index({ title: 1, description: 1 })
-CohortSchema.plugin(toJSON)
-CohortSchema.plugin(paginate)
 
-const Signatures = mongoose.model<SignatureInterface, SignatureInterfaceModel>('Cohorts', CohortSchema)
+const Signatures = mongoose.model<SignatureInterface, SignatureInterfaceModel>('Signatures', SignatureSchema)
 
 export default Signatures

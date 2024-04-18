@@ -266,10 +266,6 @@ export const deleteQuiz = async (quiz: string): Promise<void> => {
   await Quizzes.findByIdAndDelete(quiz)
 }
 
-export const deleteQuizFromBlock = async (_: string, block: string): Promise<void> => {
-  await Blocks.findByIdAndUpdate(block, { $set: { quiz: undefined } })
-}
-
 
 export const updateQuiz = async (quiz: string, body: any): Promise<void> => {
   await Quizzes.findByIdAndUpdate(quiz, { $set: { ...body } })
