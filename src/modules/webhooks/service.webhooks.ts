@@ -751,6 +751,9 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
           let textBody = `Not quite right!. \n\n${convertToWhatsAppString(he.decode(item.quiz.revisitChunk))}. \n\n`
           if (data.quizAttempts === 0) {
             textBody = `Not quite right!. \n\nHint: ${convertToWhatsAppString(he.decode(item.quiz.hint || ''))}. \n\nPlease try again: \n\n${item.content}`
+            if (item.quiz.hint && item.quiz.hint.length < 2) {
+              textBody = `Not quite right!.\n\nPlease try again: \n\n${item.content}`
+            }
             payload.interactive.action.buttons = [
               {
                 type: "reply",
