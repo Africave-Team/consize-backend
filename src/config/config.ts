@@ -3,6 +3,7 @@ import 'dotenv/config'
 
 const envVarsSchema = Joi.object()
   .keys({
+    ENV: Joi.string().required(),
     NODE_ENV: Joi.string().valid('production', 'development', 'test').required(),
     REDIS_HOST: Joi.string().required().description('REDIS Host url'),
     WHATSAPP_PHONENUMBER_ID: Joi.string().required().description("phone number ID for whatsapp"),
@@ -38,6 +39,7 @@ if (error) {
 
 const config = {
   env: envVars.NODE_ENV,
+  server: envVars.ENV,
   port: envVars.PORT,
   whatsapp: {
     authTemplateName: envVars.WHATSAPP_AUTH_TEMPLATE_NAME,

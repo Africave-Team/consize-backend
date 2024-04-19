@@ -152,9 +152,13 @@ export const generateCourseCertificate = async (course: CourseInterface, student
   const snapshot = await dbRef.once('value')
   let data: { [id: string]: StudentCourseStats } | null = snapshot.val()
   console.log(data)
-  const browser = await puppeteer.launch({
+  let launchConfig: { args: any[], executablePath?: string } = {
     args: ['--no-sandbox']
-  })
+  }
+  if (config.server !== "local") {
+    launchConfig['executablePath'] = '/usr/bin/chromium-browser'
+  }
+  const browser = await puppeteer.launch(launchConfig)
   // get the signatories
   const signatories = await fetchSignatures(owner.id)
   const timestamp = new Date().getTime()

@@ -192,6 +192,7 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
     let data: StudentCourseStats | null = snapshot.val()
     if (data === null) {
       data = {
+        scores: [],
         lessons: {
           [lesson.id]: {
             duration: 0,
@@ -207,6 +208,9 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
     }
     if (!data.lessons) {
       data.lessons = {}
+    }
+    if (!data.scores) {
+      data.scores = []
     }
     if (data.lessons) {
       let lessonNode = data.lessons[lesson.id]
@@ -242,7 +246,7 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
 }
 
 
-export const saveQuizDuration = async function (teamId: string, studentId: string, duration: number, attempts: number, lesson?: LessonInterface, quiz?: QuizInterface) {
+export const saveQuizDuration = async function (teamId: string, studentId: string, duration: number, score: number, attempts: number, lesson?: LessonInterface, quiz?: QuizInterface) {
 
   if (lesson && quiz) {
     const dbRef = db.ref(COURSE_STATS).child(teamId).child(lesson.course).child("students").child(studentId)
@@ -254,6 +258,7 @@ export const saveQuizDuration = async function (teamId: string, studentId: strin
     let data: StudentCourseStats | null = snapshot.val()
     if (data === null) {
       data = {
+        scores: [],
         lessons: {
           [lesson.id]: {
             duration: 0,
@@ -261,12 +266,19 @@ export const saveQuizDuration = async function (teamId: string, studentId: strin
             quizzes: {
               [quiz.id]: {
                 duration: 0,
-                retakes: 0
+                retakes: 0,
+                score: 0
               }
             }
           }
         }
       }
+    }
+    if (!data.scores) {
+      data.scores = []
+    }
+    if (data.scores && Array.isArray(data.scores)) {
+      data.scores.push(score)
     }
     if (!data.lessons) {
       data.lessons = {}
@@ -293,7 +305,8 @@ export const saveQuizDuration = async function (teamId: string, studentId: strin
         } else {
           lessonNode.quizzes[quiz.id] = {
             duration,
-            retakes: attempts
+            retakes: attempts,
+            score
           }
         }
       }

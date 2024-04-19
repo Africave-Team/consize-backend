@@ -30,6 +30,7 @@ export interface CreateStudentPayload {
 }
 
 export interface StudentCourseStats {
+  scores: number[]
   lessons: {
     [lessonId: string]: {
       duration: number
@@ -42,6 +43,7 @@ export interface StudentCourseStats {
         [quizId: string]: {
           duration: number
           retakes: number
+          score: number
         }
       }
     }
