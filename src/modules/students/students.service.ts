@@ -181,8 +181,8 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
 }
 
 export const saveBlockDuration = async function (teamId: string, studentId: string, duration: number, lesson?: LessonInterface, block?: BlockInterface) {
-
-  if (lesson && block) {
+  const student = await Students.findById(studentId)
+  if (lesson && block && student) {
     const dbRef = db.ref(COURSE_STATS).child(teamId).child(lesson.course).child("students").child(studentId)
     // get existing data
     const snapshot = await dbRef.once('value')
@@ -192,6 +192,8 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
     let data: StudentCourseStats | null = snapshot.val()
     if (data === null) {
       data = {
+        name: `${student.firstName} ${student.otherNames}`,
+        phoneNumber: student.phoneNumber,
         scores: [],
         lessons: {
           [lesson.id]: {
@@ -206,13 +208,13 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
         }
       }
     }
-    if (!data.lessons) {
+    if (data && !data.lessons) {
       data.lessons = {}
     }
-    if (!data.scores) {
+    if (data && !data.scores) {
       data.scores = []
     }
-    if (data.lessons) {
+    if (data && data.lessons) {
       let lessonNode = data.lessons[lesson.id]
       if (!lessonNode) {
         data.lessons[lesson.id] = {
@@ -247,8 +249,8 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
 
 
 export const saveQuizDuration = async function (teamId: string, studentId: string, duration: number, score: number, attempts: number, lesson?: LessonInterface, quiz?: QuizInterface) {
-
-  if (lesson && quiz) {
+  const student = await Students.findById(studentId)
+  if (lesson && quiz && student) {
     const dbRef = db.ref(COURSE_STATS).child(teamId).child(lesson.course).child("students").child(studentId)
     // get existing data
     const snapshot = await dbRef.once('value')
@@ -258,6 +260,8 @@ export const saveQuizDuration = async function (teamId: string, studentId: strin
     let data: StudentCourseStats | null = snapshot.val()
     if (data === null) {
       data = {
+        name: `${student.firstName} ${student.otherNames}`,
+        phoneNumber: student.phoneNumber,
         scores: [],
         lessons: {
           [lesson.id]: {
@@ -274,16 +278,16 @@ export const saveQuizDuration = async function (teamId: string, studentId: strin
         }
       }
     }
-    if (!data.scores) {
+    if (data && !data.scores) {
       data.scores = []
     }
-    if (data.scores && Array.isArray(data.scores)) {
+    if (data && data.scores && Array.isArray(data.scores)) {
       data.scores.push(score)
     }
-    if (!data.lessons) {
+    if (data && !data.lessons) {
       data.lessons = {}
     }
-    if (data.lessons) {
+    if (data && data.lessons) {
       let lessonNode = data.lessons[lesson.id]
       if (!lessonNode) {
         data.lessons[lesson.id] = {
