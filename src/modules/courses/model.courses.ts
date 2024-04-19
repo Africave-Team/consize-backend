@@ -84,6 +84,9 @@ const CourseSchema = new Schema<CourseInterface, CourseInterfaceModel>(
         private: {
             type: Boolean
         },
+        survey: {
+            type: String
+        }
     },
     {
         collection: 'courses',

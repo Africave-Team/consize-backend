@@ -158,11 +158,7 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
 }
 
 export const generateCourseCertificate = async (course: CourseInterface, student: StudentInterface, owner: TeamsInterface): Promise<string> => {
-  const dbRef = db.ref(COURSE_STATS).child(owner.id).child(course.id).child("students")
   // get existing data
-  const snapshot = await dbRef.once('value')
-  let data: { [id: string]: StudentCourseStats } | null = snapshot.val()
-  console.log(data)
   let launchConfig: { args: any[], executablePath?: string } = {
     args: ['--no-sandbox']
   }
