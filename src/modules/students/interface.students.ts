@@ -30,6 +30,8 @@ export interface CreateStudentPayload {
 }
 
 export interface StudentCourseStats {
+  name: string
+  phoneNumber: string
   scores: number[]
   lessons: {
     [lessonId: string]: {

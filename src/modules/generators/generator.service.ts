@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer'
 import { Student } from '../students'
 import { uploadFileToCloudStorage } from '../upload/service.upload'
-import { GenerateCertificatePayload, GenerateLeaderboardPayload } from './generator.interfaces'
+import { BoardMember, GenerateCertificatePayload, GenerateLeaderboardPayload } from './generator.interfaces'
 import { StudentCourseStats, StudentInterface } from '../students/interface.students'
 import { CourseInterface } from '../courses/interfaces.courses'
 import { TeamsInterface } from '../teams/interfaces.teams'
@@ -55,7 +55,21 @@ export const generateCourseLeaderboard = async (course: CourseInterface, student
   // get existing data
   const snapshot = await dbRef.once('value')
   let data: { [id: string]: StudentCourseStats } | null = snapshot.val()
-  console.log(data)
+  let rankings: BoardMember[] = []
+  if (data) {
+    rankings = Object.values(data).sort((a: StudentCourseStats, b: StudentCourseStats) => {
+      const first = a.scores.reduce((a, b) => a + b, 0)
+      const second = b.scores.reduce((a, b) => a + b, 0)
+      return second - first
+    }).map((std: StudentCourseStats, index: number) => {
+      return {
+        name: std.name,
+        isCurrentUser: student.phoneNumber === std.phoneNumber,
+        rank: index + 1,
+        score: std.scores.reduce((a, b) => a + b, 0)
+      }
+    })
+  }
   let launchConfig: { args: any[], executablePath?: string } = {
     args: ['--no-sandbox']
   }
@@ -69,14 +83,7 @@ export const generateCourseLeaderboard = async (course: CourseInterface, student
     studentName: `${student.firstName} ${student.otherNames}`,
     courseName: course.title,
     organizationName: owner.name,
-    leaderboard: [
-      {
-        isCurrentUser: true,
-        name: `${student.firstName} ${student.otherNames}`,
-        rank: 1,
-        score: 80
-      }
-    ]
+    leaderboard: rankings
   }
   const query = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
   await page.goto(`https://consize.com/templates/leaderboard?data=${query}`, { waitUntil: "networkidle0" })
