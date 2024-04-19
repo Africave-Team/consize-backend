@@ -56,9 +56,13 @@ export const generateCourseLeaderboard = async (course: CourseInterface, student
   const snapshot = await dbRef.once('value')
   let data: { [id: string]: StudentCourseStats } | null = snapshot.val()
   console.log(data)
-  const browser = await puppeteer.launch({
+  let launchConfig: { args: any[], executablePath?: string } = {
     args: ['--no-sandbox']
-  })
+  }
+  if (config.server !== "local") {
+    launchConfig['executablePath'] = '/usr/bin/chromium-browser'
+  }
+  const browser = await puppeteer.launch(launchConfig)
   const timestamp = new Date().getTime()
   const page = await browser.newPage()
   let payload: GenerateLeaderboardPayload = {
