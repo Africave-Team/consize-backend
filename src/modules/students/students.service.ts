@@ -180,7 +180,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
 
 }
 
-export const saveBlockDuration = async function (teamId: string, studentId: string, duration: number, lesson?: LessonInterface, block?: BlockInterface) {
+export const saveBlockDuration = async function (teamId: string, studentId: string, duration: number, progress: number, lesson?: LessonInterface, block?: BlockInterface) {
   const student = await Students.findById(studentId)
   if (lesson && block && student) {
     const dbRef = db.ref(COURSE_STATS).child(teamId).child(lesson.course).child("students").child(studentId)
@@ -194,6 +194,9 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
       data = {
         name: `${student.firstName} ${student.otherNames}`,
         phoneNumber: student.phoneNumber,
+        completed: false,
+        progress,
+        droppedOut: false,
         scores: [],
         lessons: {
           [lesson.id]: {
@@ -239,6 +242,7 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
         }
       }
     }
+    data.progress = progress
     let payload: StudentCourseStats = {
       ...data,
 
@@ -247,8 +251,31 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
   }
 }
 
+export const completeCourse = async function (teamId: string, studentId: string, courseId: string, certificate: string) {
+  const student = await Students.findById(studentId)
+  if (student) {
+    const dbRef = db.ref(COURSE_STATS).child(teamId).child(courseId).child("students").child(studentId)
+    // get existing data
+    const snapshot = await dbRef.once('value')
 
-export const saveQuizDuration = async function (teamId: string, studentId: string, duration: number, score: number, attempts: number, lesson?: LessonInterface, quiz?: QuizInterface) {
+    // Step 3: Ensure the received data matches the defined type
+    // Use type assertion or type guards to ensure type safety
+    let data: StudentCourseStats | null = snapshot.val()
+    if (data === null) {
+      return
+    }
+    let payload: StudentCourseStats = {
+      ...data,
+      completed: true,
+      certificate
+
+    }
+    dbRef.set(payload)
+  }
+}
+
+
+export const saveQuizDuration = async function (teamId: string, studentId: string, duration: number, score: number, attempts: number, progress: number, lesson?: LessonInterface, quiz?: QuizInterface) {
   const student = await Students.findById(studentId)
   if (lesson && quiz && student) {
     const dbRef = db.ref(COURSE_STATS).child(teamId).child(lesson.course).child("students").child(studentId)
@@ -262,6 +289,9 @@ export const saveQuizDuration = async function (teamId: string, studentId: strin
       data = {
         name: `${student.firstName} ${student.otherNames}`,
         phoneNumber: student.phoneNumber,
+        completed: false,
+        droppedOut: false,
+        progress,
         scores: [],
         lessons: {
           [lesson.id]: {
@@ -278,6 +308,7 @@ export const saveQuizDuration = async function (teamId: string, studentId: strin
         }
       }
     }
+    data.progress = progress
     if (data && !data.scores) {
       data.scores = []
     }

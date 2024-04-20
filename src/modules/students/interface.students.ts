@@ -32,6 +32,10 @@ export interface CreateStudentPayload {
 export interface StudentCourseStats {
   name: string
   phoneNumber: string
+  completed?: boolean
+  droppedOut?: boolean
+  certificate?: string
+  progress: number
   scores: number[]
   lessons: {
     [lessonId: string]: {

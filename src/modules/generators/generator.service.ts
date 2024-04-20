@@ -16,6 +16,7 @@ import { handleContinue } from '../webhooks/service.webhooks'
 import { CourseEnrollment, Message } from '../webhooks/interfaces.webhooks'
 import { SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { fetchSignatures } from '../signatures/service.signatures'
+import { completeCourse } from '../students/students.service'
 
 
 export function delay (ms: number) {
@@ -143,6 +144,7 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
       const url = await generateCourseCertificate(course, student, owner)
       if (url.includes('https://')) {
         // send media message with continue button
+        completeCourse(course.owner, studentId, courseId, url)
         agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
           to: student.phoneNumber,
           type: "image",
