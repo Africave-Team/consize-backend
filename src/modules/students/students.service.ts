@@ -16,7 +16,6 @@ import { LessonInterface } from '../courses/interfaces.lessons'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { COURSE_STATS } from '../rtdb/nodes'
 import Teams from '../teams/model.teams'
-import { CourseStatistics } from '../rtdb/interfaces.rtdb'
 import { QuizInterface } from '../courses/interfaces.quizzes'
 
 export const bulkAddStudents = async (students: Student[]): Promise<string[]> => {
