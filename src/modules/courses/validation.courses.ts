@@ -17,7 +17,8 @@ const createCourseRequest: Record<keyof CreateCoursePayload, any> = {
   description: Joi.string().required(),
   price: Joi.number().optional(),
   audiences: Joi.string().optional(),
-  currentCohort: Joi.string().optional()
+  currentCohort: Joi.string().optional(),
+  survey: Joi.string().optional()
 }
 
 export const createCourse = {
