@@ -20,7 +20,7 @@ import { v4 } from 'uuid'
 import { logger } from '../logger'
 import moment from 'moment'
 import { LessonInterface } from '../courses/interfaces.lessons'
-import { saveBlockDuration, saveQuizDuration } from '../students/students.service'
+import { saveBlockDuration, saveCourseProgress, saveQuizDuration } from '../students/students.service'
 import { delay } from '../generators/generator.service'
 
 enum CourseFlowMessageType {
@@ -502,7 +502,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           // calculate the elapsed time and update stats service
           if (data.blockStartTime) {
             const diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
-            saveBlockDuration(data.team, data.student, diffInSeconds, (data.currentBlock / data.totalBlocks) * 100, currentItem.lesson, currentItem.block)
+            saveBlockDuration(data.team, data.student, diffInSeconds, currentItem.lesson, currentItem.block)
             updatedData = { ...updatedData, blockStartTime: null }
           }
         }
@@ -644,6 +644,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             break
         }
         redisClient.set(key, JSON.stringify({ ...updatedData }))
+        saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
       }
     }
   }
@@ -693,7 +694,7 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ph
       // calculate the elapsed time and update stats service
       if (data.blockStartTime) {
         const diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
-        saveBlockDuration(data.team, data.student, diffInSeconds, (data.currentBlock / data.totalBlocks) * 100, item.lesson, item.block)
+        saveBlockDuration(data.team, data.student, diffInSeconds, item.lesson, item.block)
         updatedData = { ...updatedData, blockStartTime: null }
       }
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
@@ -816,7 +817,7 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
       }
       await redisClient.set(key, JSON.stringify(updatedData))
       if (saveStats) {
-        saveQuizDuration(data.team, data.student, duration, score, retakes, (data.currentBlock / data.totalBlocks) * 100, item.lesson, item.quiz)
+        saveQuizDuration(data.team, data.student, duration, score, retakes, item.lesson, item.quiz)
       }
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
     }
