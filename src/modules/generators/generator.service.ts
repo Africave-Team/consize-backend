@@ -59,8 +59,8 @@ export const generateCourseLeaderboard = async (course: CourseInterface, student
   let rankings: BoardMember[] = []
   if (data) {
     rankings = Object.values(data).sort((a: StudentCourseStats, b: StudentCourseStats) => {
-      const first = a.scores.reduce((a, b) => a + b, 0)
-      const second = b.scores.reduce((a, b) => a + b, 0)
+      const first = a.scores ? a.scores.reduce((a, b) => a + b, 0) : 0
+      const second = b.scores ? b.scores.reduce((a, b) => a + b, 0) : 0
       return second - first
     }).map((std: StudentCourseStats, index: number) => {
       return {
