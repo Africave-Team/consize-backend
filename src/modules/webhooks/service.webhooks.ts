@@ -531,6 +531,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 }
               }
             })
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.ENDQUIZ:
             const progress = (data.currentBlock / data.totalBlocks) * 100
@@ -555,6 +556,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             agenda.now<CourseEnrollment>(SEND_LEADERBOARD, {
               ...updatedData
             })
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
 
           case CourseFlowMessageType.ENDCOURSE:
@@ -597,10 +599,12 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 }
               }
             })
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.QUIZ:
             sendQuiz(item, phoneNumber, messageId)
             updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date() }
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.INTRO:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -632,17 +636,18 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 }
               }
             })
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.BLOCK:
           case CourseFlowMessageType.BLOCKWITHQUIZ:
             await sendBlockContent(item, phoneNumber, messageId)
             updatedData = { ...updatedData, blockStartTime: new Date() }
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           default:
             break
         }
         redisClient.set(key, JSON.stringify({ ...updatedData }))
-        saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
       }
     }
   }
