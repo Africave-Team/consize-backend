@@ -214,12 +214,10 @@ export const generateCourseFlow = async function (courseId: string) {
     }
     let load = {
       type: CourseFlowMessageType.ENDCOURSE,
-      content: `That was the last lesson 🎊\n\nWell done on finishing the course 🤝\n\nYou’ll be getting your certificate 📄 soon so that you can brag about it😎 {survey}`
+      content: `That was the last lesson 🎊\n\nWell done on finishing the course 🤝\n\nYou’ll be getting your certificate 📄 soon so that you can brag about it😎 `
     }
     if (course.survey) {
-      load.content.replace('{survey}', 'but first, we want to get your feedback on the course.\n\nWe’ll be sending you a quick survey next 🔎')
-    } else {
-      load.content.replace('{survey}', '')
+      load.content = load.content + `but first, we want to get your feedback on the course.\n\nWe’ll be sending you a quick survey next 🔎`
     }
     flow.push(load)
     if (redisClient.isReady) {
@@ -566,7 +564,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               messaging_product: "whatsapp",
               recipient_type: "individual",
               text: {
-                body: item.content
+                body: item.content.replace('{survey}', '')
               }
             })
             // if no survey for this course, then send the certificate

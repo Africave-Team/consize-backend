@@ -256,6 +256,7 @@ export const completeCourse = async function (teamId: string, studentId: string,
     }
     let payload: StudentCourseStats = {
       ...data,
+      progress: 100,
       completed: true,
       certificate
 
