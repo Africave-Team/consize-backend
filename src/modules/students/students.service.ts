@@ -164,19 +164,11 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
   dbRef.child("students").child(studentId).set({
     name: student.firstName + ' ' + student.otherNames,
     phoneNumber: student.phoneNumber,
+    progress: 0,
+    completed: false,
+    droppedOut: false,
     lessons: {}
   })
-  const snapshot = await dbRef.once('value')
-
-  // Step 3: Ensure the received data matches the defined type
-  // Use type assertion or type guards to ensure type safety
-  let data: CourseStatistics | null = snapshot.val()
-  if (data) {
-    const students = data.students ? Object.values(data.students) : []
-    data.enrolled = students.length
-    data.active = students.length
-    dbRef.set(data)
-  }
 
 }
 
