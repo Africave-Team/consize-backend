@@ -218,6 +218,8 @@ export const generateCourseFlow = async function (courseId: string) {
     }
     if (course.survey) {
       load.content.replace('{survey}', 'but first, we want to get your feedback on the course.\n\nWe’ll be sending you a quick survey next 🔎')
+    } else {
+      load.content.replace('{survey}', '')
     }
     flow.push(load)
     if (redisClient.isReady) {
