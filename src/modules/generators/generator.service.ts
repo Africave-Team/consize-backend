@@ -67,7 +67,7 @@ export const generateCourseLeaderboard = async (course: CourseInterface, student
         name: std.name,
         isCurrentUser: student.phoneNumber === std.phoneNumber,
         rank: index + 1,
-        score: std.scores.reduce((a, b) => a + b, 0)
+        score: std.scores ? std.scores.reduce((a, b) => a + b, 0) : 0
       }
     })
   }
