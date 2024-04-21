@@ -1,7 +1,7 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
 import { GENERATE_COURSE_TRENDS } from '../MessageTypes'
-import { generateCurrentCourseTrends } from '@/modules/courses/service.courses'
+import { generateCurrentCourseTrends } from '../../courses/service.courses'
 
 const handleCourseTrends: Processor<{ courseId: string, teamId: string }> = async (job: Job<{ courseId: string, teamId: string }>) => {
   try {
