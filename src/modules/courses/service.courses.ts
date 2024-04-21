@@ -435,7 +435,8 @@ export const calculateCurrentStats = function (students: SessionStudent[]) {
       return acc
     }
   }, 0)
-  copy.averageMcqRetakeRate = retakes / quizCount
+
+  copy.averageMcqRetakeRate = quizCount !== 0 ? retakes / quizCount : 0
 
   let lessonCount = 0
   let lessonDuration = students.reduce((acc, curr) => {
@@ -491,6 +492,7 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
   if (data) {
     const students = Object.entries(data).map(([key, value]) => ({ ...value, id: key, progress: value.progress ? value.progress : 0 }))
     const currentStats = calculateCurrentStats(students)
+    console.log(currentStats)
 
     let date = moment().format('DD/MM/YYYY')
     const trendsDbRef = db.ref(COURSE_TRENDS).child(courseId)
