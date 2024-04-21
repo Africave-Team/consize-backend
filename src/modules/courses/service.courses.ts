@@ -436,7 +436,7 @@ export const calculateCurrentStats = function (students: SessionStudent[]) {
     }
   }, 0)
 
-  copy.averageMcqRetakeRate = quizCount !== 0 ? retakes / quizCount : 0
+  copy.averageMcqRetakeRate = (retakes / quizCount) || 0
 
   let lessonCount = 0
   let lessonDuration = students.reduce((acc, curr) => {
@@ -456,7 +456,7 @@ export const calculateCurrentStats = function (students: SessionStudent[]) {
     }
   }, 0)
 
-  copy.averageLessonDurationMinutes = Math.round(lessonDuration / lessonCount)
+  copy.averageLessonDurationMinutes = Math.round(lessonDuration / lessonCount) || 0
 
   let blockCount = 0
   let blockDuration = students.reduce((acc, curr) => {
@@ -479,7 +479,7 @@ export const calculateCurrentStats = function (students: SessionStudent[]) {
       return acc
     }
   }, 0)
-  copy.averageBlockDurationMinutes = Math.round(blockDuration / blockCount)
+  copy.averageBlockDurationMinutes = Math.round(blockDuration / blockCount) || 0
 
   return copy
 }
