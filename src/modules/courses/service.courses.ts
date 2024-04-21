@@ -195,7 +195,20 @@ export const searchTeamCourses = async ({ teamId, search }: { teamId: string, se
 }
 
 export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: string, courseId: string }): Promise<CourseInterface | null> => {
-  const course = await Course.findOne({ owner: teamId, _id: courseId }).populate("lessons").populate("courses").lean()
+  const course = await Course.findOne({ owner: teamId, _id: courseId }).populate({
+    path: "lessons",
+    populate: {
+      path: "blocks",
+      populate: {
+        path: "quiz"
+      }
+    }
+  }).populate({
+    path: 'lessons',
+    populate: {
+      path: 'quizzes' // Populating quizzes at the lesson level
+    }
+  }).populate("courses").lean()
   return course
 }
 
