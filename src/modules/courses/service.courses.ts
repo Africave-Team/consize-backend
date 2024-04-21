@@ -479,7 +479,7 @@ export const calculateCurrentStats = function (students: SessionStudent[]) {
       return acc
     }
   }, 0)
-  copy.averageBlockDurationMinutes = Math.round(blockDuration / blockCount) || 0
+  copy.averageBlockDurationMinutes = blockDuration / blockCount
 
   return copy
 }
