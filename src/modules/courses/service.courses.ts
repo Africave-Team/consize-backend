@@ -3,8 +3,7 @@ import httpStatus from 'http-status'
 // import { QueryResult } from '../paginate/paginate'
 import { QueryResult } from '../paginate/paginate'
 import db from "../rtdb"
-import { CourseStatistics } from '../rtdb/interfaces.rtdb'
-import { COURSE_STATS } from '../rtdb/nodes'
+import { COURSE_STATS, COURSE_TRENDS } from '../rtdb/nodes'
 import { CourseInterface, CourseStatus, CreateCoursePayload } from './interfaces.courses'
 import Course from './model.courses'
 import { CreateLessonPayload, LessonInterface } from './interfaces.lessons'
@@ -16,6 +15,35 @@ import Quizzes from './model.quizzes'
 import Settings from './model.settings'
 import { CourseSettings, DropoutEvents, LearnerGroup, LearnerGroupLaunchTime, PeriodTypes } from './interfaces.settings'
 import Students from '../students/model.students'
+import { StudentCourseStats } from '../students/interface.students'
+import moment from 'moment'
+import { CourseStatistics } from '../rtdb/interfaces.rtdb'
+
+interface SessionStudent extends StudentCourseStats {
+  id: string
+}
+
+interface Trend {
+  date: string
+  value: number
+}
+
+interface TrendItem {
+  trends: Trend[]
+  current: number
+}
+interface TrendStatistics {
+  enrolled: TrendItem
+  active: TrendItem
+  completed: TrendItem
+  dropoutRate: TrendItem
+  averageTestScore: TrendItem
+  averageCompletionMinutes: TrendItem
+  averageCourseProgress: TrendItem
+  averageMcqRetakeRate: TrendItem
+  averageLessonDurationMinutes: TrendItem
+  averageBlockDurationMinutes: TrendItem
+}
 // import Students from '../students/model.students'
 
 enum PageType {
@@ -322,4 +350,339 @@ export const removeLearnerGroup = async (id: string, groupId: string): Promise<v
 
 export const fetchLearnerGroupMembers = async (members: string[]) => {
   return Students.find({ _id: { $in: members } })
+}
+
+export const calculateCurrentStats = function (students: SessionStudent[]) {
+  let copy = {
+    enrolled: 0,
+    active: 0,
+    completed: 0,
+    dropoutRate: 0,
+    averageTestScore: 0,
+    averageCompletionMinutes: 0,
+    averageCourseProgress: 0,
+    averageMcqRetakeRate: 0,
+    averageLessonDurationMinutes: 0,
+    averageBlockDurationMinutes: 0,
+  }
+  const scores = students.reduce((acc, curr) => {
+    if (curr.scores && curr.scores.length > 0) {
+      let total = curr.scores.reduce((a, b) => a + b, 0)
+      return acc + total
+    } else {
+      return acc
+    }
+  }, 0)
+  copy.enrolled = students.length
+  copy.active = students.filter(e => !e.completed && !e.droppedOut).length
+  copy.dropoutRate = (students.filter(e => e.droppedOut).length / copy.enrolled) * 100
+  copy.completed = students.filter(e => e.completed).length
+  copy.averageTestScore = (scores) / students.length
+
+  copy.averageCourseProgress = students.reduce((acc, curr) => {
+    if (curr.progress) {
+      return acc + curr.progress
+    } else {
+      return acc
+    }
+  }, 0) / students.length
+
+  copy.averageCompletionMinutes = students.reduce((acc, curr) => {
+    if (curr.lessons) {
+      const lessons = Object.values(curr.lessons)
+      if (lessons.length === 0) {
+        return acc
+      } else {
+        let total = lessons.reduce((a, b) => a + b.duration, 0)
+        return acc + (total / 60)
+      }
+    } else {
+      return acc
+    }
+  }, 0) / students.length
+
+  let quizCount = 0
+  let retakes = students.reduce((acc, curr) => {
+    if (curr.lessons) {
+      const lessons = Object.values(curr.lessons)
+      if (lessons.length === 0) {
+        return acc
+      } else {
+        let total = lessons.map(e => {
+          if (e.quizzes) {
+            const quizzes = Object.values(e.quizzes)
+            quizCount += quizzes.length
+            return quizzes.reduce((acc, curr) => acc + curr.retakes, 0) / quizzes.length
+          }
+          return 0
+        }).reduce((a, b) => a + b, 0)
+        return acc + (total)
+      }
+    } else {
+      return acc
+    }
+  }, 0)
+  copy.averageMcqRetakeRate = retakes / quizCount
+
+  let lessonCount = 0
+  let lessonDuration = students.reduce((acc, curr) => {
+    if (curr.lessons) {
+      const lessons = Object.values(curr.lessons)
+      if (lessons.length === 0) {
+        return acc
+      } else {
+        lessonCount += lessons.length
+        let total = lessons.map(e => {
+          return e.duration / 60
+        }).reduce((a, b) => a + b, 0)
+        return acc + total
+      }
+    } else {
+      return acc
+    }
+  }, 0)
+
+  copy.averageLessonDurationMinutes = Math.round(lessonDuration / lessonCount)
+
+  let blockCount = 0
+  let blockDuration = students.reduce((acc, curr) => {
+    if (curr.lessons) {
+      const lessons = Object.values(curr.lessons)
+      if (lessons.length === 0) {
+        return acc
+      } else {
+        let total = lessons.map(e => {
+          if (e.blocks) {
+            const blocks = Object.values(e.blocks)
+            blockCount += blocks.length
+            return blocks.reduce((acc, curr) => acc + curr.duration / 60, 0)
+          }
+          return 0
+        }).reduce((a, b) => a + b, 0)
+        return acc + (total)
+      }
+    } else {
+      return acc
+    }
+  }, 0)
+  copy.averageBlockDurationMinutes = Math.round(blockDuration / blockCount)
+
+  return copy
+}
+
+
+export const generateCurrentCourseTrends = async (courseId: string, teamId: string) => {
+  const studentsDbRef = db.ref(COURSE_STATS).child(teamId).child(courseId).child("students")
+  const snapshot = await studentsDbRef.once('value')
+  let data: { [id: string]: StudentCourseStats } | null = snapshot.val()
+  if (data) {
+    const students = Object.entries(data).map(([key, value]) => ({ ...value, id: key, progress: value.progress ? value.progress : 0 }))
+    const currentStats = calculateCurrentStats(students)
+
+    let date = moment().format('DD/MM/YYYY')
+    const trendsDbRef = db.ref(COURSE_TRENDS).child(courseId)
+    const trendSnapshot = await trendsDbRef.once('value')
+    let trendsData: TrendStatistics | null = trendSnapshot.val()
+
+    if (!trendsData) {
+      trendsData = {
+        active: {
+          trends: [
+            {
+              date,
+              value: currentStats.active
+            }
+          ],
+          current: currentStats.active,
+        },
+        completed: {
+          trends: [
+            {
+              date,
+              value: currentStats.completed
+            }
+          ],
+          current: currentStats.completed,
+        },
+        enrolled: {
+          trends: [
+            {
+              date,
+              value: currentStats.enrolled
+            }
+          ],
+          current: currentStats.enrolled,
+        },
+        dropoutRate: {
+          trends: [
+            {
+              date,
+              value: currentStats.dropoutRate
+            }
+          ],
+          current: currentStats.dropoutRate,
+        },
+        averageTestScore: {
+          trends: [
+            {
+              date,
+              value: currentStats.averageTestScore
+            }
+          ],
+          current: currentStats.averageTestScore,
+        },
+        averageMcqRetakeRate: {
+          trends: [
+            {
+              date,
+              value: currentStats.averageMcqRetakeRate
+            }
+          ],
+          current: currentStats.averageMcqRetakeRate,
+        },
+        averageBlockDurationMinutes: {
+          trends: [
+            {
+              date,
+              value: currentStats.averageBlockDurationMinutes
+            }
+          ],
+          current: currentStats.averageBlockDurationMinutes,
+        },
+        averageCompletionMinutes: {
+          trends: [
+            {
+              date,
+              value: currentStats.averageCompletionMinutes
+            }
+          ],
+          current: currentStats.averageCompletionMinutes,
+        },
+        averageCourseProgress: {
+          trends: [
+            {
+              date,
+              value: currentStats.averageCourseProgress
+            }
+          ],
+          current: currentStats.averageCourseProgress,
+        },
+        averageLessonDurationMinutes: {
+          trends: [
+            {
+              date,
+              value: currentStats.averageLessonDurationMinutes
+            }
+          ],
+          current: currentStats.averageLessonDurationMinutes,
+        },
+      }
+    } else {
+      let index = -1
+      // handle active
+      trendsData.active.current = currentStats.active
+      index = trendsData.active.trends.findIndex(e => e.date === date)
+      if (index >= 0 && trendsData.active.trends[index]) {
+        // @ts-ignore
+        trendsData.active.trends[index].value = currentStats.active
+        index = -1
+      } else {
+        trendsData.active.trends.push({ date, value: currentStats.active })
+      }
+
+      // handle enrolled
+      trendsData.enrolled.current = currentStats.enrolled
+      index = trendsData.enrolled.trends.findIndex(e => e.date === date)
+      if (index >= 0 && trendsData.enrolled.trends[index]) {
+        // @ts-ignore
+        trendsData.enrolled.trends[index].value = currentStats.enrolled
+        index = -1
+      } else {
+        trendsData.enrolled.trends.push({ date, value: currentStats.enrolled })
+      }
+
+      // handle completed
+      trendsData.completed.current = currentStats.completed
+      index = trendsData.completed.trends.findIndex(e => e.date === date)
+      if (index >= 0 && trendsData.completed.trends[index]) {
+        // @ts-ignore
+        trendsData.completed.trends[index].value = currentStats.completed
+        index = -1
+      } else {
+        trendsData.completed.trends.push({ date, value: currentStats.completed })
+      }
+      // handle dropoutRate
+      trendsData.dropoutRate.current = currentStats.dropoutRate
+      index = trendsData.dropoutRate.trends.findIndex(e => e.date === date)
+      if (index >= 0 && trendsData.dropoutRate.trends[index]) {
+        // @ts-ignore
+        trendsData.dropoutRate.trends[index].value = currentStats.dropoutRate
+        index = -1
+      } else {
+        trendsData.dropoutRate.trends.push({ date, value: currentStats.dropoutRate })
+      }
+      // handle averageTestScore
+      trendsData.averageTestScore.current = currentStats.averageTestScore
+      index = trendsData.averageTestScore.trends.findIndex(e => e.date === date)
+      if (index >= 0 && trendsData.averageTestScore.trends[index]) {
+        // @ts-ignore
+        trendsData.averageTestScore.trends[index].value = currentStats.averageTestScore
+        index = -1
+      } else {
+        trendsData.averageTestScore.trends.push({ date, value: currentStats.averageTestScore })
+      }
+      // handle averageCompletionMinutes
+      trendsData.averageCompletionMinutes.current = currentStats.averageCompletionMinutes
+      index = trendsData.averageCompletionMinutes.trends.findIndex(e => e.date === date)
+      if (index >= 0 && trendsData.averageCompletionMinutes.trends[index]) {
+        // @ts-ignore
+        trendsData.averageCompletionMinutes.trends[index].value = currentStats.averageCompletionMinutes
+        index = -1
+      } else {
+        trendsData.averageCompletionMinutes.trends.push({ date, value: currentStats.averageCompletionMinutes })
+      }
+      // handle averageCourseProgress
+      trendsData.averageCourseProgress.current = currentStats.averageCourseProgress
+      index = trendsData.averageCourseProgress.trends.findIndex(e => e.date === date)
+      if (index >= 0 && trendsData.averageCourseProgress.trends[index]) {
+        // @ts-ignore
+        trendsData.averageCourseProgress.trends[index].value = currentStats.averageCourseProgress
+        index = -1
+      } else {
+        trendsData.averageCourseProgress.trends.push({ date, value: currentStats.averageCourseProgress })
+      }
+      // handle averageMcqRetakeRate
+      trendsData.averageMcqRetakeRate.current = currentStats.averageMcqRetakeRate
+      index = trendsData.averageMcqRetakeRate.trends.findIndex(e => e.date === date)
+      if (index >= 0 && trendsData.averageMcqRetakeRate.trends[index]) {
+        // @ts-ignore
+        trendsData.averageMcqRetakeRate.trends[index].value = currentStats.averageMcqRetakeRate
+        index = -1
+      } else {
+        trendsData.averageMcqRetakeRate.trends.push({ date, value: currentStats.averageMcqRetakeRate })
+      }
+      // handle averageLessonDurationMinutes
+      trendsData.averageLessonDurationMinutes.current = currentStats.averageLessonDurationMinutes
+      index = trendsData.averageLessonDurationMinutes.trends.findIndex(e => e.date === date)
+      if (index >= 0 && trendsData.averageLessonDurationMinutes.trends[index]) {
+        // @ts-ignore
+        trendsData.averageLessonDurationMinutes.trends[index].value = currentStats.averageLessonDurationMinutes
+        index = -1
+      } else {
+        trendsData.averageLessonDurationMinutes.trends.push({ date, value: currentStats.averageLessonDurationMinutes })
+      }
+      // handle averageBlockDurationMinutes
+      trendsData.averageBlockDurationMinutes.current = currentStats.averageBlockDurationMinutes
+      index = trendsData.averageBlockDurationMinutes.trends.findIndex(e => e.date === date)
+      if (index >= 0 && trendsData.averageBlockDurationMinutes.trends[index]) {
+        // @ts-ignore
+        trendsData.averageBlockDurationMinutes.trends[index].value = currentStats.averageBlockDurationMinutes
+        index = -1
+      } else {
+        trendsData.averageBlockDurationMinutes.trends.push({ date, value: currentStats.averageBlockDurationMinutes })
+      }
+    }
+    await trendsDbRef.set(trendsData)
+
+  }
 }

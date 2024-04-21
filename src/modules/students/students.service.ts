@@ -4,7 +4,7 @@ import Students from './model.students'
 import randomstring from "randomstring"
 import { CreateStudentPayload, Student, StudentCourseStats, StudentInterface } from './interface.students'
 import { agenda } from '../scheduler'
-import { SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { GENERATE_COURSE_TRENDS, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { Message } from '../webhooks/interfaces.webhooks'
 import OTP from './model.otp'
 import db from "../rtdb"
@@ -160,7 +160,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
   await sendWelcome(courseId, student.phoneNumber)
 
   let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
-  dbRef.child("students").child(studentId).set({
+  await dbRef.child("students").child(studentId).set({
     name: student.firstName + ' ' + student.otherNames,
     phoneNumber: student.phoneNumber,
     progress: 0,
@@ -168,6 +168,15 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
     droppedOut: false,
     lessons: {}
   })
+
+  const jobs = await agenda.jobs({ 'data.courseId': courseId })
+  if (jobs.length === 0) {
+    // Queue the trends generator
+    agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
+      courseId,
+      teamId: course.owner
+    })
+  }
 
 }
 

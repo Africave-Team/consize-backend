@@ -14,3 +14,9 @@ export const SEND_CERTIFICATE = "SEND_CERTIFICATE"
 
 // student messages
 export const SEND_VERIFICATION_VERIFICATION = "SEND_VERIFICATION_VERIFICATION"
+
+
+
+
+// Background events
+export const GENERATE_COURSE_TRENDS = "GENERATE_COURSE_TRENDS"

@@ -1,8 +1,10 @@
 import { CourseInterface, CourseInterfaceModel, CourseStatus, Media, MediaType, Sources } from './interfaces.courses'
 import mongoose, { Schema } from 'mongoose'
+import { agenda } from '../scheduler'
 import { v4 } from "uuid"
 import { toJSON } from '../toJSON'
 import { paginate } from '../paginate'
+import { GENERATE_COURSE_TRENDS } from '../scheduler/MessageTypes'
 
 export const MediaSchema = new Schema<Media>(
     {
@@ -98,5 +100,25 @@ CourseSchema.plugin(toJSON)
 CourseSchema.plugin(paginate)
 
 const Courses = mongoose.model<CourseInterface, CourseInterfaceModel>('Courses', CourseSchema)
+
+Courses.watch().
+    on('change', async (data: {
+        operationType: string,
+        fullDocument: CourseInterface
+    }) => {
+        let courseId = data.fullDocument._id.toString()
+        const jobs = await agenda.jobs({ 'data.courseId': courseId })
+        jobs.forEach(async (job) => {
+            await job.remove()
+            console.log('Cancelled job:', job.attrs._id)
+        })
+        if (data.fullDocument.status === CourseStatus.PUBLISHED) {
+            // Queue the trends generator
+            agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
+                courseId,
+                teamId: data.fullDocument.owner
+            })
+        }
+    })
 
 export default Courses
