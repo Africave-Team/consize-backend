@@ -508,7 +508,7 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
               value: currentStats.active
             }
           ],
-          current: currentStats.active,
+          current: currentStats.active * 100,
         },
         completed: {
           trends: [
@@ -517,7 +517,7 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
               value: currentStats.completed
             }
           ],
-          current: currentStats.completed,
+          current: currentStats.completed * 100,
         },
         enrolled: {
           trends: [
@@ -526,7 +526,7 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
               value: currentStats.enrolled
             }
           ],
-          current: currentStats.enrolled,
+          current: currentStats.enrolled * 100,
         },
         dropoutRate: {
           trends: [
@@ -535,7 +535,7 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
               value: currentStats.dropoutRate
             }
           ],
-          current: currentStats.dropoutRate,
+          current: currentStats.dropoutRate * 100,
         },
         averageTestScore: {
           trends: [
@@ -544,7 +544,7 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
               value: currentStats.averageTestScore
             }
           ],
-          current: currentStats.averageTestScore,
+          current: currentStats.averageTestScore * 100,
         },
         averageMcqRetakeRate: {
           trends: [
@@ -553,7 +553,7 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
               value: currentStats.averageMcqRetakeRate
             }
           ],
-          current: currentStats.averageMcqRetakeRate,
+          current: currentStats.averageMcqRetakeRate * 100,
         },
         averageBlockDurationMinutes: {
           trends: [
@@ -562,7 +562,7 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
               value: currentStats.averageBlockDurationMinutes
             }
           ],
-          current: currentStats.averageBlockDurationMinutes,
+          current: currentStats.averageBlockDurationMinutes * 100,
         },
         averageCompletionMinutes: {
           trends: [
@@ -571,7 +571,7 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
               value: currentStats.averageCompletionMinutes
             }
           ],
-          current: currentStats.averageCompletionMinutes,
+          current: currentStats.averageCompletionMinutes * 100,
         },
         averageCourseProgress: {
           trends: [
@@ -580,7 +580,7 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
               value: currentStats.averageCourseProgress
             }
           ],
-          current: currentStats.averageCourseProgress,
+          current: currentStats.averageCourseProgress * 100,
         },
         averageLessonDurationMinutes: {
           trends: [
@@ -589,13 +589,20 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
               value: currentStats.averageLessonDurationMinutes
             }
           ],
-          current: currentStats.averageLessonDurationMinutes,
+          current: currentStats.averageLessonDurationMinutes * 100,
         },
       }
     } else {
       let index = -1
       // handle active
-      trendsData.active.current = currentStats.active
+      // calculate delta
+      let older = trendsData.active.trends.filter(e => e.date !== date)
+      if (older.length > 0) {
+        let last = older[older.length - 1]
+        if (last) {
+          trendsData.active.current = (currentStats.active - last.value) * 100
+        }
+      }
       index = trendsData.active.trends.findIndex(e => e.date === date)
       if (index >= 0 && trendsData.active.trends[index]) {
         // @ts-ignore
@@ -606,6 +613,13 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
       }
 
       // handle enrolled
+      older = trendsData.enrolled.trends.filter(e => e.date !== date)
+      if (older.length > 0) {
+        let last = older[older.length - 1]
+        if (last) {
+          trendsData.enrolled.current = (currentStats.enrolled - last.value) * 100
+        }
+      }
       trendsData.enrolled.current = currentStats.enrolled
       index = trendsData.enrolled.trends.findIndex(e => e.date === date)
       if (index >= 0 && trendsData.enrolled.trends[index]) {
@@ -617,6 +631,13 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
       }
 
       // handle completed
+      older = trendsData.completed.trends.filter(e => e.date !== date)
+      if (older.length > 0) {
+        let last = older[older.length - 1]
+        if (last) {
+          trendsData.completed.current = (currentStats.completed - last.value) * 100
+        }
+      }
       trendsData.completed.current = currentStats.completed
       index = trendsData.completed.trends.findIndex(e => e.date === date)
       if (index >= 0 && trendsData.completed.trends[index]) {
@@ -627,6 +648,13 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
         trendsData.completed.trends.push({ date, value: currentStats.completed })
       }
       // handle dropoutRate
+      older = trendsData.dropoutRate.trends.filter(e => e.date !== date)
+      if (older.length > 0) {
+        let last = older[older.length - 1]
+        if (last) {
+          trendsData.dropoutRate.current = (currentStats.dropoutRate - last.value) * 100
+        }
+      }
       trendsData.dropoutRate.current = currentStats.dropoutRate
       index = trendsData.dropoutRate.trends.findIndex(e => e.date === date)
       if (index >= 0 && trendsData.dropoutRate.trends[index]) {
@@ -637,6 +665,13 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
         trendsData.dropoutRate.trends.push({ date, value: currentStats.dropoutRate })
       }
       // handle averageTestScore
+      older = trendsData.averageTestScore.trends.filter(e => e.date !== date)
+      if (older.length > 0) {
+        let last = older[older.length - 1]
+        if (last) {
+          trendsData.averageTestScore.current = (currentStats.averageTestScore - last.value) * 100
+        }
+      }
       trendsData.averageTestScore.current = currentStats.averageTestScore
       index = trendsData.averageTestScore.trends.findIndex(e => e.date === date)
       if (index >= 0 && trendsData.averageTestScore.trends[index]) {
@@ -647,6 +682,13 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
         trendsData.averageTestScore.trends.push({ date, value: currentStats.averageTestScore })
       }
       // handle averageCompletionMinutes
+      older = trendsData.averageCompletionMinutes.trends.filter(e => e.date !== date)
+      if (older.length > 0) {
+        let last = older[older.length - 1]
+        if (last) {
+          trendsData.averageCompletionMinutes.current = (currentStats.averageCompletionMinutes - last.value) * 100
+        }
+      }
       trendsData.averageCompletionMinutes.current = currentStats.averageCompletionMinutes
       index = trendsData.averageCompletionMinutes.trends.findIndex(e => e.date === date)
       if (index >= 0 && trendsData.averageCompletionMinutes.trends[index]) {
@@ -657,6 +699,13 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
         trendsData.averageCompletionMinutes.trends.push({ date, value: currentStats.averageCompletionMinutes })
       }
       // handle averageCourseProgress
+      older = trendsData.averageCourseProgress.trends.filter(e => e.date !== date)
+      if (older.length > 0) {
+        let last = older[older.length - 1]
+        if (last) {
+          trendsData.averageCourseProgress.current = (currentStats.averageCourseProgress - last.value) * 100
+        }
+      }
       trendsData.averageCourseProgress.current = currentStats.averageCourseProgress
       index = trendsData.averageCourseProgress.trends.findIndex(e => e.date === date)
       if (index >= 0 && trendsData.averageCourseProgress.trends[index]) {
@@ -667,6 +716,13 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
         trendsData.averageCourseProgress.trends.push({ date, value: currentStats.averageCourseProgress })
       }
       // handle averageMcqRetakeRate
+      older = trendsData.averageMcqRetakeRate.trends.filter(e => e.date !== date)
+      if (older.length > 0) {
+        let last = older[older.length - 1]
+        if (last) {
+          trendsData.averageMcqRetakeRate.current = (currentStats.averageMcqRetakeRate - last.value) * 100
+        }
+      }
       trendsData.averageMcqRetakeRate.current = currentStats.averageMcqRetakeRate
       index = trendsData.averageMcqRetakeRate.trends.findIndex(e => e.date === date)
       if (index >= 0 && trendsData.averageMcqRetakeRate.trends[index]) {
@@ -677,6 +733,13 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
         trendsData.averageMcqRetakeRate.trends.push({ date, value: currentStats.averageMcqRetakeRate })
       }
       // handle averageLessonDurationMinutes
+      older = trendsData.averageLessonDurationMinutes.trends.filter(e => e.date !== date)
+      if (older.length > 0) {
+        let last = older[older.length - 1]
+        if (last) {
+          trendsData.averageLessonDurationMinutes.current = (currentStats.averageLessonDurationMinutes - last.value) * 100
+        }
+      }
       trendsData.averageLessonDurationMinutes.current = currentStats.averageLessonDurationMinutes
       index = trendsData.averageLessonDurationMinutes.trends.findIndex(e => e.date === date)
       if (index >= 0 && trendsData.averageLessonDurationMinutes.trends[index]) {
@@ -687,6 +750,13 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
         trendsData.averageLessonDurationMinutes.trends.push({ date, value: currentStats.averageLessonDurationMinutes })
       }
       // handle averageBlockDurationMinutes
+      older = trendsData.averageBlockDurationMinutes.trends.filter(e => e.date !== date)
+      if (older.length > 0) {
+        let last = older[older.length - 1]
+        if (last) {
+          trendsData.averageBlockDurationMinutes.current = (currentStats.averageBlockDurationMinutes - last.value) * 100
+        }
+      }
       trendsData.averageBlockDurationMinutes.current = currentStats.averageBlockDurationMinutes
       index = trendsData.averageBlockDurationMinutes.trends.findIndex(e => e.date === date)
       if (index >= 0 && trendsData.averageBlockDurationMinutes.trends[index]) {
