@@ -40,6 +40,7 @@ export interface StudentCourseStats {
   lessons: {
     [lessonId: string]: {
       duration: number
+      title: string
       blocks: {
         [blockId: string]: {
           duration: number

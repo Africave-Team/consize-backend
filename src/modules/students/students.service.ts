@@ -200,6 +200,7 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
         scores: [],
         lessons: {
           [lesson.id]: {
+            title: lesson.title,
             duration: 0,
             blocks: {
               [block.id]: {
@@ -221,6 +222,7 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
       let lessonNode = data.lessons[lesson.id]
       if (!lessonNode) {
         data.lessons[lesson.id] = {
+          title: lesson.title,
           duration: 0,
           blocks: {},
           quizzes: {}
@@ -319,6 +321,7 @@ export const saveQuizDuration = async function (teamId: string, studentId: strin
         scores: [],
         lessons: {
           [lesson.id]: {
+            title: lesson.title,
             duration: 0,
             blocks: {},
             quizzes: {
@@ -345,6 +348,7 @@ export const saveQuizDuration = async function (teamId: string, studentId: strin
       let lessonNode = data.lessons[lesson.id]
       if (!lessonNode) {
         data.lessons[lesson.id] = {
+          title: lesson.title,
           duration: 0,
           blocks: {},
           quizzes: {}
