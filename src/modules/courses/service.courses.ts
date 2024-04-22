@@ -484,6 +484,28 @@ export const calculateCurrentStats = function (students: SessionStudent[]) {
   return copy
 }
 
+function replaceNaNInfinityNull (obj: {
+  enrolled: number
+  active: number
+  completed: number
+  dropoutRate: number
+  averageTestScore: number
+  averageCompletionMinutes: number
+  averageCourseProgress: number
+  averageMcqRetakeRate: number
+  averageLessonDurationMinutes: number
+  averageBlockDurationMinutes: number
+}) {
+  for (let key in obj) {
+    // @ts-ignore
+    if (typeof obj[key] === 'number' && (isNaN(obj[key]) || !isFinite(obj[key]) || obj[key] === null)) {
+      // @ts-ignore
+      obj[key] = 0
+    }
+  }
+  return obj
+}
+
 
 export const generateCurrentCourseTrends = async (courseId: string, teamId: string) => {
   const studentsDbRef = db.ref(COURSE_STATS).child(teamId).child(courseId).child("students")
@@ -491,8 +513,8 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
   let data: { [id: string]: StudentCourseStats } | null = snapshot.val()
   if (data) {
     const students = Object.entries(data).map(([key, value]) => ({ ...value, id: key, progress: value.progress ? value.progress : 0 }))
-    const currentStats = calculateCurrentStats(students)
-    console.log(currentStats)
+    let currentStats = replaceNaNInfinityNull(calculateCurrentStats(students))
+
 
     let date = moment().format('DD/MM/YYYY')
     const trendsDbRef = db.ref(COURSE_TRENDS).child(courseId)
