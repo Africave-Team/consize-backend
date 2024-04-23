@@ -763,7 +763,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.SURVEY_FREE_FORM:
-            await sendMultiSurvey(item, phoneNumber, messageId)
+            await sendFreeformSurvey(item, phoneNumber, messageId)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           default:

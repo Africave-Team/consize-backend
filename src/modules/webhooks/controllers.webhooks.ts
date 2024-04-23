@@ -3,7 +3,7 @@ import { Request, Response } from 'express'
 import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
-import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment } from './interfaces.webhooks'
+import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, FREEFORM_RESPONSE } from './interfaces.webhooks'
 import { fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -44,6 +44,9 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       }
       switch (btnId) {
         case START:
+        case SURVEY_A:
+        case SURVEY_B:
+        case SURVEY_C:
         case CONTINUE:
           if (enrollment) {
             let msgId = v4()
