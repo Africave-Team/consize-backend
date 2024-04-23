@@ -13,6 +13,7 @@ import signaturesRoute from './signatures.route'
 import quizzesRoute from './quizzes.route'
 import studentsRoute from './students'
 import whatsappRoute from './whatsapp.route'
+import surveyRoute from "./survey.route"
 import config from '../../config/config'
 
 const router = express.Router()
@@ -74,6 +75,10 @@ const defaultIRoute: IRoute[] = [
   {
     path: "/whatsapp",
     route: whatsappRoute
+  },
+  {
+    path: "/survey",
+    route: surveyRoute
   }
 ]
 
