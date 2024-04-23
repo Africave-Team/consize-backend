@@ -2,7 +2,7 @@ import httpStatus from 'http-status'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
-import { CONTINUE, CourseEnrollment, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, ReplyButton, START } from './interfaces.webhooks'
+import { CONTINUE, CourseEnrollment, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, ReplyButton, SCHEDULE_RESUMPTION, START, TOMORROW } from './interfaces.webhooks'
 import axios, { AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -111,16 +111,16 @@ export const generateCourseFlow = async function (courseId: string) {
 
     // blocks
     let lessonIndex = 0
-    const nextLesson = course.lessons[lessonIndex]
-    if (nextLesson) {
-      let lessonData = await Lessons.findById(nextLesson)
-      if (lessonData) {
-        flow.push({
-          type: CourseFlowMessageType.ENDLESSON,
-          content: `*First lesson*: ${lessonData.title}\n\n➡️ Tap 'Continue Now' when you're ready to start.\n\nTap 'Continue Tomorrow' to continue tomorrow at \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.`
-        })
-      }
-    }
+    // const nextLesson = course.lessons[lessonIndex]
+    // if (nextLesson) {
+    //   let lessonData = await Lessons.findById(nextLesson)
+    //   if (lessonData) {
+    //     flow.push({
+    //       type: CourseFlowMessageType.ENDLESSON,
+    //       content: `*First lesson*: ${lessonData.title}\n\n➡️ Tap 'Continue Now' when you're ready to start.\n\nTap 'Continue Tomorrow' to continue tomorrow at \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.`
+    //     })
+    //   }
+    // }
     for (let lesson of course.lessons) {
       let lessonData = await Lessons.findById(lesson)
       if (lessonData) {
@@ -592,7 +592,21 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                       type: "reply",
                       reply: {
                         id: CONTINUE + `|${messageId}`,
-                        title: "Continue"
+                        title: "Continue Now"
+                      }
+                    },
+                    {
+                      type: "reply",
+                      reply: {
+                        id: TOMORROW + `|${messageId}`,
+                        title: "Continue Tomorrow"
+                      }
+                    },
+                    {
+                      type: "reply",
+                      reply: {
+                        id: SCHEDULE_RESUMPTION + `|${messageId}`,
+                        title: "Set Resumption Time"
                       }
                     }
                   ]
