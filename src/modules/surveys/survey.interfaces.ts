@@ -34,3 +34,22 @@ export interface SurveyInterface extends Survey, Document {
 export interface SurveyInterfaceModel extends Model<SurveyInterface> {
   paginate (filter: Record<string, any>, options: Record<string, any>): Promise<QueryResult<SurveyInterface>>
 }
+
+export interface SurveyResponse {
+  response: string
+  responseType: ResponseType
+  surveyQuestion: string
+  student: string
+  team: string
+  survey: string
+  course: string
+}
+
+export interface SurveyResponseInterface extends SurveyResponse, Document {
+  _id: string
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+export interface SurveyResponseInterfaceModel extends Model<SurveyResponseInterface> {
+}

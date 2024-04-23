@@ -3,8 +3,8 @@ import { Request, Response } from 'express'
 import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
-import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, FREEFORM_RESPONSE } from './interfaces.webhooks'
-import { fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz } from "./service.webhooks"
+import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C } from './interfaces.webhooks'
+import { fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleSurveyFreeform, handleSurveyMulti } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
@@ -44,9 +44,6 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       }
       switch (btnId) {
         case START:
-        case SURVEY_A:
-        case SURVEY_B:
-        case SURVEY_C:
         case CONTINUE:
           if (enrollment) {
             let msgId = v4()
@@ -129,7 +126,17 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         case CERTIFICATES:
 
           break
-
+        case SURVEY_A:
+        case SURVEY_B:
+        case SURVEY_C:
+          let rsp = 0
+          if (btnId === SURVEY_B) rsp = 1
+          if (btnId === SURVEY_C) rsp = 2
+          if (enrollment) {
+            const msgId = v4()
+            await handleSurveyMulti(rsp, enrollment, destination, msgId)
+          }
+          break
         default:
           if (btnId.startsWith('continue_')) {
             const courseId = btnId.replace("continue_", "")
@@ -196,6 +203,9 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           // await sendWelcome("4f260e57-d4d7-45e1-aa17-7754362f7115", destination, messageid)
           break
         default:
+          if (enrollment) {
+            handleSurveyFreeform(response, enrollment, destination, v4())
+          }
           break
       }
     } else if (type === "button") {

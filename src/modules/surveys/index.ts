@@ -1,9 +1,10 @@
 import Survey from "./survey.model"
+import SurveyResponse from "./surveyReponse.model"
 import * as SurveyInterfaces from "./survey.interfaces"
 import * as SurveyValidators from "./survey.validator"
 import * as SurveyServices from "./survey.service"
 import * as SurveyControllers from "./survey.controller"
 
 export {
-  Survey, SurveyInterfaces, SurveyValidators, SurveyServices, SurveyControllers
+  Survey, SurveyInterfaces, SurveyValidators, SurveyServices, SurveyControllers, SurveyResponse
 }

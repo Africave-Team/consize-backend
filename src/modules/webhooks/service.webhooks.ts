@@ -2,7 +2,7 @@ import httpStatus from 'http-status'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
-import { CONTINUE, CourseEnrollment, FREEFORM_RESPONSE, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
+import { CONTINUE, CourseEnrollment, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
 import axios, { AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -10,6 +10,7 @@ import Courses from '../courses/model.courses'
 import { Team } from '../teams'
 import { CourseInterface, MediaType } from '../courses/interfaces.courses'
 import he from "he"
+import db from "../rtdb"
 import Settings from '../courses/model.settings'
 import Lessons from '../courses/model.lessons'
 import Blocks from '../courses/model.blocks'
@@ -22,8 +23,10 @@ import moment from 'moment'
 import { LessonInterface } from '../courses/interfaces.lessons'
 import { saveBlockDuration, saveCourseProgress, saveQuizDuration } from '../students/students.service'
 import { delay } from '../generators/generator.service'
-import { Survey } from '../surveys'
+import { Survey, SurveyResponse } from '../surveys'
 import { Question, ResponseType } from '../surveys/survey.interfaces'
+import { COURSE_STATS } from '../rtdb/nodes'
+import { StudentCourseStats } from '../students/interface.students'
 
 enum CourseFlowMessageType {
   WELCOME = 'welcome',
@@ -38,7 +41,8 @@ enum CourseFlowMessageType {
   LEADERBOARD = 'leaderboard',
   CERTIFICATE = 'certificate',
   SURVEY_MULTI_CHOICE = 'survey-multi-choice',
-  SURVEY_FREE_FORM = 'survey-free-form'
+  SURVEY_FREE_FORM = 'survey-free-form',
+  END_SURVEY = 'end-survey'
 
 }
 
@@ -240,13 +244,19 @@ export const generateCourseFlow = async function (courseId: string) {
             })
           } else {
             flow.push({
-              type: CourseFlowMessageType.SURVEY_MULTI_CHOICE,
-              content: `${question.question}`,
+              type: CourseFlowMessageType.SURVEY_FREE_FORM,
+              content: `${question.question} \n\nType your response and send it.`,
               surveyQuestion: question,
               surveyId: course.survey
             })
           }
         }
+
+        let load = {
+          type: CourseFlowMessageType.END_SURVEY,
+          content: `That was the last survey question 🎊\n\nThank you for your feedback about this course 🤝.`
+        }
+        flow.push(load)
       }
     }
     if (redisClient.isReady) {
@@ -473,30 +483,16 @@ export const sendMultiSurvey = async (item: CourseFlowItem, phoneNumber: string,
   }
 }
 
-export const sendFreeformSurvey = async (item: CourseFlowItem, phoneNumber: string, messageId: string): Promise<void> => {
+export const sendFreeformSurvey = async (item: CourseFlowItem, phoneNumber: string, _: string): Promise<void> => {
   try {
     if (item.surveyQuestion) {
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
         to: phoneNumber,
-        type: "interactive",
+        type: "text",
         messaging_product: "whatsapp",
         recipient_type: "individual",
-        interactive: {
-          body: {
-            text: item.content
-          },
-          type: "button",
-          action: {
-            buttons: [
-              {
-                type: "reply",
-                reply: {
-                  id: FREEFORM_RESPONSE + `|${messageId}`,
-                  title: "Enter response"
-                }
-              },
-            ]
-          }
+        text: {
+          body: item.content
         }
       })
     }
@@ -636,13 +632,31 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 score = ((scores.reduce((a, b) => a + b, 0) / scores.length) * 100).toFixed(0)
               }
             }
+            const dbRef = db.ref(COURSE_STATS).child(data.team).child(data.id).child("students")
+            // get existing data
+            const snapshot = await dbRef.once('value')
+            let rtdb: { [id: string]: StudentCourseStats } | null = snapshot.val()
+            let rankings: StudentCourseStats[] = []
+            if (rtdb) {
+              let stds: StudentCourseStats[] = Object.values(rtdb)
+              if (stds.length > 1) {
+                rankings = stds.sort((a: StudentCourseStats, b: StudentCourseStats) => {
+                  const first = a.scores ? a.scores.reduce((a, b) => a + b, 0) : 0
+                  const second = b.scores ? b.scores.reduce((a, b) => a + b, 0) : 0
+                  return second - first
+                })
+              } else {
+                rankings = stds
+              }
+            }
+            const rank = rankings.findIndex(e => e.phoneNumber === phoneNumber)
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
               type: "text",
               messaging_product: "whatsapp",
               recipient_type: "individual",
               text: {
-                body: item.content.replace('{progress}', Math.ceil(progress).toString()).replace('{score}', score)
+                body: item.content.replace('{progress}', Math.ceil(progress).toString()).replace('{score}', score).replace('{course_rank}', (rank >= 0 ? rank + 1 : 1).toString())
               }
             })
             await delay(10000)
@@ -668,7 +682,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
             } else {
               // if no survey for this course, then send the certificate
-              await delay(10000)
+              await delay(5000)
               agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
                 ...updatedData
               })
@@ -765,6 +779,22 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           case CourseFlowMessageType.SURVEY_FREE_FORM:
             await sendFreeformSurvey(item, phoneNumber, messageId)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            break
+
+          case CourseFlowMessageType.END_SURVEY:
+            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: phoneNumber,
+              type: "text",
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              text: {
+                body: item.content
+              }
+            })
+            await delay(5000)
+            agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
+              ...updatedData
+            })
             break
           default:
             break
@@ -945,6 +975,96 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
         saveQuizDuration(data.team, data.student, duration, score, retakes, item.lesson, item.quiz)
       }
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
+    }
+  }
+}
+
+export const handleSurveyMulti = async (answer: number, data: CourseEnrollment, phoneNumber: string, messageId: string): Promise<void> => {
+  const courseKey = `${config.redisBaseKey}courses:${data.id}`
+  const courseFlow = await redisClient.get(courseKey)
+  const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data?.id}`
+  if (courseFlow) {
+    const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
+    const item = courseFlowData[data.currentBlock - 1]
+    if (item && item.surveyId) {
+      // save the survey response
+      if (item.surveyQuestion) {
+        await SurveyResponse.create({
+          survey: item.surveyId,
+          team: data.team,
+          surveyQuestion: item.surveyQuestion.id,
+          course: data.id,
+          student: data.student,
+          response: item.surveyQuestion.choices[answer],
+          responseType: ResponseType.MULTI_CHOICE
+        })
+      }
+      // check if the next block is a survey
+      let nextBlock = courseFlowData[data.currentBlock]
+      if (nextBlock) {
+        if (nextBlock.surveyId) {
+          // if next block is survey, check if it is multi-choice survey or freeform
+          if (nextBlock.type === CourseFlowMessageType.SURVEY_MULTI_CHOICE) {
+            // if it is multi, send multi survey
+            sendMultiSurvey(nextBlock, phoneNumber, messageId)
+          } else {
+            // else send freeform
+            sendFreeformSurvey(nextBlock, phoneNumber, messageId)
+          }
+          // update redis and rtdb
+          saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+          let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: data.currentBlock + 1, nextBlock: data.nextBlock + 1 }
+          redisClient.set(key, JSON.stringify({ ...updatedData }))
+        } else if (nextBlock.type === CourseFlowMessageType.END_SURVEY) {
+          handleContinue(data.currentBlock, courseKey, phoneNumber, v4(), data)
+        }
+      }
+    }
+  }
+}
+
+
+
+export const handleSurveyFreeform = async (answer: string, data: CourseEnrollment, phoneNumber: string, messageId: string): Promise<void> => {
+  const courseKey = `${config.redisBaseKey}courses:${data.id}`
+  const courseFlow = await redisClient.get(courseKey)
+  const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data?.id}`
+  if (courseFlow) {
+    const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
+    const item = courseFlowData[data.currentBlock - 1]
+    if (item && item.surveyId) {
+      // save the survey response
+      if (item.surveyQuestion) {
+        await SurveyResponse.create({
+          survey: item.surveyId,
+          team: data.team,
+          surveyQuestion: item.surveyQuestion.id,
+          course: data.id,
+          student: data.student,
+          response: answer,
+          responseType: ResponseType.FREE_FORM
+        })
+      }
+      // check if the next block is a survey
+      let nextBlock = courseFlowData[data.currentBlock]
+      if (nextBlock) {
+        if (nextBlock.surveyId) {
+          // if next block is survey, check if it is multi-choice survey or freeform
+          if (nextBlock.type === CourseFlowMessageType.SURVEY_MULTI_CHOICE) {
+            // if it is multi, send multi survey
+            sendMultiSurvey(nextBlock, phoneNumber, messageId)
+          } else {
+            // else send freeform
+            sendFreeformSurvey(nextBlock, phoneNumber, messageId)
+          }
+          // update redis and rtdb
+          saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+          let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: data.currentBlock + 1, nextBlock: data.nextBlock + 1 }
+          redisClient.set(key, JSON.stringify({ ...updatedData }))
+        } else if (nextBlock.type === CourseFlowMessageType.END_SURVEY) {
+          handleContinue(data.currentBlock, courseKey, phoneNumber, v4(), data)
+        }
+      }
     }
   }
 }

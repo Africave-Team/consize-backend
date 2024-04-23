@@ -166,6 +166,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
     progress: 0,
     completed: false,
     droppedOut: false,
+    scores: [],
     lessons: {}
   })
 
