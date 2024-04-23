@@ -2,7 +2,7 @@ import httpStatus from 'http-status'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
-import { CONTINUE, CourseEnrollment, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, ReplyButton, SCHEDULE_RESUMPTION, START, TOMORROW } from './interfaces.webhooks'
+import { CONTINUE, CourseEnrollment, FREEFORM_RESPONSE, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
 import axios, { AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -22,6 +22,8 @@ import moment from 'moment'
 import { LessonInterface } from '../courses/interfaces.lessons'
 import { saveBlockDuration, saveCourseProgress, saveQuizDuration } from '../students/students.service'
 import { delay } from '../generators/generator.service'
+import { Survey } from '../surveys'
+import { Question, ResponseType } from '../surveys/survey.interfaces'
 
 enum CourseFlowMessageType {
   WELCOME = 'welcome',
@@ -35,6 +37,8 @@ enum CourseFlowMessageType {
   QUIZ = 'quiz',
   LEADERBOARD = 'leaderboard',
   CERTIFICATE = 'certificate',
+  SURVEY_MULTI_CHOICE = 'survey-multi-choice',
+  SURVEY_FREE_FORM = 'survey-free-form'
 
 }
 
@@ -46,6 +50,8 @@ interface CourseFlowItem {
   block?: BlockInterface
   lesson?: LessonInterface
   quiz?: QuizInterface
+  surveyQuestion?: Question
+  surveyId?: string
 }
 
 // interface UserTracker {
@@ -220,6 +226,29 @@ export const generateCourseFlow = async function (courseId: string) {
       load.content = load.content + `but first, we want to get your feedback on the course.\n\nWe’ll be sending you a quick survey next 🔎`
     }
     flow.push(load)
+
+    if (course.survey) {
+      const survey = await Survey.findById(course.survey)
+      if (survey) {
+        for (let question of survey.questions) {
+          if (question.responseType === ResponseType.MULTI_CHOICE) {
+            flow.push({
+              type: CourseFlowMessageType.SURVEY_MULTI_CHOICE,
+              content: `${question.question}\n\nChoices: \nA: ${question.choices[0]} \nB: ${question.choices[1]} \nC: ${question.choices[2]}`,
+              surveyQuestion: question,
+              surveyId: course.survey
+            })
+          } else {
+            flow.push({
+              type: CourseFlowMessageType.SURVEY_MULTI_CHOICE,
+              content: `${question.question}`,
+              surveyQuestion: question,
+              surveyId: course.survey
+            })
+          }
+        }
+      }
+    }
     if (redisClient.isReady) {
       await redisClient.del(courseKey)
       await redisClient.set(courseKey, JSON.stringify(flow))
@@ -412,6 +441,70 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
   }
 }
 
+export const sendMultiSurvey = async (item: CourseFlowItem, phoneNumber: string, messageId: string): Promise<void> => {
+  try {
+    if (item.surveyQuestion) {
+      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+        to: phoneNumber,
+        type: "interactive",
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        interactive: {
+          body: {
+            text: item.content
+          },
+          type: "button",
+          action: {
+            buttons: [
+              ...item.surveyQuestion.choices.map((_, index) => ({
+                type: "reply",
+                reply: {
+                  id: index === 0 ? SURVEY_A : index === 1 ? SURVEY_B : SURVEY_C + `|${messageId}|${item.surveyQuestion?.id}`,
+                  title: index === 0 ? "A" : index === 1 ? "B" : "C"
+                }
+              } as ReplyButton))
+            ]
+          }
+        }
+      })
+    }
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+  }
+}
+
+export const sendFreeformSurvey = async (item: CourseFlowItem, phoneNumber: string, messageId: string): Promise<void> => {
+  try {
+    if (item.surveyQuestion) {
+      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+        to: phoneNumber,
+        type: "interactive",
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        interactive: {
+          body: {
+            text: item.content
+          },
+          type: "button",
+          action: {
+            buttons: [
+              {
+                type: "reply",
+                reply: {
+                  id: FREEFORM_RESPONSE + `|${messageId}`,
+                  title: "Enter response"
+                }
+              },
+            ]
+          }
+        }
+      })
+    }
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+  }
+}
+
 export const sendWelcome = async (currentIndex: string, phoneNumber: string): Promise<void> => {
   try {
     if (redisClient.isReady) {
@@ -569,11 +662,18 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 body: item.content.replace('{survey}', '')
               }
             })
-            // if no survey for this course, then send the certificate
-            await delay(10000)
-            agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
-              ...updatedData
-            })
+            let next = flowData[nextIndex + 1]
+            if (next?.surveyId && next.surveyQuestion) {
+              updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
+              handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
+            } else {
+              // if no survey for this course, then send the certificate
+              await delay(10000)
+              agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
+                ...updatedData
+              })
+            }
+
             break
           case CourseFlowMessageType.ENDLESSON:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -616,7 +716,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.QUIZ:
-            sendQuiz(item, phoneNumber, messageId)
+            await sendQuiz(item, phoneNumber, messageId)
             updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
@@ -656,6 +756,14 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           case CourseFlowMessageType.BLOCKWITHQUIZ:
             await sendBlockContent(item, phoneNumber, messageId)
             updatedData = { ...updatedData, blockStartTime: new Date() }
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            break
+          case CourseFlowMessageType.SURVEY_MULTI_CHOICE:
+            await sendMultiSurvey(item, phoneNumber, messageId)
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            break
+          case CourseFlowMessageType.SURVEY_FREE_FORM:
+            await sendMultiSurvey(item, phoneNumber, messageId)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           default:

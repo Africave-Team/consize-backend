@@ -104,20 +104,28 @@ const Courses = mongoose.model<CourseInterface, CourseInterfaceModel>('Courses',
 Courses.watch().
     on('change', async (data: {
         operationType: string,
-        fullDocument: CourseInterface
+        documentKey: { _id: string },
+        updateDescription?: {
+            updatedFields: {
+                status: CourseStatus
+            }
+        }
     }) => {
-        let courseId = data.fullDocument._id.toString()
-        const jobs = await agenda.jobs({ 'data.courseId': courseId })
-        jobs.forEach(async (job) => {
-            await job.remove()
-            console.log('Cancelled job:', job.attrs._id)
-        })
-        if (data.fullDocument.status === CourseStatus.PUBLISHED) {
-            // Queue the trends generator
-            agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
-                courseId,
-                teamId: data.fullDocument.owner
+        if (data.updateDescription && data.updateDescription.updatedFields && data.updateDescription.updatedFields.status && data.updateDescription.updatedFields.status === CourseStatus.PUBLISHED) {
+            let courseId = data.documentKey._id.toString()
+            const jobs = await agenda.jobs({ 'data.courseId': courseId })
+            jobs.forEach(async (job) => {
+                await job.remove()
+                console.log('Cancelled job:', job.attrs._id)
             })
+            const course = await Courses.findById(courseId)
+            if (course) {
+                // Queue the trends generator
+                agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
+                    courseId,
+                    teamId: course.owner
+                })
+            }
         }
     })
 

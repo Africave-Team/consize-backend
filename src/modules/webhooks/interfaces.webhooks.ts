@@ -109,3 +109,9 @@ export const CERTIFICATES = "/certificates"
 export const COURSES = "/courses"
 export const TOMORROW = "/tomorrow"
 export const SCHEDULE_RESUMPTION = "/schedule-resumption"
+
+export const SURVEY_A = "/survey_a"
+export const SURVEY_B = "/survey_b"
+export const SURVEY_C = "/survey_c"
+
+export const FREEFORM_RESPONSE = "/freeform-response"
