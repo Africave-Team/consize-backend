@@ -167,6 +167,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           }
           break
         case SCHEDULE_RESUMPTION:
+          console.log(btnId, "init schedule here")
           if (enrollment) {
             let msgId = v4()
             sendResumptionOptions(destination, msgId)
