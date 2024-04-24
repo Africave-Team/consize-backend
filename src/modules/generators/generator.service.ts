@@ -87,7 +87,7 @@ export const generateCourseLeaderboard = async (course: CourseInterface, student
     leaderboard: rankings
   }
   const query = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
-  await page.goto(`https://consize.com/templates/leaderboard?data=${query}`, { waitUntil: "networkidle0" })
+  await page.goto(`${config.clientUrl}/templates/leaderboard?data=${query}`, { waitUntil: "networkidle0" })
   await page.setViewport({
     width: 1920, height: 1080, deviceScaleFactor: 2
   })
