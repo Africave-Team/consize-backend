@@ -214,7 +214,7 @@ export const generateCourseFlow = async function (courseId: string) {
           if (lessonData) {
             flow.push({
               type: CourseFlowMessageType.ENDLESSON,
-              content: `*Next lesson*: ${lessonData.title}\n\n➡️ Tap 'Continue Now' when you're ready to start.\n\nTap 'Continue Tomorrow' to continue tomorrow at \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.
+              content: `*Next lesson*: ${lessonData.title}\n\n➡️ Tap 'Continue Now' when you're ready to start.\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.
             `
             })
           }

@@ -3,7 +3,7 @@ import { Request, Response } from 'express'
 import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
-import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C } from './interfaces.webhooks'
+import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION } from './interfaces.webhooks'
 import { fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleSurveyFreeform, handleSurveyMulti } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -136,6 +136,11 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             const msgId = v4()
             await handleSurveyMulti(rsp, enrollment, destination, msgId)
           }
+          break
+        case TOMORROW:
+
+          break
+        case SCHEDULE_RESUMPTION:
           break
         default:
           if (btnId.startsWith('continue_')) {
