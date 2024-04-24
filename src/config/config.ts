@@ -6,6 +6,8 @@ const envVarsSchema = Joi.object()
     ENV: Joi.string().required(),
     NODE_ENV: Joi.string().valid('production', 'development', 'test').required(),
     REDIS_HOST: Joi.string().required().description('REDIS Host url'),
+    REDIS_PASSWORD: Joi.string().required().description('REDIS password'),
+    REDIS_PORT: Joi.string().required().description('REDIS port'),
     WHATSAPP_PHONENUMBER_ID: Joi.string().required().description("phone number ID for whatsapp"),
     WHATSAPP_AUTH_TEMPLATE_NAME: Joi.string().required().description("Authentication template for first time student enrollment"),
     REDIS_BASE_KEY: Joi.string().required().description("Base key string for redis store"),
@@ -80,7 +82,11 @@ const config = {
     },
     from: envVars.EMAIL_FROM,
   },
-  redis: envVars.REDIS_HOST,
+  redis: {
+    host: envVars.REDIS_HOST,
+    password: envVars.REDIS_PASSWORD,
+    port: envVars.REDIS_PORT
+  },
   redisBaseKey: envVars.REDIS_BASE_KEY,
   clientUrl: envVars.CLIENT_URL,
 }

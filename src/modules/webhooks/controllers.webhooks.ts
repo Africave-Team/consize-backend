@@ -2,9 +2,9 @@
 import { Request, Response } from 'express'
 import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
-import { SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
-import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION } from './interfaces.webhooks'
-import { fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleSurveyFreeform, handleSurveyMulti } from "./service.webhooks"
+import { RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING } from './interfaces.webhooks'
+import { fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleSurveyFreeform, handleSurveyMulti, sendResumptionOptions } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
@@ -138,9 +138,34 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           }
           break
         case TOMORROW:
-
+          if (enrollment) {
+            let msgId = v4()
+            agenda.schedule('in 5 minutes', RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+          }
+          break
+        case MORNING:
+          if (enrollment) {
+            let msgId = v4()
+            agenda.schedule('in 2 minutes', RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+          }
+          break
+        case AFTERNOON:
+          if (enrollment) {
+            let msgId = v4()
+            agenda.schedule('in 5 minutes', RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+          }
+          break
+        case EVENING:
+          if (enrollment) {
+            let msgId = v4()
+            agenda.schedule('in 8 minutes', RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+          }
           break
         case SCHEDULE_RESUMPTION:
+          if (enrollment) {
+            let msgId = v4()
+            sendResumptionOptions(destination, msgId)
+          }
           break
         default:
           if (btnId.startsWith('continue_')) {

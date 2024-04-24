@@ -115,3 +115,8 @@ export const SURVEY_B = "/survey_b"
 export const SURVEY_C = "/survey_c"
 
 export const FREEFORM_RESPONSE = "/freeform-response"
+
+
+export const MORNING = TOMORROW + '_9am'
+export const AFTERNOON = TOMORROW + '_3pm'
+export const EVENING = TOMORROW + '_8pm'
