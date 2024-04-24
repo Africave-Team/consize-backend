@@ -195,7 +195,7 @@ export const generateCourseCertificate = async (course: CourseInterface, student
     }
   }
   const query = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
-  await page.goto(`https://consize.com/templates/certificate?data=${query}`, { waitUntil: "networkidle0" })
+  await page.goto(`${config.clientUrl}/templates/certificate?data=${query}`, { waitUntil: "networkidle0" })
   await page.setViewport({
     width: 1920, height: 1080, deviceScaleFactor: 2
   })
