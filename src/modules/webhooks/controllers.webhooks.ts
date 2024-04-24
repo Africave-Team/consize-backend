@@ -246,6 +246,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       }
     } else if (type === "button") {
       const response = messageBody[0].button.payload
+      console.log(response)
       if (response === "Start") {
         if (enrollment) {
           let msgId = v4()
