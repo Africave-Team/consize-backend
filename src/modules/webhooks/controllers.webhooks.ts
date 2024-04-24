@@ -42,6 +42,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           }
         }
       }
+      console.log(btnId)
       switch (btnId) {
         case START:
         case CONTINUE:
