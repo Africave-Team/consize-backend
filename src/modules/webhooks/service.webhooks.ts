@@ -107,10 +107,6 @@ export const generateCourseFlow = async function (courseId: string) {
       type: CourseFlowMessageType.WELCOME,
       content: `You have successfully enrolled for the course *${course.title}* by the organization *${courseOwner?.name}*.\n\nThis is a self paced course, which means you can learn at your own speed.\n\nStart the course anytime at your convenience by tapping 'Start'.`
     })
-    flow.push({
-      type: CourseFlowMessageType.ENDLESSON,
-      content: `Tap 'Continue Now' when you're ready to start.\n\nTap 'Continue Tomorrow' to continue tomorrow at \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.`
-    })
     const description = convertToWhatsAppString(he.decode(course.description))
     // course intro
     flow.push({
