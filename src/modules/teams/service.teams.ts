@@ -14,6 +14,11 @@ export const createTeam = async (name: string, ownerId: string): Promise<TeamsIn
   return team
 }
 
+export const fetchTeamInfo = async (teamid: string): Promise<TeamsInterface> => {
+  const team = await Team.findById(teamid)
+  if (!team) throw new ApiError(httpStatus.NOT_FOUND, 'Team not found')
+  return team
+}
 
 export const updateTeamInfo = async (teamid: string, payload: Partial<Omit<TeamsInterface, "_id" | "owner" | "createdAt" | "updatedAt">>): Promise<TeamsInterface> => {
   const team = await Team.findByIdAndUpdate(teamid, { $set: payload }, { new: true })

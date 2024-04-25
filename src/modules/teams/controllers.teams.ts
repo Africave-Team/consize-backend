@@ -62,3 +62,10 @@ export const updateTeamInfo = catchAsync(async (req: Request, res: Response) => 
     res.status(httpStatus.NO_CONTENT).send({ data: team })
   }
 })
+
+export const fetchTeamInfo = catchAsync(async (req: Request, res: Response) => {
+  if (typeof req.params['teamId'] === 'string') {
+    const team = await teamService.fetchTeamInfo(req.params["teamId"])
+    res.status(httpStatus.NO_CONTENT).send({ data: team })
+  }
+})
