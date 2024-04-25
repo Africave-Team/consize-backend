@@ -1164,7 +1164,7 @@ export const sendResumptionMessage = async (phoneNumber: string, key: string, da
       interactive: {
         header: {
           type: MediaType.TEXT,
-          text: "*Welcome back*"
+          text: "Welcome back"
         },
         body: {
           text: `You scheduled to resume the course *${data.title} today at this time.*\n\nYou can resume your scheduled course by clicking the "Resume Now" button below`

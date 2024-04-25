@@ -140,10 +140,9 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           }
           break
         case TOMORROW:
-          console.log(btnId, "schedule here")
           if (enrollment) {
             let msgId = v4()
-            agenda.schedule('in 30 seconds', RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            agenda.schedule('tomorrow at 9:00am', RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "9:00am")
           }
           break
