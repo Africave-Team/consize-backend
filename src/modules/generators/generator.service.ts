@@ -12,11 +12,12 @@ import { COURSE_STATS } from '../rtdb/nodes'
 import { v4 } from 'uuid'
 import { agenda } from '../scheduler'
 import config from '../../config/config'
-import { handleContinue } from '../webhooks/service.webhooks'
+import { CourseFlowItem, CourseFlowMessageType, handleContinue } from '../webhooks/service.webhooks'
 import { CourseEnrollment, Message } from '../webhooks/interfaces.webhooks'
 import { SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { fetchSignatures } from '../signatures/service.signatures'
 import { completeCourse } from '../students/students.service'
+import { redisClient } from '../redis'
 
 
 export function delay (ms: number) {
@@ -54,6 +55,12 @@ export const sendCourseLeaderboard = async (courseId: string, studentId: string,
 export const generateCourseLeaderboard = async (course: CourseInterface, student: StudentInterface, owner: TeamsInterface): Promise<string> => {
   const dbRef = db.ref(COURSE_STATS).child(owner.id).child(course.id).child("students")
   // get existing data
+  const flow = await redisClient.get(`${config.redisBaseKey}courses:${course.id}`)
+  let totalQuiz = 1
+  if (flow) {
+    const flowData: CourseFlowItem[] = JSON.parse(flow)
+    totalQuiz = flowData.filter(e => e.type === CourseFlowMessageType.QUIZ).length
+  }
   const snapshot = await dbRef.once('value')
   let data: { [id: string]: StudentCourseStats } | null = snapshot.val()
   let rankings: BoardMember[] = []
@@ -61,13 +68,20 @@ export const generateCourseLeaderboard = async (course: CourseInterface, student
     rankings = Object.values(data).sort((a: StudentCourseStats, b: StudentCourseStats) => {
       const first = a.scores ? a.scores.reduce((a, b) => a + b, 0) : 0
       const second = b.scores ? b.scores.reduce((a, b) => a + b, 0) : 0
-      return second - first
+      return ((second * 100) / totalQuiz) - ((first * 100) / totalQuiz)
     }).map((std: StudentCourseStats, index: number) => {
+      let score = 0
+      if (std.scores) {
+        score = std.scores.reduce((a, b) => a + b, 0)
+        if (score > 0) {
+          score = (score * 100) / totalQuiz
+        }
+      }
       return {
         name: std.name,
         isCurrentUser: student.phoneNumber === std.phoneNumber,
         rank: index + 1,
-        score: std.scores ? std.scores.reduce((a, b) => a + b, 0) : 0
+        score
       }
     })
   }

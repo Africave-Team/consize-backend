@@ -28,7 +28,7 @@ import { Question, ResponseType } from '../surveys/survey.interfaces'
 import { COURSE_STATS } from '../rtdb/nodes'
 import { StudentCourseStats } from '../students/interface.students'
 
-enum CourseFlowMessageType {
+export enum CourseFlowMessageType {
   WELCOME = 'welcome',
   INTRO = 'intro',
   BLOCK = 'block',
@@ -46,7 +46,7 @@ enum CourseFlowMessageType {
 
 }
 
-interface CourseFlowItem {
+export interface CourseFlowItem {
   type: CourseFlowMessageType
   content: string
   mediaType?: MediaType
