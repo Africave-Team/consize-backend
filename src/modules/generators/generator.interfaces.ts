@@ -15,6 +15,7 @@ export interface GenerateCertificatePayload {
   studentName: string,
   courseName: string,
   organizationName: string,
+  logoUrl: string | null
   signature1: string,
   signatory1: string,
   signature2: string,

@@ -175,6 +175,7 @@ export const generateCourseCertificate = async (course: CourseInterface, student
   let payload: GenerateCertificatePayload = {
     studentName: `${student.firstName} ${student.otherNames}`,
     courseName: course.title,
+    logoUrl: owner.logo || null,
     organizationName: owner.name,
     signatory1: "Pelumi Ogboye",
     signatory2: "Ifeanyi Perry",
