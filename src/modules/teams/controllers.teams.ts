@@ -55,3 +55,10 @@ export const acceptTeamInvite = catchAsync(async (req: Request, res: Response) =
   const team = await teamService.fetchTeamById(user.team)
   res.send({ user, tokens, team })
 })
+
+export const updateTeamInfo = catchAsync(async (req: Request, res: Response) => {
+  if (typeof req.params['teamId'] === 'string') {
+    const team = await teamService.updateTeamInfo(req.params["teamId"], req.body)
+    res.status(httpStatus.NO_CONTENT).send({ data: team })
+  }
+})
