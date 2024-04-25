@@ -3,8 +3,8 @@ import AppConfig from '../../../config/config'
 import { GENERATE_COURSE_TRENDS, RESUME_TOMORROW } from '../MessageTypes'
 import { generateCurrentCourseTrends } from '../../courses/service.courses'
 import { CourseEnrollment } from '@/modules/webhooks/interfaces.webhooks'
-import config from '../../../config/config'
-import { sendResumptionMessage } from '../../webhooks/service.webhooks'
+// import config from '../../../config/config'
+// import { sendResumptionMessage } from '../../webhooks/service.webhooks'
 
 const handleCourseTrends: Processor<{ courseId: string, teamId: string }> = async (job: Job<{ courseId: string, teamId: string }>) => {
   try {
