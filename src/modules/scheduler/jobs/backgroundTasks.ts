@@ -20,7 +20,7 @@ export const handleCourseTrends: Processor<{ courseId: string, teamId: string }>
 
 const handleContinueTomorrow: Processor<{ enrollment: CourseEnrollment, phoneNumber: string, messageId: string }> = async (job: Job<{ enrollment: CourseEnrollment, phoneNumber: string, messageId: string }>) => {
   try {
-    if (AppConfig.server === "local") {
+    if (AppConfig.server !== "test") {
       const data = job.attrs.data
       const { enrollment, phoneNumber } = data
       await sendResumptionMessage(phoneNumber, `${config.redisBaseKey}enrollments:${phoneNumber}:${enrollment.id}`, enrollment)
