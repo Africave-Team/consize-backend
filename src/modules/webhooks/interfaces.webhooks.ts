@@ -7,7 +7,8 @@ interface Header {
   },
   image?: {
     link: string
-  }
+  },
+  text?: string
 }
 
 interface MessageBody {
@@ -120,3 +121,5 @@ export const FREEFORM_RESPONSE = "/freeform-response"
 export const MORNING = TOMORROW + '_9am'
 export const AFTERNOON = TOMORROW + '_3pm'
 export const EVENING = TOMORROW + '_8pm'
+
+export const RESUME_COURSE = "RESUME_COURSE"

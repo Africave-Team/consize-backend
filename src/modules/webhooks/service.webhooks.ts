@@ -2,7 +2,7 @@ import httpStatus from 'http-status'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
+import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
 import axios, { AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -106,6 +106,10 @@ export const generateCourseFlow = async function (courseId: string) {
     flow.push({
       type: CourseFlowMessageType.WELCOME,
       content: `You have successfully enrolled for the course *${course.title}* by the organization *${courseOwner?.name}*.\n\nThis is a self paced course, which means you can learn at your own speed.\n\nStart the course anytime at your convenience by tapping 'Start'.`
+    })
+    flow.push({
+      type: CourseFlowMessageType.ENDLESSON,
+      content: `Tap 'Continue Now' when you're ready to start.\n\nTap 'Continue Tomorrow' to continue tomorrow at \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.`
     })
     const description = convertToWhatsAppString(he.decode(course.description))
     // course intro
@@ -273,7 +277,9 @@ export const sendMessage = async function (message: Message) {
       "Authorization": `Bearer ${config.whatsapp.token}`,
       "Content-Type": "application/json"
     }
-  }).catch((error) => logger.info(error.response.data)).then((data) => logger.info(JSON.stringify((data as AxiosResponse).data)))
+  }).catch((error) => {
+    logger.error(JSON.stringify((error)))
+  }).then((data) => logger.info(JSON.stringify((data as AxiosResponse).data)))
 }
 
 export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string, messageId: string): Promise<void> => {
@@ -1100,8 +1106,9 @@ export const sendAuthMessage = async () => {
   logger.info(request_body)
 }
 
-export const sendResumptionOptions = async (phoneNumber: string, messageId: string): Promise<void> => {
+export const sendResumptionOptions = async (phoneNumber: string, key: string, data: CourseEnrollment): Promise<void> => {
   try {
+    let msgId = v4()
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
       type: "interactive",
@@ -1117,21 +1124,21 @@ export const sendResumptionOptions = async (phoneNumber: string, messageId: stri
             {
               type: "reply",
               reply: {
-                id: MORNING + `|${messageId}`,
+                id: MORNING + `|${msgId}`,
                 title: "Morning"
               }
             },
             {
               type: "reply",
               reply: {
-                id: AFTERNOON + `|${messageId}`,
+                id: AFTERNOON + `|${msgId}`,
                 title: "Afternnon"
               }
             },
             {
               type: "reply",
               reply: {
-                id: EVENING + `|${messageId}`,
+                id: EVENING + `|${msgId}`,
                 title: "Evening"
               }
             }
@@ -1139,7 +1146,63 @@ export const sendResumptionOptions = async (phoneNumber: string, messageId: stri
         }
       }
     })
+    redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
 }
+
+
+export const sendResumptionMessage = async (phoneNumber: string, key: string, data: CourseEnrollment): Promise<void> => {
+  try {
+    let msgId = v4()
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: phoneNumber,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        header: {
+          type: MediaType.TEXT,
+          text: "*Welcome back*"
+        },
+        body: {
+          text: `You scheduled to resume the course *${data.title} today at this time.*\n\nYou can resume your scheduled course by clicking the "Resume Now" button below`
+        },
+        type: "button",
+        action: {
+          buttons: [
+            {
+              type: "reply",
+              reply: {
+                id: RESUME_COURSE + `|${msgId}`,
+                title: "Resume Now"
+              }
+            }
+          ]
+        }
+      }
+    })
+    redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+  }
+}
+
+export const sendScheduleAcknowledgement = async (phoneNumber: string, time: string): Promise<void> => {
+  try {
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: phoneNumber,
+      type: "text",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      text: {
+        body: `You have chosen to resume this course at ${time} tomorrow. \n\nWe will continue this course for you at this time.`
+      }
+    })
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+  }
+}
+
+

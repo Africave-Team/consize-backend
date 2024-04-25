@@ -4,7 +4,8 @@ import { QueryResult } from '../paginate/paginate'
 export enum MediaType {
     AUDIO = 'audio',
     VIDEO = 'video',
-    IMAGE = 'image'
+    IMAGE = 'image',
+    TEXT = "text"
 }
 export interface Media {
     awsFileKey: string
