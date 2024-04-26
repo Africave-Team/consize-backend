@@ -628,6 +628,9 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
             trendsData.active.current = ((currentStats.active - last.value) / last.value) * 100
           }
         }
+        if (isNaN(trendsData.active.current) || !isFinite(trendsData.active.current)) {
+          trendsData.active.current = 0
+        }
       }
       index = trendsData.active.trends.findIndex(e => e.date === date)
       if (index >= 0 && trendsData.active.trends[index]) {
@@ -648,6 +651,9 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
           } else {
             trendsData.enrolled.current = ((currentStats.enrolled - last.value) / last.value) * 100
           }
+        }
+        if (isNaN(trendsData.enrolled.current) || !isFinite(trendsData.enrolled.current)) {
+          trendsData.enrolled.current = 0
         }
       }
       trendsData.enrolled.current = currentStats.enrolled
@@ -671,6 +677,9 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
             trendsData.completed.current = ((currentStats.completed - last.value) / last.value) * 100
           }
         }
+        if (isNaN(trendsData.completed.current) || !isFinite(trendsData.completed.current)) {
+          trendsData.completed.current = 0
+        }
       }
       trendsData.completed.current = currentStats.completed
       index = trendsData.completed.trends.findIndex(e => e.date === date)
@@ -691,6 +700,9 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
           } else {
             trendsData.dropoutRate.current = ((currentStats.dropoutRate - last.value) / last.value) * 100
           }
+        }
+        if (isNaN(trendsData.dropoutRate.current) || !isFinite(trendsData.dropoutRate.current)) {
+          trendsData.dropoutRate.current = 0
         }
       }
       trendsData.dropoutRate.current = currentStats.dropoutRate
@@ -713,6 +725,9 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
             trendsData.averageTestScore.current = ((currentStats.averageTestScore - last.value) / last.value) * 100
           }
         }
+        if (isNaN(trendsData.averageTestScore.current) || !isFinite(trendsData.averageTestScore.current)) {
+          trendsData.averageTestScore.current = 0
+        }
       }
       trendsData.averageTestScore.current = currentStats.averageTestScore
       index = trendsData.averageTestScore.trends.findIndex(e => e.date === date)
@@ -733,6 +748,9 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
           } else {
             trendsData.averageCompletionMinutes.current = ((currentStats.averageCompletionMinutes - last.value) / last.value) * 100
           }
+        }
+        if (isNaN(trendsData.averageCompletionMinutes.current) || !isFinite(trendsData.averageCompletionMinutes.current)) {
+          trendsData.averageCompletionMinutes.current = 0
         }
       }
       trendsData.averageCompletionMinutes.current = currentStats.averageCompletionMinutes
@@ -755,6 +773,9 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
             trendsData.averageCourseProgress.current = ((currentStats.averageCourseProgress - last.value) / last.value) * 100
           }
         }
+        if (isNaN(trendsData.averageCourseProgress.current) || !isFinite(trendsData.averageCourseProgress.current)) {
+          trendsData.averageCourseProgress.current = 0
+        }
       }
       trendsData.averageCourseProgress.current = currentStats.averageCourseProgress
       index = trendsData.averageCourseProgress.trends.findIndex(e => e.date === date)
@@ -775,6 +796,9 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
           } else {
             trendsData.averageMcqRetakeRate.current = ((currentStats.averageMcqRetakeRate - last.value) / last.value) * 100
           }
+        }
+        if (isNaN(trendsData.averageMcqRetakeRate.current) || !isFinite(trendsData.averageMcqRetakeRate.current)) {
+          trendsData.averageMcqRetakeRate.current = 0
         }
       }
       trendsData.averageMcqRetakeRate.current = currentStats.averageMcqRetakeRate
@@ -797,6 +821,9 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
             trendsData.averageLessonDurationMinutes.current = ((currentStats.averageLessonDurationMinutes - last.value) / last.value) * 100
           }
         }
+        if (isNaN(trendsData.averageLessonDurationMinutes.current) || !isFinite(trendsData.averageLessonDurationMinutes.current)) {
+          trendsData.averageLessonDurationMinutes.current = 0
+        }
       }
       trendsData.averageLessonDurationMinutes.current = currentStats.averageLessonDurationMinutes
       index = trendsData.averageLessonDurationMinutes.trends.findIndex(e => e.date === date)
@@ -817,6 +844,9 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
           } else {
             trendsData.averageBlockDurationMinutes.current = ((currentStats.averageBlockDurationMinutes - last.value) / last.value) * 100
           }
+        }
+        if (isNaN(trendsData.averageBlockDurationMinutes.current) || !isFinite(trendsData.averageBlockDurationMinutes.current)) {
+          trendsData.averageBlockDurationMinutes.current = 0
         }
       }
       trendsData.averageBlockDurationMinutes.current = currentStats.averageBlockDurationMinutes

@@ -1,6 +1,6 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
-import { RESUME_TOMORROW } from '../MessageTypes'
+import { GENERATE_COURSE_TRENDS, RESUME_TOMORROW } from '../MessageTypes'
 import { generateCurrentCourseTrends } from '../../courses/service.courses'
 import { CourseEnrollment } from '@/modules/webhooks/interfaces.webhooks'
 import config from '../../../config/config'
@@ -31,6 +31,6 @@ const handleContinueTomorrow: Processor<{ enrollment: CourseEnrollment, phoneNum
 }
 
 module.exports = (agenda: Agenda) => {
-  // agenda.define<{ courseId: string, teamId: string }>(GENERATE_COURSE_TRENDS, handleCourseTrends)
+  agenda.define<{ courseId: string, teamId: string }>(GENERATE_COURSE_TRENDS, handleCourseTrends)
   agenda.define<{ enrollment: CourseEnrollment, phoneNumber: string, messageId: string }>(RESUME_TOMORROW, handleContinueTomorrow)
 }
