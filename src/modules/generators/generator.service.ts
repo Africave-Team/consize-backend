@@ -212,7 +212,7 @@ export const generateCourseCertificate = async (course: CourseInterface, student
   const query = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
   await page.goto(`${config.clientUrl}/templates/certificate?data=${query}`, { waitUntil: "networkidle0" })
   await page.setViewport({
-    width: 1920, height: 1080, deviceScaleFactor: 2
+    width: 1520, height: 980, deviceScaleFactor: 5
   })
   const divSelector = '.template' // Replace with your actual div selector
   await page.waitForSelector(divSelector)

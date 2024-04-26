@@ -181,6 +181,8 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
 
 }
 
+export const findStudentById = (studentId: string) => Students.findById(studentId)
+
 export const saveBlockDuration = async function (teamId: string, studentId: string, duration: number, lesson?: LessonInterface, block?: BlockInterface) {
   const student = await Students.findById(studentId)
   if (lesson && block && student) {

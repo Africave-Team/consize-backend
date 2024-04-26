@@ -70,9 +70,8 @@ export function convertToWhatsAppString (html: string, indent: number = 0): stri
   formattedText = formattedText.replace(/\n/g, '')
   // Replace <br /> tags with new lines
   formattedText = formattedText.replace(/<br\s*\/?>/gi, '\n')
-
+  formattedText = formattedText.replace(/<p\s*\/?>/gi, '')
   formattedText = formattedText.replace(/<p>(.*?)<\/p>/gi, '$1')
-  console.log(formattedText, 'with no p')
   // Replace <b> tags with *
   formattedText = formattedText.replace(/<b>(.*?)<\/b>/gi, '*$1*')
   formattedText = formattedText.replace(/<strong>(.*?)<\/strong>/gi, '*$1*')
@@ -86,13 +85,19 @@ export function convertToWhatsAppString (html: string, indent: number = 0): stri
   formattedText = formattedText.replace(/<\/?ol.*?>/gi, '\n\n')
 
   // Replace <li> tags with "-" for unordered lists and numbers for ordered lists
-  formattedText = formattedText.replace(/<li>(.*?)<\/li>/gi, (_, content) => {
-    const indentation = ' '.repeat(indent * 4)
-    return `\n${indentation}- ${convertToWhatsAppString(content, indent + 1)}`
-  })
+  // formattedText = formattedText.replace(/<li>(.*?)<\/li>/gi, (_, content) => {
+  //   const indentation = ' '.repeat(indent * 4)
+  //   return `{newLine}${indentation}- ${convertToWhatsAppString(content, indent + 1)}`
+  // })
+  formattedText = formattedText.replace(/<p>(.*?)<\/p>/gi, '$1')
+  formattedText = formattedText.replace(/<li>(.*?)<\/li>/gi, `\n${' '.repeat(indent * 4)}----$1`)
+  console.log(formattedText, "after lists")
 
   // Remove any remaining HTML tags
   formattedText = formattedText.replace(/<[^>]+>/g, '')
+
+  // formattedText = formattedText.replace(/{newLine}/g, '\n')
+
 
   return formattedText.trim()
 }

@@ -11,6 +11,7 @@ import permissionRoute from './permissions.route'
 import blocksRoute from './blocks.route'
 import signaturesRoute from './signatures.route'
 import quizzesRoute from './quizzes.route'
+import generatorRoute from './generators'
 import studentsRoute from './students'
 import whatsappRoute from './whatsapp.route'
 import surveyRoute from "./survey.route"
@@ -79,6 +80,10 @@ const defaultIRoute: IRoute[] = [
   {
     path: "/survey",
     route: surveyRoute
+  },
+  {
+    path: "/generator",
+    route: generatorRoute
   }
 ]
 
