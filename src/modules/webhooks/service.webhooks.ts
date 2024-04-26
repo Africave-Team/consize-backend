@@ -82,8 +82,8 @@ export function convertToWhatsAppString (html: string, indent: number = 0): stri
 
   // Handle lists
   // Replace <ul> and <ol> tags with new lines
-  formattedText = formattedText.replace(/<\/?ul.*?>/gi, '\n\n')
-  formattedText = formattedText.replace(/<\/?ol.*?>/gi, '\n\n')
+  formattedText = formattedText.replace(/<\/?ul.*?>/gi, '\n')
+  formattedText = formattedText.replace(/<\/?ol.*?>/gi, '\n')
 
   // Replace <li> tags with "-" for unordered lists and numbers for ordered lists
   formattedText = formattedText.replace(/<li(?:\s+[^>]*?)?>(.*?)<\/li>/gi, (_, content) => {
