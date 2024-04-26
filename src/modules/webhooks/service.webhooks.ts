@@ -71,20 +71,23 @@ export function convertToWhatsAppString (html: string, indent: number = 0): stri
   // Replace <br /> tags with new lines
   formattedText = formattedText.replace(/<br\s*\/?>/gi, '\n')
 
+  formattedText = formattedText.replace(/<p>(.*?)<\/p>/gi, '$1')
+  console.log(formattedText, 'with no p')
   // Replace <b> tags with *
   formattedText = formattedText.replace(/<b>(.*?)<\/b>/gi, '*$1*')
+  formattedText = formattedText.replace(/<strong>(.*?)<\/strong>/gi, '*$1*')
 
   // Replace <i> tags with _
   formattedText = formattedText.replace(/<i>(.*?)<\/i>/gi, '_$1_')
 
   // Handle lists
   // Replace <ul> and <ol> tags with new lines
-  formattedText = formattedText.replace(/<\/?ul.*?>/gi, '\n')
-  formattedText = formattedText.replace(/<\/?ol.*?>/gi, '\n')
+  formattedText = formattedText.replace(/<\/?ul.*?>/gi, '\n\n')
+  formattedText = formattedText.replace(/<\/?ol.*?>/gi, '\n\n')
 
   // Replace <li> tags with "-" for unordered lists and numbers for ordered lists
   formattedText = formattedText.replace(/<li>(.*?)<\/li>/gi, (_, content) => {
-    const indentation = ' '.repeat(indent * 2)
+    const indentation = ' '.repeat(indent * 4)
     return `\n${indentation}- ${convertToWhatsAppString(content, indent + 1)}`
   })
 
@@ -146,7 +149,7 @@ export const generateCourseFlow = async function (courseId: string) {
             if (blockData.quiz) {
               const quiz = await Quizzes.findById(blockData.quiz)
               if (quiz) {
-                content += `\n${convertToWhatsAppString(he.decode(quiz.question))}`
+                content += `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
                 let flo: CourseFlowItem = {
                   type: CourseFlowMessageType.BLOCKWITHQUIZ,
                   content,
@@ -188,7 +191,7 @@ export const generateCourseFlow = async function (courseId: string) {
         for (let quizId of lessonData.quizzes) {
           const quizData = await Quizzes.findById(quizId)
           if (quizData) {
-            let content = `End of lesson quiz ${quizIndex + 1}/${lessonData.quizzes.length}\n\nQuestion:\n${convertToWhatsAppString(he.decode(quizData.question))}\n\nChoices: \nA: ${quizData.choices[0]} \nB: ${quizData.choices[1]} \nC: ${quizData.choices[2]}`
+            let content = `End of lesson quiz ${quizIndex + 1}/${lessonData.quizzes.length}\n\nQuestion:\n${convertToWhatsAppString(he.decode(quizData.question))}\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]} \n\nC: ${quizData.choices[2]}`
             flow.push({
               type: CourseFlowMessageType.QUIZ,
               content,
