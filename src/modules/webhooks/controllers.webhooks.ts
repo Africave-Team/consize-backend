@@ -1,13 +1,15 @@
-// import httpStatus from 'http-status'
+import httpStatus from 'http-status'
+import he from "he"
 import { Request, Response } from 'express'
 import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE } from './interfaces.webhooks'
-import { fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleSurveyFreeform, handleSurveyMulti, sendResumptionOptions, sendScheduleAcknowledgement } from "./service.webhooks"
+import { convertToWhatsAppString, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleSurveyFreeform, handleSurveyMulti, sendResumptionOptions, sendScheduleAcknowledgement } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
+import Blocks from '../courses/model.blocks'
 // import { logger } from '../logger'
 
 export const whatsappWebhookSubscriber = catchAsync(async (req: Request, res: Response) => {
@@ -270,4 +272,15 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
 
   }
   return res.send()
+})
+
+export const convertBlockContentToWhatsapp = catchAsync(async (req: Request, res: Response) => {
+  const { blockId } = req.params
+  if (blockId) {
+    const block = await Blocks.findById(blockId)
+    if (block) {
+      res.status(httpStatus.OK).send({ data: convertToWhatsAppString(he.decode(block.content)) })
+    }
+  }
+
 })
