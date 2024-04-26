@@ -16,7 +16,7 @@ export interface SEND_VERIFICATION_MESSAGE {
 const forgotPasswordprocessor: Processor<SEND_VERIFICATION_MESSAGE> = async (job: Job<SEND_VERIFICATION_MESSAGE>) => {
   const { code, email, name, } = job.attrs.data
   try {
-    if (AppConfig.env !== "test") {
+    if (AppConfig.server !== "test") {
       await emailService.sendResetPasswordEmail(email, code, name.split(' ')[0] || 'Customer')
     }
   } catch (error) {
@@ -27,7 +27,7 @@ const forgotPasswordprocessor: Processor<SEND_VERIFICATION_MESSAGE> = async (job
 const verifyEmailProcessor: Processor<SEND_VERIFICATION_MESSAGE> = async (job: Job<SEND_VERIFICATION_MESSAGE>) => {
   const { code, email, name, } = job.attrs.data
   try {
-    if (AppConfig.env !== "test") {
+    if (AppConfig.server !== "test") {
       await emailService.sendVerificationEmail(email, name.split(' ')[0] || 'User', code)
     }
   } catch (error) {
@@ -38,7 +38,7 @@ const verifyEmailProcessor: Processor<SEND_VERIFICATION_MESSAGE> = async (job: J
 const handleTeamInviteEmail: Processor<SEND_VERIFICATION_MESSAGE> = async (job: Job<SEND_VERIFICATION_MESSAGE>) => {
   const { code, email, name, teamName } = job.attrs.data
   try {
-    if (AppConfig.env !== "test") {
+    if (AppConfig.server !== "test") {
       await emailService.sendTeamInvitationEmail(email, name.split(' ')[0] || 'User', teamName || 'Consize', code)
     }
   } catch (error) {
@@ -48,7 +48,7 @@ const handleTeamInviteEmail: Processor<SEND_VERIFICATION_MESSAGE> = async (job: 
 
 const handleSendWhatsappMessage: Processor<Message> = async (job: Job<Message>) => {
   try {
-    if (AppConfig.env !== "test") {
+    if (AppConfig.server !== "test") {
       await sendMessage(job.attrs.data)
     }
   } catch (error) {
@@ -58,7 +58,7 @@ const handleSendWhatsappMessage: Processor<Message> = async (job: Job<Message>) 
 
 const handleSendLeaderboard: Processor<CourseEnrollment> = async (job: Job<CourseEnrollment>) => {
   try {
-    if (AppConfig.env !== "test") {
+    if (AppConfig.server !== "test") {
       const data = job.attrs.data
       const { id, student } = data
       sendCourseLeaderboard(id, student, data)
@@ -70,7 +70,7 @@ const handleSendLeaderboard: Processor<CourseEnrollment> = async (job: Job<Cours
 
 const handleSendCertificate: Processor<CourseEnrollment> = async (job: Job<CourseEnrollment>) => {
   try {
-    if (AppConfig.env !== "test") {
+    if (AppConfig.server !== "test") {
       const data = job.attrs.data
       const { id, student } = data
       sendCourseCertificate(id, student)

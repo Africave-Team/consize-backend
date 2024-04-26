@@ -8,7 +8,7 @@ import { sendResumptionMessage } from '../../webhooks/service.webhooks'
 
 export const handleCourseTrends: Processor<{ courseId: string, teamId: string }> = async (job: Job<{ courseId: string, teamId: string }>) => {
   try {
-    if (AppConfig.env !== "test") {
+    if (AppConfig.server !== "test") {
       const data = job.attrs.data
       const { courseId, teamId } = data
       generateCurrentCourseTrends(courseId, teamId)
