@@ -14,6 +14,7 @@ import quizzesRoute from './quizzes.route'
 import generatorRoute from './generators'
 import studentsRoute from './students'
 import whatsappRoute from './whatsapp.route'
+import slackRoute from './slack.route'
 import surveyRoute from "./survey.route"
 import config from '../../config/config'
 
@@ -84,6 +85,10 @@ const defaultIRoute: IRoute[] = [
   {
     path: "/generator",
     route: generatorRoute
+  },
+  {
+    path: "/slack",
+    route: slackRoute
   }
 ]
 
