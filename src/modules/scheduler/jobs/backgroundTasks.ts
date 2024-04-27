@@ -2,14 +2,14 @@ import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
 import { DAILY_REMINDER, DAILY_ROUTINE, GENERATE_COURSE_TRENDS, RESUME_TOMORROW } from '../MessageTypes'
 import { generateCurrentCourseTrends } from '../../courses/service.courses'
-import { CourseEnrollment } from '@/modules/webhooks/interfaces.webhooks'
+import { CourseEnrollment } from '../../webhooks/interfaces.webhooks'
 import config from '../../../config/config'
 import { sendResumptionMessage } from '../../webhooks/service.webhooks'
 import Reminders from '../reminders.model'
 // import { agenda } from '..'
-import { Course } from '@/modules/courses'
-import { CourseSettings } from '@/modules/courses/interfaces.settings'
-import Settings from '@/modules/courses/model.settings'
+import { Course } from '../../courses'
+import { CourseSettings } from '../../courses/interfaces.settings'
+import Settings from '../../courses/model.settings'
 
 export const handleCourseTrends: Processor<{ courseId: string, teamId: string }> = async (job: Job<{ courseId: string, teamId: string }>) => {
   try {
