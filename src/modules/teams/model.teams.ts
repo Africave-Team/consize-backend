@@ -12,6 +12,9 @@ export const TeamSchema = new Schema<TeamsInterface>(
         logo: {
             type: Schema.Types.String
         },
+        slackToken: {
+            type: Schema.Types.String
+        },
         owner: {
             type: String
         }

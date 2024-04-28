@@ -1,4 +1,4 @@
-import { CourseInterface, CourseInterfaceModel, CourseStatus, Media, MediaType, Sources } from './interfaces.courses'
+import { CourseInterface, CourseInterfaceModel, CourseStatus, Distribution, Media, MediaType, Sources } from './interfaces.courses'
 import mongoose, { Schema } from 'mongoose'
 import { agenda } from '../scheduler'
 import { v4 } from "uuid"
@@ -35,6 +35,11 @@ const CourseSchema = new Schema<CourseInterface, CourseInterfaceModel>(
         },
         description: {
             type: String
+        },
+        distribution: {
+            type: String,
+            enum: Object.values(Distribution),
+            default: Distribution.WHATSAPP
         },
         status: {
             type: String,

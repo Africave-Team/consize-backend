@@ -4,6 +4,8 @@ import { SlackWebhookHandler, SlackWebhookChallengeHandler } from "../../modules
 
 const router: Router = express.Router()
 
-router.route("/webhook").get(SlackWebhookChallengeHandler).post(SlackWebhookHandler)
+router.route("/webhook").post(SlackWebhookChallengeHandler)
+
+router.route("/interactivity").post(SlackWebhookHandler)
 
 export default router

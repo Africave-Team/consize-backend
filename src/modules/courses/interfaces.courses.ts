@@ -7,6 +7,10 @@ export enum MediaType {
     IMAGE = 'image',
     TEXT = "text"
 }
+export enum Distribution {
+    SLACK = 'slack',
+    WHATSAPP = 'whatsapp',
+}
 export interface Media {
     awsFileKey: string
     mediaType: MediaType
@@ -38,6 +42,7 @@ interface Course {
     bundle: boolean
     private: boolean
     source: Sources
+    distribution?: Distribution
     price?: number
     currentCohort?: string
     audiences?: string
@@ -51,6 +56,7 @@ export interface CreateCoursePayload {
     headerMedia: Media
     title: string
     description: string
+    distribution?: Distribution
     price?: number
     audiences?: string
     currentCohort?: string
