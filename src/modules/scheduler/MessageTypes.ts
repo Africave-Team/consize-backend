@@ -28,3 +28,15 @@ export const RESUME_TOMORROW = "RESUME_TOMORROW"
 // Daily routines
 export const DAILY_ROUTINE = "DAILY_ROUTINE"
 export const DAILY_REMINDER = "DAILY_REMINDER"
+
+
+
+// schedule cohorts
+export const COHORT_SCHEDULE = "COHORT_SCHEDULE"
+
+
+
+
+// slack messages
+
+export const SEND_SLACK_MESSAGE = "SEND_SLACK_MESSAGE"

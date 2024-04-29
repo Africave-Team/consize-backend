@@ -17,6 +17,7 @@ import { BlockInterface } from '../courses/interfaces.blocks'
 import { COURSE_STATS } from '../rtdb/nodes'
 import Teams from '../teams/model.teams'
 import { QuizInterface } from '../courses/interfaces.quizzes'
+import { sendWelcomeSlack, startCourseSlack } from '../slack/slack.services'
 
 export const bulkAddStudents = async (students: Student[]): Promise<string[]> => {
   try {
@@ -382,4 +383,39 @@ export const saveQuizDuration = async function (teamId: string, studentId: strin
     }
     dbRef.set(payload)
   }
+}
+
+export const testCourseSlack = async (slackId: string, courseId: string): Promise<void> => {
+
+  // enroll course
+  const course = await Course.findById(courseId)
+  if (!course) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No course found for this id.")
+  }
+  const owner = await Teams.findById(course.owner).select('name')
+  if (!owner) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No team found.")
+  }
+  if (owner.slackToken) {
+    await generateCourseFlow(courseId)
+    await startCourseSlack(slackId, courseId, slackId)
+    await sendWelcomeSlack(courseId, slackId, owner.slackToken)
+  }
+
+}
+
+export const testCourseWhatsapp = async (phoneNumber: string, courseId: string): Promise<void> => {
+  // enroll course
+  const course = await Course.findById(courseId)
+  if (!course) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No course found for this id.")
+  }
+  const owner = await Teams.findById(course.owner).select('name')
+  if (!owner) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No team found.")
+  }
+  await generateCourseFlow(courseId)
+  await startCourse(phoneNumber, courseId, phoneNumber)
+  await sendWelcome(courseId, phoneNumber)
+
 }

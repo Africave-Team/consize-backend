@@ -1,10 +1,12 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
-import { SEND_VERIFICATION_EMAIL, SEND_FORGOT_PASSWORD_EMAIL, SEND_TEAM_INVITATION, SEND_WHATSAPP_MESSAGE, SEND_LEADERBOARD, SEND_CERTIFICATE } from '../MessageTypes'
+import { SEND_VERIFICATION_EMAIL, SEND_FORGOT_PASSWORD_EMAIL, SEND_TEAM_INVITATION, SEND_WHATSAPP_MESSAGE, SEND_LEADERBOARD, SEND_CERTIFICATE, SEND_SLACK_MESSAGE } from '../MessageTypes'
 import { emailService } from '../../../modules/email'
 import { sendMessage } from '../../../modules/webhooks/service.webhooks'
 import { CourseEnrollment, Message } from '../../../modules/webhooks/interfaces.webhooks'
 import { sendCourseCertificate, sendCourseLeaderboard } from '../../../modules/generators/generator.service'
+import { SendSlackMessagePayload } from '../../slack/interfaces.slack'
+import { sendSlackMessage } from '../../slack/slack.services'
 
 export interface SEND_VERIFICATION_MESSAGE {
   email: string
@@ -56,6 +58,17 @@ const handleSendWhatsappMessage: Processor<Message> = async (job: Job<Message>) 
   }
 }
 
+const handleSendSlackMessage: Processor<SendSlackMessagePayload> = async (job: Job<SendSlackMessagePayload>) => {
+  try {
+    if (AppConfig.server !== "test") {
+      const { message, channel, accessToken } = job.attrs.data
+      await sendSlackMessage(accessToken, channel, message)
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
 const handleSendLeaderboard: Processor<CourseEnrollment> = async (job: Job<CourseEnrollment>) => {
   try {
     if (AppConfig.server !== "test") {
@@ -89,4 +102,6 @@ module.exports = (agenda: Agenda) => {
   agenda.define<Message>(SEND_WHATSAPP_MESSAGE, handleSendWhatsappMessage)
   agenda.define<CourseEnrollment>(SEND_LEADERBOARD, handleSendLeaderboard)
   agenda.define<CourseEnrollment>(SEND_CERTIFICATE, handleSendCertificate)
+
+  agenda.define<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, handleSendSlackMessage)
 }
