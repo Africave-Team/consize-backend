@@ -5,14 +5,19 @@ import { redisClient } from '../redis'
 import { ApiError } from '../errors'
 import httpStatus from 'http-status'
 import he from "he"
+import db from "../rtdb"
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackChannel, SlackMessage, SlackTextMessageTypes, SlackUser } from './interfaces.slack'
-import { CourseFlowItem, convertToWhatsAppString } from '../webhooks/service.webhooks'
+import { CourseFlowItem, convertToWhatsAppString, generateCourseFlow } from '../webhooks/service.webhooks'
 import { agenda } from '../scheduler'
-import { SEND_SLACK_MESSAGE } from '../scheduler/MessageTypes'
+import { GENERATE_COURSE_TRENDS, SEND_SLACK_MESSAGE } from '../scheduler/MessageTypes'
 import { CourseInterface } from '../courses/interfaces.courses'
 import Courses from '../courses/model.courses'
 import { v4 } from 'uuid'
-import { CourseEnrollment } from '../webhooks/interfaces.webhooks'
+import { CONTINUE, CourseEnrollment } from '../webhooks/interfaces.webhooks'
+import Students from '../students/model.students'
+import { Course } from '../courses'
+import Teams from '../teams/model.teams'
+import { COURSE_STATS } from '../rtdb/nodes'
 
 export const handleSlackWebhook = async function () { }
 
@@ -155,8 +160,25 @@ export const sendSlackMessage = async function (slackToken: string, channelId: s
   }
 }
 
+export const sendSlackResponseMessage = async function (url: string, content: SlackMessage) {
+  const result: AxiosResponse<{ ok: boolean, user: SlackUser }> = await axios.post(url, {
+    ...content,
+    "replace_original": false,
+    "response_type": "in_channel"
+  }, {
+    headers: {
+      "Content-Type": "application/json",
+    }
+  })
 
-export const sendWelcomeSlack = async (currentIndex: string, slackId: string, token: string): Promise<void> => {
+  if (!result.data.ok) {
+    console.log(result.data)
+    throw new Error("Could not send this message")
+  }
+}
+
+
+export const sendWelcomeSlack = async (currentIndex: string, slackId: string, token: string, messageId: string): Promise<void> => {
   try {
     if (redisClient.isReady) {
       const courseKey = `${config.redisBaseKey}courses:${currentIndex}`
@@ -165,6 +187,7 @@ export const sendWelcomeSlack = async (currentIndex: string, slackId: string, to
         const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
         const item = courseFlowData[0]
         if (item) {
+
           const user = await fetchSlackUserProfile(token, slackId)
           const conversation = await createConversation(token, slackId)
           if (conversation && user) {
@@ -178,11 +201,8 @@ export const sendWelcomeSlack = async (currentIndex: string, slackId: string, to
                     fields: [
                       {
                         type: SlackTextMessageTypes.MARKDOWN,
-                        text: `Welcome *${user.profile.first_name}*`
-                      },
-                      {
-                        type: SlackTextMessageTypes.MARKDOWN,
-                        text: `You have been invited by your organization admin to participate in courses distributed through Consize. \n\nClick the button below to accept this invitation.`
+                        text: `Welcome *${user.profile.first_name}*\n\n${item.content}`
+
                       }
                     ]
                   },
@@ -195,9 +215,9 @@ export const sendWelcomeSlack = async (currentIndex: string, slackId: string, to
                         text: {
                           type: SlackTextMessageTypes.PLAINTEXT,
                           "emoji": true,
-                          text: "Continue",
+                          text: "Start",
                         },
-                        value: "continue"
+                        value: CONTINUE + `|${messageId}`
                       }
                     ]
                   }
@@ -271,4 +291,49 @@ export const startCourseSlack = async (channel: string, courseId: string, studen
     }
   }
   return initialMessageId
+}
+
+
+export const enrollStudentToCourseSlack = async (studentId: string, courseId: string): Promise<void> => {
+  const student = await Students.findOne({ _id: studentId })
+  if (!student) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No student account found.")
+  }
+  if (!student.verified) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Student account has not been verified.")
+  }
+
+  // enroll course
+  const course = await Course.findById(courseId)
+  if (!course) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No course found for this id.")
+  }
+  const owner = await Teams.findById(course.owner)
+  if (!owner) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No team found.")
+  }
+  await generateCourseFlow(courseId)
+  const id = await startCourseSlack(student.channelId, courseId, student.id)
+  await sendWelcomeSlack(courseId, student.slackId, owner.slackToken, id)
+
+  let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
+  await dbRef.child("students").child(studentId).set({
+    name: student.firstName + ' ' + student.otherNames,
+    phoneNumber: student.phoneNumber,
+    progress: 0,
+    completed: false,
+    droppedOut: false,
+    scores: [],
+    lessons: {}
+  })
+
+  const jobs = await agenda.jobs({ 'data.courseId': courseId })
+  if (jobs.length === 0) {
+    // Queue the trends generator
+    agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
+      courseId,
+      teamId: course.owner
+    })
+  }
+
 }

@@ -3,7 +3,7 @@ import { courseService } from '../courses'
 import { ApiError } from '../errors'
 import { CohortsInterface, CohortsStatus, CreateCohortInterface } from "./interface.cohorts"
 import Cohorts from "./model.cohorts"
-import { Distribution } from '../courses/interfaces.courses'
+import { CourseStatus, Distribution } from '../courses/interfaces.courses'
 import { slackServices } from '../slack'
 import { teamService } from '../teams'
 import { Student, studentService } from '../students'
@@ -12,6 +12,7 @@ import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, Sl
 import { agenda } from '../scheduler'
 import { COHORT_SCHEDULE, SEND_SLACK_MESSAGE } from '../scheduler/MessageTypes'
 import moment from 'moment'
+import { ACCEPT_INVITATION, REJECT_INVITATION } from '../webhooks/interfaces.webhooks'
 
 export const createCohort = async ({ courseId, distribution, name, members, channels, students, schedule, date, time }: CreateCohortInterface): Promise<CohortsInterface> => {
     const courseInformation = await courseService.fetchSingleCourse({ courseId })
@@ -101,7 +102,17 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
                                                     "emoji": true,
                                                     text: "Accept invitation",
                                                 },
-                                                value: "accept_invitation"
+                                                value: ACCEPT_INVITATION
+                                            },
+                                            {
+                                                type: SlackActionType.BUTTON,
+                                                style: MessageActionButtonStyle.DANGER,
+                                                text: {
+                                                    type: SlackTextMessageTypes.PLAINTEXT,
+                                                    "emoji": true,
+                                                    text: "Reject invitation",
+                                                },
+                                                value: REJECT_INVITATION
                                             }
                                         ]
                                     }
@@ -120,7 +131,6 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
             cohortMembers = studentsData.map(e => e && e.id)
         }
     }
-    console.log(cohortMembers, "members")
     const cohort = new Cohorts({ name, date, time, members: cohortMembers, schedule, distribution, courseId, status: CohortsStatus.PENDING })
     await cohort.save()
     if (schedule) {
@@ -131,6 +141,10 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
         // Calculate the difference in minutes between now and the combined date
         const differenceInMinutes = combinedDateTime.diff(moment(), 'minutes')
         agenda.schedule<{ cohortId: string }>(`in ${differenceInMinutes} minutes`, COHORT_SCHEDULE, { cohortId: cohort.id })
+    } else {
+        if (courseInformation.status === CourseStatus.PUBLISHED) {
+            agenda.now<{ cohortId: string }>(COHORT_SCHEDULE, { cohortId: cohort.id })
+        }
     }
     return cohort
 }
@@ -138,4 +152,23 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
 export const fetchCohorts = async (courseId: string): Promise<CohortsInterface[]> => {
     const cohorts = await Cohorts.find({ courseId: courseId })
     return cohorts
+}
+
+
+export const initiateCourseForCohort = async function (cohortId: string) {
+    const cohort = await Cohorts.findById(cohortId)
+    if (cohort) {
+        if (cohort.distribution === Distribution.SLACK) {
+            await Promise.all(cohort.members.map(async (student) => {
+                await slackServices.enrollStudentToCourseSlack(student, cohort.courseId)
+            }))
+        } else {
+            await Promise.all(cohort.members.map(async (student) => {
+                await studentService.enrollStudentToCourse(student, cohort.courseId)
+            }))
+        }
+
+        cohort.status = CohortsStatus.DISABLED
+        await cohort.save()
+    }
 }

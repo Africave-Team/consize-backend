@@ -40,3 +40,4 @@ export const COHORT_SCHEDULE = "COHORT_SCHEDULE"
 // slack messages
 
 export const SEND_SLACK_MESSAGE = "SEND_SLACK_MESSAGE"
+export const SEND_SLACK_RESPONSE = "SEND_SLACK_RESPONSE"

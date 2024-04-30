@@ -77,3 +77,31 @@ export interface SendSlackMessagePayload {
   message: SlackMessage
   accessToken: string
 }
+
+export interface SendSlackResponsePayload {
+  url: string
+  message: SlackMessage
+}
+
+
+export interface SlackResponseAction {
+  action_id: string
+  value: string
+}
+
+export interface SlackResponseChannel {
+  id: string
+  name: string
+}
+export interface SlackResponseUser {
+  id: string
+  name: string
+  username: string
+}
+export interface SlackResponse {
+  actions: SlackResponseAction[]
+  response_url: string
+  user: SlackResponseUser
+  channel: SlackResponseChannel
+  type: string
+}

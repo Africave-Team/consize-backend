@@ -3,6 +3,7 @@ import { QueryResult } from '../paginate/paginate'
 
 export interface Student {
   verified: boolean
+  rejected: boolean
   firstName: string
   otherNames: string
   phoneNumber: string

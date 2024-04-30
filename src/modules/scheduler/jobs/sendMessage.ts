@@ -1,12 +1,12 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
-import { SEND_VERIFICATION_EMAIL, SEND_FORGOT_PASSWORD_EMAIL, SEND_TEAM_INVITATION, SEND_WHATSAPP_MESSAGE, SEND_LEADERBOARD, SEND_CERTIFICATE, SEND_SLACK_MESSAGE } from '../MessageTypes'
+import { SEND_VERIFICATION_EMAIL, SEND_FORGOT_PASSWORD_EMAIL, SEND_TEAM_INVITATION, SEND_WHATSAPP_MESSAGE, SEND_LEADERBOARD, SEND_CERTIFICATE, SEND_SLACK_MESSAGE, SEND_SLACK_RESPONSE } from '../MessageTypes'
 import { emailService } from '../../../modules/email'
 import { sendMessage } from '../../../modules/webhooks/service.webhooks'
 import { CourseEnrollment, Message } from '../../../modules/webhooks/interfaces.webhooks'
 import { sendCourseCertificate, sendCourseLeaderboard } from '../../../modules/generators/generator.service'
-import { SendSlackMessagePayload } from '../../slack/interfaces.slack'
-import { sendSlackMessage } from '../../slack/slack.services'
+import { SendSlackMessagePayload, SendSlackResponsePayload } from '../../slack/interfaces.slack'
+import { sendSlackMessage, sendSlackResponseMessage } from '../../slack/slack.services'
 
 export interface SEND_VERIFICATION_MESSAGE {
   email: string
@@ -69,6 +69,17 @@ const handleSendSlackMessage: Processor<SendSlackMessagePayload> = async (job: J
   }
 }
 
+const handleSendSlackResponseMessage: Processor<SendSlackResponsePayload> = async (job: Job<SendSlackResponsePayload>) => {
+  try {
+    if (AppConfig.server !== "test") {
+      const { message, url } = job.attrs.data
+      await sendSlackResponseMessage(url, message)
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
 const handleSendLeaderboard: Processor<CourseEnrollment> = async (job: Job<CourseEnrollment>) => {
   try {
     if (AppConfig.server !== "test") {
@@ -104,4 +115,6 @@ module.exports = (agenda: Agenda) => {
   agenda.define<CourseEnrollment>(SEND_CERTIFICATE, handleSendCertificate)
 
   agenda.define<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, handleSendSlackMessage)
+
+  agenda.define<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, handleSendSlackResponseMessage)
 }

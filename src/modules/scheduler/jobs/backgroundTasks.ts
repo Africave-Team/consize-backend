@@ -10,6 +10,7 @@ import Reminders from '../reminders.model'
 import { Course } from '../../courses'
 import { CourseSettings } from '../../courses/interfaces.settings'
 import Settings from '../../courses/model.settings'
+import { initiateCourseForCohort } from '../../cohorts/service.cohorts'
 
 export const handleCourseTrends: Processor<{ courseId: string, teamId: string }> = async (job: Job<{ courseId: string, teamId: string }>) => {
   try {
@@ -82,7 +83,7 @@ const handleCohortSchedule: Processor<{ cohortId: string }> = async (job: Job<{ 
   try {
     if (AppConfig.server !== "test") {
       const data = job.attrs.data
-      console.log(data)
+      initiateCourseForCohort(data.cohortId)
     }
   } catch (error) {
     console.log(error, "error send message")

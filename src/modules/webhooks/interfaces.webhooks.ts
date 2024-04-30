@@ -123,3 +123,8 @@ export const AFTERNOON = TOMORROW + '_3pm'
 export const EVENING = TOMORROW + '_8pm'
 
 export const RESUME_COURSE = "RESUME_COURSE"
+
+
+// slack
+export const ACCEPT_INVITATION = "accept_invitation"
+export const REJECT_INVITATION = "reject_invitation"

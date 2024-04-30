@@ -398,8 +398,8 @@ export const testCourseSlack = async (slackId: string, courseId: string): Promis
   }
   if (owner.slackToken) {
     await generateCourseFlow(courseId)
-    await startCourseSlack(slackId, courseId, slackId)
-    await sendWelcomeSlack(courseId, slackId, owner.slackToken)
+    const id = await startCourseSlack(slackId, courseId, slackId)
+    await sendWelcomeSlack(courseId, slackId, owner.slackToken, id)
   }
 
 }
