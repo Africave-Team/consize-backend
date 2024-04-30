@@ -3,6 +3,7 @@ import { v4 } from "uuid"
 import { toJSON } from '../toJSON'
 import { paginate } from '../paginate'
 import { CohortsInterface, CohortsInterfaceModel, CohortsStatus } from './interface.cohorts'
+import { Distribution } from '../courses/interfaces.courses'
 
 const CohortSchema = new Schema<CohortsInterface, CohortsInterfaceModel>(
     {
@@ -13,15 +14,28 @@ const CohortSchema = new Schema<CohortsInterface, CohortsInterfaceModel>(
         courseId: {
             type: String,
         },
+        schedule: {
+            type: Boolean,
+            default: false
+        },
         status: {
             type: String,
             enum: Object.values(CohortsStatus),
             default: CohortsStatus.ACTIVE
         },
-        startDate: {
+        distribution: {
             type: String,
+            enum: Object.values(Distribution),
+            default: Distribution.SLACK
         },
-        endDate: {
+        members: {
+            type: [String],
+            ref: "Students"
+        },
+        date: {
+            type: Date,
+        },
+        time: {
             type: String,
         },
 

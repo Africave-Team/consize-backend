@@ -19,6 +19,12 @@ const StudentSchema = new Schema<StudentInterface>({
   phoneNumber: {
     type: String
   },
+  channelId: {
+    type: String
+  },
+  slackId: {
+    type: String
+  },
   email: {
     type: String
   },
@@ -30,7 +36,7 @@ const StudentSchema = new Schema<StudentInterface>({
   collection: "students"
 })
 
-StudentSchema.index({ firstName: 1, otherNames: 1, phoneNumber: 1, email: 1 })
+StudentSchema.index({ firstName: 1, otherNames: 1, phoneNumber: 1, slackId: 1, email: 1 })
 StudentSchema.plugin(toJSON)
 StudentSchema.plugin(paginate)
 

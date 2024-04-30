@@ -30,6 +30,9 @@ const envVarsSchema = Joi.object()
     SMTP_PASSWORD: Joi.string().description('password for email server'),
     EMAIL_FROM: Joi.string().description('the from field in the emails sent by the app'),
     CLIENT_URL: Joi.string().required().description('Client url'),
+    SLACK_CLIENT_ID: Joi.string().required().description("Provide slack credentials"),
+    SLACK_APP_SECRET: Joi.string().required().description("Provide slack credentials"),
+    SLACK_REDIRECT_URI: Joi.string().required().uri().description("redirect uri for slack. must be a uri")
   })
   .unknown()
 
@@ -89,6 +92,11 @@ const config = {
   },
   redisBaseKey: envVars.REDIS_BASE_KEY,
   clientUrl: envVars.CLIENT_URL,
+  slack: {
+    id: envVars.SLACK_CLIENT_ID,
+    secret: envVars.SLACK_APP_SECRET,
+    redirectUrl: envVars.SLACK_REDIRECT_URI
+  }
 }
 
 export default config

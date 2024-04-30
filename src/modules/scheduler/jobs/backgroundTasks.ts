@@ -1,6 +1,6 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
-import { DAILY_REMINDER, DAILY_ROUTINE, GENERATE_COURSE_TRENDS, RESUME_TOMORROW } from '../MessageTypes'
+import { COHORT_SCHEDULE, DAILY_REMINDER, DAILY_ROUTINE, GENERATE_COURSE_TRENDS, RESUME_TOMORROW } from '../MessageTypes'
 import { generateCurrentCourseTrends } from '../../courses/service.courses'
 import { CourseEnrollment } from '../../webhooks/interfaces.webhooks'
 import config from '../../../config/config'
@@ -78,9 +78,21 @@ const handleDailyReminders: Processor<{ courseId: string, studentId: string }> =
   }
 }
 
+const handleCohortSchedule: Processor<{ cohortId: string }> = async (job: Job<{ cohortId: string }>) => {
+  try {
+    if (AppConfig.server !== "test") {
+      const data = job.attrs.data
+      console.log(data)
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
 module.exports = (agenda: Agenda) => {
   agenda.define<{ courseId: string, teamId: string }>(GENERATE_COURSE_TRENDS, handleCourseTrends)
   agenda.define<{ courseId: string, studentId: string }>(DAILY_ROUTINE, handleStartDailyRoutine)
   agenda.define<{ courseId: string, studentId: string }>(DAILY_REMINDER, handleDailyReminders)
+  agenda.define<{ cohortId: string }>(COHORT_SCHEDULE, handleCohortSchedule)
   agenda.define<{ enrollment: CourseEnrollment, phoneNumber: string, messageId: string }>(RESUME_TOMORROW, handleContinueTomorrow)
 }
