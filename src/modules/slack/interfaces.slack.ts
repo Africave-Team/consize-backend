@@ -129,4 +129,9 @@ export interface SlackResponse {
   channel: SlackResponseChannel
   type: string
   trigger_id: string
+  view: {
+    state: {
+      values: object
+    }
+  }
 }
