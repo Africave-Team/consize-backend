@@ -65,6 +65,7 @@ export interface SlackMessageBlock {
   elements?: SlackActionBlock[]
   element?: SlackActionBlock
   image_url?: string
+  block_id?: string
   alt_text?: string
   label?: SlackTextMessage
 }
@@ -76,6 +77,7 @@ export interface SlackActionBlock {
   value?: string
   multiline?: boolean
   placeholder?: SlackTextMessage
+  action_id?: string
   options?: { text: SlackTextMessage, value: string }[]
 }
 

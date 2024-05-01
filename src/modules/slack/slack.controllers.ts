@@ -114,6 +114,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                       },
                       {
                         "type": MessageBlockType.INPUT,
+                        "block_id": "opinion_input",
                         "label": {
                           "type": SlackTextMessageTypes.PLAINTEXT,
                           "text": "What do you want for our team weekly lunch?",
@@ -121,6 +122,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                         },
                         "element": {
                           "type": SlackActionType.SELECT,
+                          "action_id": "opinion_input_action",
                           "placeholder": {
                             "type": SlackTextMessageTypes.PLAINTEXT,
                             "text": "Select your favorites",
@@ -156,6 +158,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                       },
                       {
                         "type": MessageBlockType.INPUT,
+                        "block_id": "opinion_input_text",
                         "label": {
                           "type": SlackTextMessageTypes.PLAINTEXT,
                           "text": "What can we do to improve your experience working here?",
@@ -163,7 +166,8 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                         },
                         "element": {
                           "type": SlackActionType.TEXTINPUT,
-                          "multiline": true
+                          "multiline": true,
+                          "action_id": "opinion_input_text_action",
                         }
                       }
                     ]
