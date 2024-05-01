@@ -137,10 +137,8 @@ const handleSendCertificateSlack: Processor<CourseEnrollment> = async (job: Job<
   try {
     if (AppConfig.server !== "test") {
       const data = job.attrs.data
-      const { id, student, slackResponseUrl } = data
-      if (slackResponseUrl) {
-        sendCourseCertificateSlack(id, student)
-      }
+      const { id, student } = data
+      sendCourseCertificateSlack(id, student)
     }
   } catch (error) {
     console.log(error, "error send message")
