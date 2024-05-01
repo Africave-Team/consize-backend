@@ -132,6 +132,7 @@ export interface SlackResponse {
   type: string
   trigger_id: string
   view: {
+    callback_id: string
     state: {
       values: object
     }

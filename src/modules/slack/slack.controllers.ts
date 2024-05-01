@@ -247,12 +247,33 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
         }
       }
     }
+    if (response.type === "view_submission") {
+      const metadata = response.view.callback_id
+      if (response.view && response.view.state) {
+        const values = response.view.state.values
+        const result = []
+
+        // Iterate over each key-value pair using Object.entries()
+        for (const [key, value] of Object.entries(values)) {
+          // Create a new object with the key as the id field
+          const child = Object.values(value)
+          // @ts-ignore
+          if (child[0] && child[0].value) {
+            // @ts-ignore
+            const newObj = { id: key, response: child[0].value }
+            // Push the new object to the result array
+            result.push(newObj)
+
+          }
+        }
+
+        console.log(result, metadata)
+      }
+    }
   })
   const { payload: ld } = req.body
   const response: SlackResponse = JSON.parse(ld)
-  if (response.view && response.view.state) {
-    console.log(JSON.stringify(response.view.state))
-  }
+
   agenda.now<SlackResponse>("process-slack-webhook", response)
   res.status(httpStatus.OK).send()
 })

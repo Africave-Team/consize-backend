@@ -997,6 +997,9 @@ export const handleSendSurveySlack = async (courseKey: string, data: CourseEnrol
     }
     const choices = [SURVEY_A, SURVEY_B, SURVEY_C]
     for (let item of surveyItems) {
+      if (payload.view.callback_id) {
+        payload.view.callback_id = `survey=${item.surveyId}|course=${data.id}|student=${data.student}|team=${data.team}`
+      }
       if (item.surveyQuestion?.responseType === ResponseType.MULTI_CHOICE && payload.view && payload.view.blocks) {
         payload.view.blocks.push({
           "type": MessageBlockType.INPUT,
