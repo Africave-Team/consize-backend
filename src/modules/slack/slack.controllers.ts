@@ -248,7 +248,18 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
       }
     }
     if (response.type === "view_submission") {
-      const metadata = response.view.callback_id
+      let metadata: any[] = []
+      if (response.view.callback_id) {
+        metadata = response.view.callback_id.split('|').map(e => {
+          const [key, value] = e.split('=')
+          if (key && value) {
+            let val: any = {}
+            val[key] = value
+            return val
+          }
+          return {}
+        })
+      }
       if (response.view && response.view.state) {
         const values = response.view.state.values
         const result = []
