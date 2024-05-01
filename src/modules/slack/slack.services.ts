@@ -957,6 +957,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
 
 export const handleSendSurveySlack = async (courseKey: string, data: CourseEnrollment, trigger_id: string): Promise<void> => {
   const flow = await redisClient.get(courseKey)
+
   if (flow && data.slackToken) {
     const flowData: CourseFlowItem[] = JSON.parse(flow)
     const surveyItems = flowData.filter(e => e.surveyId)
@@ -1049,7 +1050,6 @@ export const handleSendSurveySlack = async (courseKey: string, data: CourseEnrol
         })
       }
     }
-
     agenda.now<SendSlackModalPayload>(SEND_SLACK_MODAL, payload)
   }
 }

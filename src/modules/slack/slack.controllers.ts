@@ -16,6 +16,7 @@ import { Job } from 'agenda'
 import { CourseFlowMessageType } from '../webhooks/service.webhooks'
 import Students from '../students/model.students'
 import Teams from '../teams/model.teams'
+import { redisClient } from '../redis'
 
 
 export const SlackWebhookChallengeHandler = catchAsync(async (req: Request, res: Response) => {
@@ -82,6 +83,10 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
             case CourseFlowMessageType.START_SURVEY:
               if (enrollment && enrollment.slackToken) {
                 handleSendSurveySlack(`${config.redisBaseKey}courses:${enrollment.id}`, enrollment, trigger_id)
+                const key = `${config.redisBaseKey}enrollments:slack:${channel.id}:${enrollment?.id}`
+                let copy = { ...enrollment }
+                copy.lastMessageId = v4()
+                await redisClient.set(key, JSON.stringify({ ...copy }))
               }
               break
             case COURSES:
