@@ -1,12 +1,13 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
-import { SEND_VERIFICATION_EMAIL, SEND_FORGOT_PASSWORD_EMAIL, SEND_TEAM_INVITATION, SEND_WHATSAPP_MESSAGE, SEND_LEADERBOARD, SEND_CERTIFICATE, SEND_SLACK_MESSAGE, SEND_SLACK_RESPONSE } from '../MessageTypes'
+import { SEND_VERIFICATION_EMAIL, SEND_FORGOT_PASSWORD_EMAIL, SEND_TEAM_INVITATION, SEND_WHATSAPP_MESSAGE, SEND_LEADERBOARD, SEND_CERTIFICATE, SEND_SLACK_MESSAGE, SEND_SLACK_RESPONSE, SEND_LEADERBOARD_SLACK, SEND_CERTIFICATE_SLACK } from '../MessageTypes'
 import { emailService } from '../../../modules/email'
 import { sendMessage } from '../../../modules/webhooks/service.webhooks'
 import { CourseEnrollment, Message } from '../../../modules/webhooks/interfaces.webhooks'
-import { sendCourseCertificate, sendCourseLeaderboard } from '../../../modules/generators/generator.service'
+import { sendCourseCertificate, sendCourseCertificateSlack, sendCourseLeaderboard, sendCourseLeaderboardSlack } from '../../../modules/generators/generator.service'
 import { SendSlackMessagePayload, SendSlackResponsePayload } from '../../slack/interfaces.slack'
 import { sendSlackMessage, sendSlackResponseMessage } from '../../slack/slack.services'
+import { AxiosError } from 'axios'
 
 export interface SEND_VERIFICATION_MESSAGE {
   email: string
@@ -76,7 +77,7 @@ const handleSendSlackResponseMessage: Processor<SendSlackResponsePayload> = asyn
       await sendSlackResponseMessage(url, message)
     }
   } catch (error) {
-    console.log(error, "error send message")
+    console.log(((error as AxiosError).response?.config.data), "error send message")
   }
 }
 
@@ -104,6 +105,35 @@ const handleSendCertificate: Processor<CourseEnrollment> = async (job: Job<Cours
   }
 }
 
+
+const handleSendLeaderboardSlack: Processor<CourseEnrollment> = async (job: Job<CourseEnrollment>) => {
+  try {
+    if (AppConfig.server !== "test") {
+      const data = job.attrs.data
+      const { id, student, slackResponseUrl } = data
+      if (slackResponseUrl) {
+        sendCourseLeaderboardSlack(id, student, data, slackResponseUrl)
+      }
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
+const handleSendCertificateSlack: Processor<CourseEnrollment> = async (job: Job<CourseEnrollment>) => {
+  try {
+    if (AppConfig.server !== "test") {
+      const data = job.attrs.data
+      const { id, student, slackResponseUrl } = data
+      if (slackResponseUrl) {
+        sendCourseCertificateSlack(id, student, slackResponseUrl)
+      }
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
 module.exports = (agenda: Agenda) => {
   agenda.define<SEND_VERIFICATION_MESSAGE>(SEND_VERIFICATION_EMAIL, verifyEmailProcessor)
   agenda.define<SEND_VERIFICATION_MESSAGE>(SEND_TEAM_INVITATION, handleTeamInviteEmail)
@@ -117,4 +147,8 @@ module.exports = (agenda: Agenda) => {
   agenda.define<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, handleSendSlackMessage)
 
   agenda.define<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, handleSendSlackResponseMessage)
+
+
+  agenda.define<CourseEnrollment>(SEND_LEADERBOARD_SLACK, handleSendLeaderboardSlack)
+  agenda.define<CourseEnrollment>(SEND_CERTIFICATE_SLACK, handleSendCertificateSlack)
 }

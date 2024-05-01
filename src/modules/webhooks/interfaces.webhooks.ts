@@ -89,6 +89,7 @@ export interface CourseEnrollment {
   nextBlock: number
   totalBlocks: number
   quizAttempts: number
+  slackResponseUrl?: string
   blockStartTime?: Date | null
   lessons?: {
     [id: string]: {

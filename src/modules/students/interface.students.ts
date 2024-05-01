@@ -35,6 +35,7 @@ export interface CreateStudentPayload {
 
 export interface StudentCourseStats {
   name: string
+  studentId: string
   phoneNumber: string
   completed?: boolean
   droppedOut?: boolean

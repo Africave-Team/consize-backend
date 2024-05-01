@@ -165,6 +165,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
     name: student.firstName + ' ' + student.otherNames,
     phoneNumber: student.phoneNumber,
     progress: 0,
+    studentId,
     completed: false,
     droppedOut: false,
     scores: [],
@@ -199,6 +200,7 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
         name: `${student.firstName} ${student.otherNames}`,
         phoneNumber: student.phoneNumber,
         completed: false,
+        studentId: student.id,
         progress: 0,
         droppedOut: false,
         scores: [],
@@ -319,6 +321,7 @@ export const saveQuizDuration = async function (teamId: string, studentId: strin
       data = {
         name: `${student.firstName} ${student.otherNames}`,
         phoneNumber: student.phoneNumber,
+        studentId,
         completed: false,
         droppedOut: false,
         progress: 0,

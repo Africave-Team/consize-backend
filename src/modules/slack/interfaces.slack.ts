@@ -29,11 +29,13 @@ export interface Fetchmembers {
 
 export enum SlackTextMessageTypes {
   PLAINTEXT = "plain_text",
-  MARKDOWN = "mrkdwn"
+  MARKDOWN = "mrkdwn",
 }
 
 export enum SlackActionType {
-  BUTTON = "button"
+  BUTTON = "button",
+  TEXTINPUT = "plain_text_input",
+  SELECT = "multi_static_select"
 }
 
 export interface SlackTextMessage {
@@ -45,7 +47,10 @@ export interface SlackTextMessage {
 export enum MessageBlockType {
   HEADER = "header",
   SECTION = "section",
-  ACTIONS = "actions"
+  ACTIONS = "actions",
+  IMAGE = "image",
+  INPUT = "input",
+  DIVIDER = "divider"
 }
 
 export enum MessageActionButtonStyle {
@@ -58,18 +63,29 @@ export interface SlackMessageBlock {
   text?: SlackTextMessage
   fields?: SlackTextMessage[]
   elements?: SlackActionBlock[]
+  element?: SlackActionBlock
+  image_url?: string
+  alt_text?: string
+  label?: SlackTextMessage
 }
 
 export interface SlackActionBlock {
   type: SlackActionType
-  text: SlackTextMessage
-  style: MessageActionButtonStyle
-  value: string
+  text?: SlackTextMessage
+  style?: MessageActionButtonStyle
+  value?: string
+  multiline?: boolean
+  placeholder?: SlackTextMessage
+  options?: { text: SlackTextMessage, value: string }[]
 }
 
 export interface SlackMessage {
+  type?: string
   text?: string
   blocks?: SlackMessageBlock[]
+  title?: SlackTextMessage
+  submit?: SlackTextMessage
+  close?: SlackTextMessage
 }
 
 export interface SendSlackMessagePayload {
