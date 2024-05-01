@@ -236,6 +236,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
       }
     }
     if (response.type === "view_submission") {
+      console.log(response)
       let metadata: any = {}
       if (response.view.callback_id) {
         for (let ted of response.view.callback_id.split('|')) {
@@ -244,6 +245,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
             metadata[key] = value
           }
         }
+        console.log(metadata, "metadata")
       }
       let enrollments: CourseEnrollment[] = await fetchEnrollmentsSlack(response.channel.id)
       let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
@@ -304,9 +306,10 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
     }
   })
   const { payload: ld } = req.body
-  const response: SlackResponse = JSON.parse(ld)
-
-  agenda.now<SlackResponse>("process-slack-webhook", response)
+  if (ld) {
+    const response: SlackResponse = JSON.parse(ld)
+    agenda.now<SlackResponse>("process-slack-webhook", response)
+  }
   res.status(httpStatus.OK).send()
 })
 
