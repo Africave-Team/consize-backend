@@ -258,9 +258,16 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
           // Create a new object with the key as the id field
           const child = Object.values(value)
           // @ts-ignore
-          if (child[0] && child[0].value) {
+          if (child[0]) {
+            let vs = child[0]
+            let newObj
+            if (vs.value) {
+              newObj = { id: key, response: vs.value }
+            }
+            if (vs.selected_option && vs.selected_option.value) {
+              newObj = { id: key, response: vs.selected_option.value }
+            }
             // @ts-ignore
-            const newObj = { id: key, response: child[0].value }
             // Push the new object to the result array
             result.push(newObj)
 

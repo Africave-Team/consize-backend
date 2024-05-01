@@ -134,7 +134,16 @@ export interface SlackResponse {
   view: {
     callback_id: string
     state: {
-      values: object
+      values: {
+        [id: string]: {
+          [value: string]: {
+            value?: string
+            selected_option?: {
+              value?: string
+            }
+          }
+        }
+      }
     }
   }
 }
