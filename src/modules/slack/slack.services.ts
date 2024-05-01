@@ -23,6 +23,7 @@ import { StudentCourseStats } from '../students/interface.students'
 import { delay } from '../generators/generator.service'
 import { SurveyResponse } from '../surveys'
 import { ResponseType } from '../surveys/survey.interfaces'
+import Surveys from '../surveys/survey.model'
 
 export const handleSlackWebhook = async function () { }
 
@@ -1249,46 +1250,20 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, u
   }
 }
 
-export const handleSurveyMulti = async (answer: number, data: CourseEnrollment, url: string, messageId: string, channel: string): Promise<void> => {
-  const courseKey = `${config.redisBaseKey}courses:${data.id}`
-  const courseFlow = await redisClient.get(courseKey)
-  const key = `${config.redisBaseKey}enrollments:slack:${channel}:${data?.id}`
-  if (courseFlow) {
-    const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
-    const item = courseFlowData[data.currentBlock - 1]
-    if (item && item.surveyId) {
-      // save the survey response
-      if (item.surveyQuestion) {
-        await SurveyResponse.create({
-          survey: item.surveyId,
-          team: data.team,
-          surveyQuestion: item.surveyQuestion.id,
-          course: data.id,
-          student: data.student,
-          response: item.surveyQuestion.choices[answer],
-          responseType: ResponseType.MULTI_CHOICE
-        })
-      }
-      // check if the next block is a survey
-      let nextBlock = courseFlowData[data.currentBlock]
-      if (nextBlock) {
-        if (nextBlock.surveyId) {
-          // if next block is survey, check if it is multi-choice survey or freeform
-          if (nextBlock.type === CourseFlowMessageType.SURVEY_MULTI_CHOICE) {
-            // if it is multi, send multi survey
-            sendMultiSurvey(nextBlock, url, messageId)
-          } else {
-            // else send freeform
-            sendFreeformSurvey(nextBlock, url)
-          }
-          // update redis and rtdb
-          saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
-          let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: data.currentBlock + 1, nextBlock: data.nextBlock + 1 }
-          redisClient.set(key, JSON.stringify({ ...updatedData }))
-        } else if (nextBlock.type === CourseFlowMessageType.END_SURVEY) {
-          handleContinueSlack(data.currentBlock, courseKey, channel, url, v4(), data)
-        }
-      }
+export const handleSurvey = async (answer: number, data: CourseEnrollment, surveyId: string, questionId: string, multi: boolean, response: string): Promise<void> => {
+  const survey = await Surveys.findById(surveyId)
+  if (survey) {
+    let current = survey.questions.find(e => e.id === questionId)
+    if (current) {
+      await SurveyResponse.create({
+        survey: surveyId,
+        team: data.team,
+        surveyQuestion: current.id,
+        course: data.id,
+        student: data.student,
+        response: multi ? current.choices[answer] : response,
+        responseType: multi ? ResponseType.MULTI_CHOICE : ResponseType.FREE_FORM
+      })
     }
   }
 }
