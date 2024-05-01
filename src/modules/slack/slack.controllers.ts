@@ -252,7 +252,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
       if (response.view && response.view.state) {
         const values = response.view.state.values
         const result = []
-
+        console.log(JSON.stringify(values))
         // Iterate over each key-value pair using Object.entries()
         for (const [key, value] of Object.entries(values)) {
           // Create a new object with the key as the id field
