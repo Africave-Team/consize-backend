@@ -3,12 +3,12 @@ import { Request, Response } from 'express'
 import { catchAsync } from '../utils'
 import { slackServices } from '.'
 import { teamService } from '../teams'
-import { FetchChannels, Fetchmembers, MessageBlockType, SendSlackModalPayload, SendSlackResponsePayload, SlackActionType, SlackResponse, SlackTextMessageTypes } from './interfaces.slack'
+import { FetchChannels, Fetchmembers, MessageBlockType, SendSlackResponsePayload, SlackResponse, SlackTextMessageTypes } from './interfaces.slack'
 import { CourseEnrollment, RESUME_COURSE, START, CONTINUE, QUIZ_NO, QUIZ_YES, QUIZ_A, QUIZ_B, QUIZ_C, STATS, COURSES, CERTIFICATES, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, MORNING, AFTERNOON, EVENING, SCHEDULE_RESUMPTION, ACCEPT_INVITATION, REJECT_INVITATION } from '../webhooks/interfaces.webhooks'
-import { fetchEnrollmentsSlack, handleContinueSlack, handleBlockQuiz, handleLessonQuiz, handleSurveyMulti, sendResumptionOptions, sendScheduleAcknowledgement } from './slack.services'
+import { fetchEnrollmentsSlack, handleContinueSlack, handleBlockQuiz, handleLessonQuiz, handleSurveyMulti, sendResumptionOptions, sendScheduleAcknowledgement, handleSendSurveySlack } from './slack.services'
 import { Student } from '../students'
 import { agenda } from '../scheduler'
-import { RESUME_TOMORROW, SEND_SLACK_MODAL, SEND_SLACK_RESPONSE } from '../scheduler/MessageTypes'
+import { RESUME_TOMORROW, SEND_SLACK_RESPONSE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import config from '../../config/config'
 import { getMomentTomorrow } from '../webhooks/controllers.webhooks'
@@ -79,100 +79,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
               break
             case CourseFlowMessageType.START_SURVEY:
               if (enrollment && enrollment.slackToken) {
-                agenda.now<SendSlackModalPayload>(SEND_SLACK_MODAL, {
-                  trigger_id,
-                  token: enrollment.slackToken,
-                  view: {
-                    "type": "modal",
-                    callback_id: `survey|${enrollment.student}`,
-                    "submit": {
-                      "type": SlackTextMessageTypes.PLAINTEXT,
-                      "text": "Submit",
-                      "emoji": true
-                    },
-                    "close": {
-                      "type": SlackTextMessageTypes.PLAINTEXT,
-                      "text": "Cancel",
-                      "emoji": true
-                    },
-                    "title": {
-                      "type": SlackTextMessageTypes.PLAINTEXT,
-                      "text": "End of course survey",
-                      "emoji": true
-                    },
-                    "blocks": [
-                      {
-                        "type": MessageBlockType.SECTION,
-                        "text": {
-                          "type": SlackTextMessageTypes.PLAINTEXT,
-                          "text": ":wave: Hey David!\n\nWe'd love to hear from you how we can make this place the best place you’ve ever worked.",
-                          "emoji": true
-                        }
-                      },
-                      {
-                        "type": MessageBlockType.DIVIDER
-                      },
-                      {
-                        "type": MessageBlockType.INPUT,
-                        "block_id": "opinion_input",
-                        "label": {
-                          "type": SlackTextMessageTypes.PLAINTEXT,
-                          "text": "What do you want for our team weekly lunch?",
-                          "emoji": true
-                        },
-                        "element": {
-                          "type": SlackActionType.SELECT,
-                          "action_id": "opinion_input_action",
-                          "placeholder": {
-                            "type": SlackTextMessageTypes.PLAINTEXT,
-                            "text": "Select your favorites",
-                            "emoji": true
-                          },
-                          "options": [
-                            {
-                              "text": {
-                                "type": SlackTextMessageTypes.PLAINTEXT,
-                                "text": ":pizza: Pizza",
-                                "emoji": true
-                              },
-                              "value": "value-0"
-                            },
-                            {
-                              "text": {
-                                "type": SlackTextMessageTypes.PLAINTEXT,
-                                "text": ":fried_shrimp: Thai food",
-                                "emoji": true
-                              },
-                              "value": "value-1"
-                            },
-                            {
-                              "text": {
-                                "type": SlackTextMessageTypes.PLAINTEXT,
-                                "text": ":desert_island: Hawaiian",
-                                "emoji": true
-                              },
-                              "value": "value-2"
-                            }
-                          ]
-                        }
-                      },
-                      {
-                        "type": MessageBlockType.INPUT,
-                        "block_id": "opinion_input_text",
-                        "label": {
-                          "type": SlackTextMessageTypes.PLAINTEXT,
-                          "text": "What can we do to improve your experience working here?",
-                          "emoji": true
-                        },
-                        "element": {
-                          "type": SlackActionType.TEXTINPUT,
-                          "multiline": true,
-                          "action_id": "opinion_input_text_action",
-                        }
-                      }
-                    ]
-                  }
-                })
+                handleSendSurveySlack(`${config.redisBaseKey}courses:${enrollment.id}`, enrollment, trigger_id)
               }
               break
             case COURSES:

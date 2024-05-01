@@ -6,10 +6,10 @@ import { ApiError } from '../errors'
 import httpStatus from 'http-status'
 import he from "he"
 import db from "../rtdb"
-import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SendSlackResponsePayload, SlackActionBlock, SlackActionType, SlackChannel, SlackMessage, SlackMessageBlock, SlackTextMessage, SlackTextMessageTypes, SlackUser } from './interfaces.slack'
+import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SendSlackModalPayload, SendSlackResponsePayload, SlackActionBlock, SlackActionType, SlackChannel, SlackMessage, SlackMessageBlock, SlackTextMessage, SlackTextMessageTypes, SlackUser } from './interfaces.slack'
 import { CourseFlowItem, CourseFlowMessageType, convertToWhatsAppString, generateCourseFlow } from '../webhooks/service.webhooks'
 import { agenda } from '../scheduler'
-import { GENERATE_COURSE_TRENDS, SEND_CERTIFICATE_SLACK, SEND_LEADERBOARD_SLACK, SEND_SLACK_MESSAGE, SEND_SLACK_RESPONSE } from '../scheduler/MessageTypes'
+import { GENERATE_COURSE_TRENDS, SEND_CERTIFICATE_SLACK, SEND_LEADERBOARD_SLACK, SEND_SLACK_MESSAGE, SEND_SLACK_MODAL, SEND_SLACK_RESPONSE } from '../scheduler/MessageTypes'
 import { CourseInterface } from '../courses/interfaces.courses'
 import Courses from '../courses/model.courses'
 import { v4 } from 'uuid'
@@ -951,6 +951,102 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
         redisClient.set(key, JSON.stringify({ ...updatedData }))
       }
     }
+  }
+}
+
+export const handleSendSurveySlack = async (courseKey: string, data: CourseEnrollment, trigger_id: string): Promise<void> => {
+  const flow = await redisClient.get(courseKey)
+  if (flow && data.slackToken) {
+    const flowData: CourseFlowItem[] = JSON.parse(flow)
+    const surveyItems = flowData.filter(e => e.surveyId)
+    let payload: SendSlackModalPayload = {
+      trigger_id,
+      token: data.slackToken,
+      view: {
+        "type": "modal",
+        callback_id: `survey|${data.student}`,
+        "submit": {
+          "type": SlackTextMessageTypes.PLAINTEXT,
+          "text": "Submit",
+          "emoji": true
+        },
+        "close": {
+          "type": SlackTextMessageTypes.PLAINTEXT,
+          "text": "Cancel",
+          "emoji": true
+        },
+        "title": {
+          "type": SlackTextMessageTypes.PLAINTEXT,
+          "text": "End of course survey",
+          "emoji": true
+        },
+        "blocks": [
+          {
+            "type": MessageBlockType.SECTION,
+            "text": {
+              "type": SlackTextMessageTypes.PLAINTEXT,
+              "text": `:wave: We'd love to hear from you how we can make this place the best place you’ve ever worked.`,
+              "emoji": true
+            }
+          },
+          {
+            "type": MessageBlockType.DIVIDER
+          }
+        ]
+      }
+    }
+    const choices = [SURVEY_A, SURVEY_B, SURVEY_C]
+    for (let item of surveyItems) {
+      if (item.surveyQuestion?.responseType === ResponseType.MULTI_CHOICE && payload.view && payload.view.blocks) {
+        payload.view.blocks.push({
+          "type": MessageBlockType.INPUT,
+          "block_id": item.surveyQuestion.id,
+          "label": {
+            "type": SlackTextMessageTypes.PLAINTEXT,
+            "text": item.surveyQuestion.question,
+            "emoji": true
+          },
+          "element": {
+            "type": SlackActionType.SELECT,
+            "action_id": `${item.surveyQuestion.id}_value`,
+            "placeholder": {
+              "type": SlackTextMessageTypes.PLAINTEXT,
+              "text": "Select your response",
+              "emoji": true
+            },
+            "options": [
+              ...item.surveyQuestion.choices.map((choice, index) => ({
+                "text": {
+                  "type": SlackTextMessageTypes.PLAINTEXT,
+                  "text": choice,
+                  "emoji": true
+                },
+                "value": choices[index] || ''
+              })),
+            ]
+          }
+        })
+      }
+
+      if (item.surveyQuestion?.responseType === ResponseType.FREE_FORM && payload.view && payload.view.blocks) {
+        payload.view.blocks.push({
+          "type": MessageBlockType.INPUT,
+          "block_id": item.surveyQuestion.id,
+          "label": {
+            "type": SlackTextMessageTypes.PLAINTEXT,
+            "text": item.surveyQuestion.question,
+            "emoji": true
+          },
+          "element": {
+            "type": SlackActionType.TEXTINPUT,
+            "multiline": true,
+            "action_id": `${item.surveyQuestion.id}_value`,
+          }
+        })
+      }
+    }
+
+    agenda.now<SendSlackModalPayload>(SEND_SLACK_MODAL, payload)
   }
 }
 
