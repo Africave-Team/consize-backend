@@ -33,6 +33,7 @@ export const DAILY_REMINDER = "DAILY_REMINDER"
 
 // schedule cohorts
 export const COHORT_SCHEDULE = "COHORT_SCHEDULE"
+export const COHORT_SCHEDULE_STUDENT = "COHORT_SCHEDULE_STUDENT"
 
 
 

@@ -5,7 +5,7 @@ export interface TeamsInterface extends Document {
     _id: string
     name: string
     owner: string
-    slackToken: string
+    slackToken: string | null
     logo?: string
     createdAt?: Date
     updatedAt?: Date

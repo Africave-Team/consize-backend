@@ -68,7 +68,7 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
         // send onboarding messages to all profiles
         if (team !== null && team.slackToken) {
             await Promise.allSettled(profiles.map(async (user): Promise<void> => {
-                if (user) {
+                if (user && team && team.slackToken) {
                     // @ts-ignore
                     const token = team.slackToken
                     const conversation = await slackServices.createConversation(token, user.id)
@@ -166,6 +166,21 @@ export const initiateCourseForCohort = async function (cohortId: string) {
             await Promise.all(cohort.members.map(async (student) => {
                 await studentService.enrollStudentToCourse(student, cohort.courseId)
             }))
+        }
+
+        cohort.status = CohortsStatus.DISABLED
+        await cohort.save()
+    }
+}
+
+
+export const initiateCourseForCohortForSingleStudent = async function (cohortId: string, studentId: string) {
+    const cohort = await Cohorts.findById(cohortId)
+    if (cohort) {
+        if (cohort.distribution === Distribution.SLACK) {
+            await slackServices.enrollStudentToCourseSlack(studentId, cohort.courseId)
+        } else {
+            await studentService.enrollStudentToCourse(studentId, cohort.courseId)
         }
 
         cohort.status = CohortsStatus.DISABLED

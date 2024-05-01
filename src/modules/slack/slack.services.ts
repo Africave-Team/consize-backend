@@ -15,7 +15,6 @@ import Courses from '../courses/model.courses'
 import { v4 } from 'uuid'
 import { CONTINUE, CourseEnrollment } from '../webhooks/interfaces.webhooks'
 import Students from '../students/model.students'
-import { Course } from '../courses'
 import Teams from '../teams/model.teams'
 import { COURSE_STATS } from '../rtdb/nodes'
 
@@ -38,6 +37,24 @@ export const handleSlackTokenExchange = async function (code: string, teamId: st
       const { access_token } = result.data
       await teamService.updateTeamInfo(teamId, { slackToken: access_token })
     } else {
+      throw new ApiError(httpStatus.BAD_REQUEST, result.data.error)
+    }
+  }
+}
+
+export const handleAppUninstall = async function (token: string) {
+  const result: AxiosResponse = await axios.post(`https://slack.com/api/apps.uninstall`, {
+    'client_id': config.slack.id,
+    'client_secret': config.slack.secret,
+    'token': token
+  }, {
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    }
+  })
+
+  if (result && result.status === 200) {
+    if (result.data && !result.data.ok) {
       throw new ApiError(httpStatus.BAD_REQUEST, result.data.error)
     }
   }
@@ -297,20 +314,20 @@ export const startCourseSlack = async (channel: string, courseId: string, studen
 export const enrollStudentToCourseSlack = async (studentId: string, courseId: string): Promise<void> => {
   const student = await Students.findOne({ _id: studentId })
   if (!student) {
-    throw new ApiError(httpStatus.NOT_FOUND, "No student account found.")
+    return
   }
   if (!student.verified) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Student account has not been verified.")
+    return
   }
 
   // enroll course
-  const course = await Course.findById(courseId)
+  const course = await Courses.findById(courseId)
   if (!course) {
-    throw new ApiError(httpStatus.NOT_FOUND, "No course found for this id.")
+    return
   }
   const owner = await Teams.findById(course.owner)
-  if (!owner) {
-    throw new ApiError(httpStatus.NOT_FOUND, "No team found.")
+  if (!owner || !owner.slackToken) {
+    return
   }
   await generateCourseFlow(courseId)
   const id = await startCourseSlack(student.channelId, courseId, student.id)

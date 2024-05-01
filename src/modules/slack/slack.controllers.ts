@@ -250,6 +250,17 @@ export const SlackTokenExchange = catchAsync(async (req: Request, res: Response)
   res.status(httpStatus.OK).send({ message: "Slack access has been saved.", data: team })
 })
 
+
+export const SlackUninstall = catchAsync(async (req: Request, res: Response) => {
+  let team = await teamService.fetchTeamById(req.user.team)
+  if (team && team.slackToken) {
+    await slackServices.handleAppUninstall(team.slackToken)
+    team.slackToken = null
+    await team.save()
+  }
+  res.status(httpStatus.OK).send({ message: "Slack access has been revoked.", data: team })
+})
+
 export const FetchSlackChannels = catchAsync(async (req: Request, res: Response) => {
   const team = await teamService.fetchTeamById(req.user.team)
   let items: FetchChannels = {

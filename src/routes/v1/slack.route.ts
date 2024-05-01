@@ -11,6 +11,7 @@ router.route("/interactivity").post(slackControllers.SlackWebhookHandler)
 
 router.use(auth())
 router.post('/token-exchange', slackControllers.SlackTokenExchange)
+router.post('/uninstall', slackControllers.SlackUninstall)
 router.get('/channels.list', slackControllers.FetchSlackChannels)
 router.get("/members.list", slackControllers.FetchSlackMembers)
 

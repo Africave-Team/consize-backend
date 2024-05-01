@@ -1,6 +1,6 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
-import { COHORT_SCHEDULE, DAILY_REMINDER, DAILY_ROUTINE, GENERATE_COURSE_TRENDS, RESUME_TOMORROW } from '../MessageTypes'
+import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE, GENERATE_COURSE_TRENDS, RESUME_TOMORROW } from '../MessageTypes'
 import { generateCurrentCourseTrends } from '../../courses/service.courses'
 import { CourseEnrollment } from '../../webhooks/interfaces.webhooks'
 import config from '../../../config/config'
@@ -10,7 +10,7 @@ import Reminders from '../reminders.model'
 import { Course } from '../../courses'
 import { CourseSettings } from '../../courses/interfaces.settings'
 import Settings from '../../courses/model.settings'
-import { initiateCourseForCohort } from '../../cohorts/service.cohorts'
+import { initiateCourseForCohort, initiateCourseForCohortForSingleStudent } from '../../cohorts/service.cohorts'
 
 export const handleCourseTrends: Processor<{ courseId: string, teamId: string }> = async (job: Job<{ courseId: string, teamId: string }>) => {
   try {
@@ -90,10 +90,22 @@ const handleCohortSchedule: Processor<{ cohortId: string }> = async (job: Job<{ 
   }
 }
 
+const handleCohortScheduleStudent: Processor<{ cohortId: string, studentId: string }> = async (job: Job<{ cohortId: string, studentId: string }>) => {
+  try {
+    if (AppConfig.server !== "test") {
+      const data = job.attrs.data
+      initiateCourseForCohortForSingleStudent(data.cohortId, data.studentId)
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
 module.exports = (agenda: Agenda) => {
   agenda.define<{ courseId: string, teamId: string }>(GENERATE_COURSE_TRENDS, handleCourseTrends)
   agenda.define<{ courseId: string, studentId: string }>(DAILY_ROUTINE, handleStartDailyRoutine)
   agenda.define<{ courseId: string, studentId: string }>(DAILY_REMINDER, handleDailyReminders)
   agenda.define<{ cohortId: string }>(COHORT_SCHEDULE, handleCohortSchedule)
+  agenda.define<{ cohortId: string, studentId: string }>(COHORT_SCHEDULE_STUDENT, handleCohortScheduleStudent)
   agenda.define<{ enrollment: CourseEnrollment, phoneNumber: string, messageId: string }>(RESUME_TOMORROW, handleContinueTomorrow)
 }
