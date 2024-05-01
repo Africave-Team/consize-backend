@@ -21,10 +21,8 @@ import { saveBlockDuration, saveCourseProgress, saveQuizDuration } from '../stud
 import moment from 'moment'
 import { StudentCourseStats } from '../students/interface.students'
 import { delay } from '../generators/generator.service'
-import { Survey, SurveyResponse } from '../surveys'
+import { SurveyResponse } from '../surveys'
 import { ResponseType } from '../surveys/survey.interfaces'
-// import { StudentCourseStats } from '../students/interface.students'
-// import { delay } from '../generators/generator.service'
 
 export const handleSlackWebhook = async function () { }
 
@@ -185,6 +183,26 @@ export const sendSlackMessage = async function (slackToken: string, channelId: s
   }
 }
 
+
+// send message
+export const sendSlackModalMessage = async function (slackToken: string, trigger: string, content: SlackMessage) {
+  console.log(trigger)
+  const result: AxiosResponse<{ ok: boolean, }> = await axios.post(`https://slack.com/api/views.open`, {
+    trigger_id: trigger,
+    view: content
+  }, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${slackToken}`
+    }
+  })
+
+  if (!result.data.ok) {
+    console.log(result.data)
+    throw new Error("Could not send this message")
+  }
+}
+
 export const sendSlackResponseMessage = async function (url: string, content: SlackMessage) {
   const result: AxiosResponse<{ ok: boolean, user: SlackUser }> = await axios.post(url, {
     ...content,
@@ -276,7 +294,7 @@ export async function fetchEnrollmentsSlack (channel: string): Promise<CourseEnr
   return enrollments
 }
 
-export const startCourseSlack = async (channel: string, courseId: string, studentId: string): Promise<string> => {
+export const startCourseSlack = async (channel: string, courseId: string, studentId: string, token: string): Promise<string> => {
   const course: CourseInterface | null = await Courses.findById(courseId)
   const key = `${config.redisBaseKey}enrollments:slack:${channel}:${courseId}`
   const initialMessageId = v4()
@@ -298,7 +316,8 @@ export const startCourseSlack = async (channel: string, courseId: string, studen
           progress: 0,
           currentBlock: 0,
           nextBlock: 1,
-          totalBlocks: courseFlowData.length
+          totalBlocks: courseFlowData.length,
+          slackToken: token
         }
         let enrollments: CourseEnrollment[] = await fetchEnrollmentsSlack(channel)
         let active: CourseEnrollment[] = enrollments.filter(e => e.active)
@@ -338,7 +357,7 @@ export const enrollStudentToCourseSlack = async (studentId: string, courseId: st
     return
   }
   await generateCourseFlow(courseId)
-  const id = await startCourseSlack(student.channelId, courseId, student.id)
+  const id = await startCourseSlack(student.channelId, courseId, student.id, owner.slackToken)
   await sendWelcomeSlack(courseId, student.slackId, owner.slackToken, id)
 
   let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
@@ -728,128 +747,66 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
             })
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
-
           case CourseFlowMessageType.ENDCOURSE:
-            agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
-              url,
-              message: {
-                blocks: [
-                  {
-                    type: MessageBlockType.SECTION,
-                    fields: [
-                      {
-                        type: SlackTextMessageTypes.MARKDOWN,
-                        text: item.content.replace('{survey}', '')
-                      }
-                    ]
-                  }
-                ]
-              }
-            })
+            let blocks: SlackMessageBlock[] = [
+
+            ]
+
             let next = flowData[nextIndex + 1]
             if (next?.surveyId && next.surveyQuestion) {
-              updatedData = { ...updatedData, nextBlock: updatedData.totalBlocks - 1, currentBlock: updatedData.totalBlocks - 1 }
-              // build the poll modal and send it
-              // fetch the survey with id
-              const survey = await Survey.findById(next.surveyId)
-              if (survey) {
-                agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
-                  url,
-                  message: {
-                    "type": "modal",
-                    "submit": {
-                      "type": SlackTextMessageTypes.PLAINTEXT,
-                      "text": "Submit",
-                      "emoji": true
-                    },
-                    "close": {
-                      "type": SlackTextMessageTypes.PLAINTEXT,
-                      "text": "Cancel",
-                      "emoji": true
-                    },
-                    "title": {
-                      "type": SlackTextMessageTypes.PLAINTEXT,
-                      "text": "End of course survey",
-                      "emoji": true
-                    },
-                    "blocks": [
-                      {
-                        "type": MessageBlockType.SECTION,
-                        "text": {
-                          "type": SlackTextMessageTypes.PLAINTEXT,
-                          "text": ":wave: Hey David!\n\nWe'd love to hear from you how we can make this place the best place you’ve ever worked.",
-                          "emoji": true
-                        }
+              blocks = [
+                {
+                  type: MessageBlockType.SECTION,
+                  fields: [
+                    {
+                      type: SlackTextMessageTypes.MARKDOWN,
+                      text: item.content.replace('{survey}', `\n\nClick the following button to take the survey.`)
+                    }
+                  ]
+                },
+                {
+                  type: MessageBlockType.ACTIONS,
+                  elements: [
+                    {
+                      type: SlackActionType.BUTTON,
+                      value: `start-survey|${messageId}`,
+                      text: {
+                        type: SlackTextMessageTypes.PLAINTEXT,
+                        emoji: true,
+                        text: "Begin survey"
                       },
-                      {
-                        "type": MessageBlockType.DIVIDER
-                      },
-                      {
-                        "type": MessageBlockType.INPUT,
-                        "label": {
-                          "type": SlackTextMessageTypes.PLAINTEXT,
-                          "text": "What do you want for our team weekly lunch?",
-                          "emoji": true
-                        },
-                        "element": {
-                          "type": SlackActionType.SELECT,
-                          "placeholder": {
-                            "type": SlackTextMessageTypes.PLAINTEXT,
-                            "text": "Select your favorites",
-                            "emoji": true
-                          },
-                          "options": [
-                            {
-                              "text": {
-                                "type": SlackTextMessageTypes.PLAINTEXT,
-                                "text": ":pizza: Pizza",
-                                "emoji": true
-                              },
-                              "value": "value-0"
-                            },
-                            {
-                              "text": {
-                                "type": SlackTextMessageTypes.PLAINTEXT,
-                                "text": ":fried_shrimp: Thai food",
-                                "emoji": true
-                              },
-                              "value": "value-1"
-                            },
-                            {
-                              "text": {
-                                "type": SlackTextMessageTypes.PLAINTEXT,
-                                "text": ":desert_island: Hawaiian",
-                                "emoji": true
-                              },
-                              "value": "value-2"
-                            }
-                          ]
-                        }
-                      },
-                      {
-                        "type": MessageBlockType.INPUT,
-                        "label": {
-                          "type": SlackTextMessageTypes.PLAINTEXT,
-                          "text": "What can we do to improve your experience working here?",
-                          "emoji": true
-                        },
-                        "element": {
-                          "type": SlackActionType.TEXTINPUT,
-                          "multiline": true
-                        }
-                      }
-                    ]
-                  }
-                })
-              }
+                      style: MessageActionButtonStyle.DANGER
+                    }
+                  ]
+                }
+              ]
             } else {
+              blocks = [
+                {
+                  type: MessageBlockType.SECTION,
+                  fields: [
+                    {
+                      type: SlackTextMessageTypes.MARKDOWN,
+                      text: item.content.replace('{survey}', '')
+                    }
+                  ]
+                }
+              ]
               // if no survey for this course, then send the certificate
               await delay(5000)
               agenda.now<CourseEnrollment>(SEND_CERTIFICATE_SLACK, {
                 ...updatedData,
                 slackResponseUrl: url
               })
+
             }
+
+            agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
+              url,
+              message: {
+                blocks
+              }
+            })
 
             break
           case CourseFlowMessageType.ENDLESSON:

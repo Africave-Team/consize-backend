@@ -85,6 +85,7 @@ export interface SlackMessage {
   blocks?: SlackMessageBlock[]
   title?: SlackTextMessage
   submit?: SlackTextMessage
+  callback_id?: string
   close?: SlackTextMessage
 }
 
@@ -97,6 +98,13 @@ export interface SendSlackMessagePayload {
 export interface SendSlackResponsePayload {
   url: string
   message: SlackMessage
+}
+
+
+export interface SendSlackModalPayload {
+  token: string
+  trigger_id: string
+  view: SlackMessage
 }
 
 
@@ -120,4 +128,5 @@ export interface SlackResponse {
   user: SlackResponseUser
   channel: SlackResponseChannel
   type: string
+  trigger_id: string
 }

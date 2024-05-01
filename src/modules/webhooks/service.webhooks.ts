@@ -42,6 +42,7 @@ export enum CourseFlowMessageType {
   CERTIFICATE = 'certificate',
   SURVEY_MULTI_CHOICE = 'survey-multi-choice',
   SURVEY_FREE_FORM = 'survey-free-form',
+  START_SURVEY = "start-survey",
   END_SURVEY = 'end-survey'
 
 }
