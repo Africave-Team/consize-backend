@@ -12,11 +12,11 @@ import { agenda } from '../scheduler'
 import config from '../../config/config'
 import { CourseFlowItem, CourseFlowMessageType, handleContinue } from '../webhooks/service.webhooks'
 import { CourseEnrollment, Message } from '../webhooks/interfaces.webhooks'
-import { SEND_SLACK_RESPONSE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { SEND_SLACK_MESSAGE, SEND_SLACK_RESPONSE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { fetchSignatures } from '../signatures/service.signatures'
 import { completeCourse } from '../students/students.service'
 import { redisClient } from '../redis'
-import { MessageBlockType, SendSlackResponsePayload } from '../slack/interfaces.slack'
+import { MessageBlockType, SendSlackMessagePayload, SendSlackResponsePayload } from '../slack/interfaces.slack'
 import { handleContinueSlack } from '../slack/slack.services'
 import Students from '../students/model.students'
 import Courses from '../courses/model.courses'
@@ -204,18 +204,19 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
   }
 }
 
-export const sendCourseCertificateSlack = async (courseId: string, studentId: string, responseUrl: string): Promise<void> => {
+export const sendCourseCertificateSlack = async (courseId: string, studentId: string): Promise<void> => {
   const student = await Students.findById(studentId)
   const course = await Courses.findById(courseId)
   if (course && student) {
     const owner = await Teams.findById(course.owner)
-    if (owner) {
+    if (owner && owner.slackToken) {
       const url = await generateCourseCertificate(course, student, owner)
       if (url.includes('https://')) {
         // send media message with continue button
         completeCourse(course.owner, studentId, courseId, url)
-        agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
-          url: responseUrl,
+        agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+          accessToken: owner.slackToken,
+          channel: student.channelId,
           message: {
             blocks: [
               {

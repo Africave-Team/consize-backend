@@ -139,7 +139,7 @@ const handleSendCertificateSlack: Processor<CourseEnrollment> = async (job: Job<
       const data = job.attrs.data
       const { id, student, slackResponseUrl } = data
       if (slackResponseUrl) {
-        sendCourseCertificateSlack(id, student, slackResponseUrl)
+        sendCourseCertificateSlack(id, student)
       }
     }
   } catch (error) {

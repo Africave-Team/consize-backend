@@ -3,17 +3,19 @@ import { Request, Response } from 'express'
 import { catchAsync } from '../utils'
 import { slackServices } from '.'
 import { teamService } from '../teams'
-import { FetchChannels, Fetchmembers, MessageBlockType, SendSlackResponsePayload, SlackResponse, SlackTextMessageTypes } from './interfaces.slack'
+import { FetchChannels, Fetchmembers, MessageBlockType, SendSlackMessagePayload, SendSlackResponsePayload, SlackResponse, SlackTextMessageTypes } from './interfaces.slack'
 import { CourseEnrollment, RESUME_COURSE, START, CONTINUE, QUIZ_NO, QUIZ_YES, QUIZ_A, QUIZ_B, QUIZ_C, STATS, COURSES, CERTIFICATES, SURVEY_B, SURVEY_C, TOMORROW, MORNING, AFTERNOON, EVENING, SCHEDULE_RESUMPTION, ACCEPT_INVITATION, REJECT_INVITATION } from '../webhooks/interfaces.webhooks'
 import { fetchEnrollmentsSlack, handleContinueSlack, handleBlockQuiz, handleLessonQuiz, handleSurvey, sendResumptionOptions, sendScheduleAcknowledgement, handleSendSurveySlack } from './slack.services'
 import { Student } from '../students'
 import { agenda } from '../scheduler'
-import { RESUME_TOMORROW, SEND_CERTIFICATE_SLACK, SEND_SLACK_RESPONSE } from '../scheduler/MessageTypes'
+import { RESUME_TOMORROW, SEND_CERTIFICATE_SLACK, SEND_SLACK_MESSAGE, SEND_SLACK_RESPONSE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import config from '../../config/config'
 import { getMomentTomorrow } from '../webhooks/controllers.webhooks'
 import { Job } from 'agenda'
 import { CourseFlowMessageType } from '../webhooks/service.webhooks'
+import Students from '../students/model.students'
+import Teams from '../teams/model.teams'
 
 
 export const SlackWebhookChallengeHandler = catchAsync(async (req: Request, res: Response) => {
@@ -236,7 +238,6 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
       }
     }
     if (response.type === "view_submission") {
-      console.log(response)
       let metadata: any = {}
       if (response.view.callback_id) {
         for (let ted of response.view.callback_id.split('|')) {
@@ -245,63 +246,72 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
             metadata[key] = value
           }
         }
-        console.log(metadata, "metadata")
       }
-      let enrollments: CourseEnrollment[] = await fetchEnrollmentsSlack(response.channel.id)
-      let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
-      if (enrollment && response.view && response.view.state) {
-        const values = response.view.state.values
-        // Iterate over each key-value pair using Object.entries()
-        for (const [key, value] of Object.entries(values)) {
-          // Create a new object with the key as the id field
-          const child = Object.values(value)
-          // @ts-ignore
-          if (child[0]) {
-            let vs = child[0]
-            let newObj
-            if (vs.value) {
-              newObj = { id: key, response: vs.value, multi: false }
-            }
-            if (vs.selected_option && vs.selected_option.value) {
-              newObj = { id: key, response: vs.selected_option.value, multi: true }
-            }
-            if (newObj && newObj.response) {
-              if (newObj.multi) {
-                let rsp = 0
-                if (newObj.response === SURVEY_B) rsp = 1
-                if (newObj.response === SURVEY_C) rsp = 2
-                await handleSurvey(rsp, enrollment, metadata.survey, newObj.id, newObj.multi, newObj.response)
-              } else {
-                await handleSurvey(0, enrollment, metadata.survey, newObj.id, newObj.multi, newObj.response)
+      if (metadata.student && metadata.team) {
+        const student = await Students.findOne({ slackId: response.user.id })
+        const owner = await Teams.findById(metadata.team)
+        if (student && student.channelId) {
+          let enrollments: CourseEnrollment[] = await fetchEnrollmentsSlack(student.channelId)
+          let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
+          if (enrollment && response.view && response.view.state) {
+            const values = response.view.state.values
+            // Iterate over each key-value pair using Object.entries()
+            for (const [key, value] of Object.entries(values)) {
+              // Create a new object with the key as the id field
+              const child = Object.values(value)
+              // @ts-ignore
+              if (child[0]) {
+                let vs = child[0]
+                let newObj
+                if (vs.value) {
+                  newObj = { id: key, response: vs.value, multi: false }
+                }
+                if (vs.selected_option && vs.selected_option.value) {
+                  newObj = { id: key, response: vs.selected_option.value, multi: true }
+                }
+                if (newObj && newObj.response) {
+                  if (newObj.multi) {
+                    let rsp = 0
+                    if (newObj.response === SURVEY_B) rsp = 1
+                    if (newObj.response === SURVEY_C) rsp = 2
+                    await handleSurvey(rsp, enrollment, metadata.survey, newObj.id, newObj.multi, newObj.response)
+                  } else {
+                    await handleSurvey(0, enrollment, metadata.survey, newObj.id, newObj.multi, newObj.response)
+                  }
+                }
+
               }
             }
 
+            if (owner && owner.slackToken) {
+              agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+                accessToken: owner.slackToken,
+                channel: student.channelId,
+                message: {
+                  blocks: [
+                    {
+                      type: MessageBlockType.SECTION,
+                      fields: [
+                        {
+                          type: SlackTextMessageTypes.MARKDOWN,
+                          text: `Thank you for sharing your opinions. We grately appreciate you taking the time.`
+
+                        }
+                      ]
+                    }
+                  ]
+                }
+              })
+            }
+
+            agenda.now<CourseEnrollment>(SEND_CERTIFICATE_SLACK, {
+              ...enrollment,
+              slackResponseUrl: response.response_url
+            })
           }
         }
-
-        agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
-          url: response.response_url,
-          message: {
-            blocks: [
-              {
-                type: MessageBlockType.SECTION,
-                fields: [
-                  {
-                    type: SlackTextMessageTypes.MARKDOWN,
-                    text: `Thank you for sharing your opinions. We grately appreciate you taking the time.`
-
-                  }
-                ]
-              }
-            ]
-          }
-        })
-
-        agenda.now<CourseEnrollment>(SEND_CERTIFICATE_SLACK, {
-          ...enrollment,
-          slackResponseUrl: response.response_url
-        })
       }
+
 
     }
   })
