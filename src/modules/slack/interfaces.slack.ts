@@ -35,7 +35,7 @@ export enum SlackTextMessageTypes {
 export enum SlackActionType {
   BUTTON = "button",
   TEXTINPUT = "plain_text_input",
-  SELECT = "plain_static_select"
+  SELECT = "static_select"
 }
 
 export interface SlackTextMessage {
