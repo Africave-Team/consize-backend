@@ -207,8 +207,10 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
 export const sendCourseCertificateSlack = async (courseId: string, studentId: string): Promise<void> => {
   const student = await Students.findById(studentId)
   const course = await Courses.findById(courseId)
+  console.log(course, student)
   if (course && student) {
     const owner = await Teams.findById(course.owner)
+    console.log(owner)
     if (owner && owner.slackToken) {
       const url = await generateCourseCertificate(course, student, owner)
       if (url.includes('https://')) {
