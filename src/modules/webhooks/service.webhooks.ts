@@ -69,7 +69,7 @@ export function convertToWhatsAppString (html: string, indent: number = 0): stri
   if (!html) return ''
   let formattedText = html
   formattedText = formattedText.replace(/\s+([^\s]+)="/gi, ' $1=')
-  formattedText = formattedText.replace(/\n/g, '')
+  // formattedText = formattedText.replace(/\n/g, '')
   // Replace <br /> tags with new lines
   formattedText = formattedText.replace(/<br\s*\/?>/gi, '\n')
   // formattedText = formattedText.replace(/<p(?:\s+[^>]*?)?>(.*?)<\/p>/gi, '')
