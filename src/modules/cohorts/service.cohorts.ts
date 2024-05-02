@@ -51,7 +51,7 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
         // create student info for all profiles
         const studentsList = await Promise.all(profiles.map((user) => {
             if (user && !user.deleted && !user.is_bot) {
-                return studentService.registerStudent({
+                return studentService.registerStudentSlack({
                     email: "",
                     slackId: user.id,
                     firstName: user.profile.first_name,

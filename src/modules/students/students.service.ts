@@ -62,6 +62,17 @@ export const registerStudent = async (payload: CreateStudentPayload): Promise<St
 }
 
 
+export const registerStudentSlack = async (payload: CreateStudentPayload): Promise<StudentInterface> => {
+  let student = await Students.findOne({ slackId: payload.slackId })
+  if (!student) {
+    student = await Students.create({
+      ...payload
+    })
+  }
+  return student
+}
+
+
 
 // otps
 
