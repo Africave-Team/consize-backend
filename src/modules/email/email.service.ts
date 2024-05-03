@@ -83,6 +83,10 @@ export const sendResetPasswordEmail = async (to: string, token: string, firstNam
   await sendEmail({ to, templateVariables: { firstName, url: `${config.clientUrl}/auth/reset-password?token=${token}` }, template: "forgot", subject: "You forgot your password" })
 }
 
+export const sendResetPasswordEmailAdmin = async (to: string, token: string, firstName: string): Promise<void> => {
+  await sendEmail({ to, templateVariables: { firstName, url: `${config.clientUrl}/console/auth/reset-password?token=${token}` }, template: "forgot", subject: "You forgot your password" })
+}
+
 export const sendVerificationEmail = async (to: string, firstName: string, token: string): Promise<void> => {
   // 5812715
   await sendEmail({ to, templateVariables: { firstName, url: `${config.clientUrl}/auth/verify?token=${token}` }, template: "verify", subject: "Let's verify your email" })
@@ -93,6 +97,6 @@ export const sendTeamInvitationEmail = async (to: string, firstName: string, tea
   await sendEmail({ to, templateVariables: { firstName, url: `${config.clientUrl}/auth/team-invitation?token=${token}` }, template: "invite", subject: "You have been invited to " + teamName })
 }
 
-export const sendSignatureNotificationEmail = async (to: string, firstName: string, teamName: string, token: string, id:string): Promise<void> => {
-  await sendEmail({ to, templateVariables: { firstName, url: `${config.clientUrl}/signatories/${id}/?=${token}` }, template: "signature", subject: "You have been invited as a signatory to " +teamName})
+export const sendSignatureNotificationEmail = async (to: string, firstName: string, teamName: string, token: string, id: string): Promise<void> => {
+  await sendEmail({ to, templateVariables: { firstName, url: `${config.clientUrl}/signatories/${id}/?=${token}` }, template: "signature", subject: "You have been invited as a signatory to " + teamName })
 }

@@ -15,7 +15,7 @@ import { generateAuthTokens, verifyToken } from '../token/token.service'
 export const loginUserWithEmailAndPassword = async (email: string, password: string): Promise<IUserDoc> => {
   const user = await getUserByEmail(email)
   if (!user || !(await user.isPasswordMatch(password))) {
-    throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password')
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Incorrect email or password')
   }
   return user
 }
@@ -69,7 +69,7 @@ export const resetPassword = async (resetPasswordToken: any, newPassword: string
     await updateUserById(user.id, { password: newPassword })
     await Token.deleteMany({ user: user.id, type: tokenTypes.RESET_PASSWORD })
   } catch (error) {
-    throw new ApiError(httpStatus.UNAUTHORIZED, 'Password reset failed')
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Password reset failed')
   }
 }
 
@@ -87,7 +87,7 @@ export const acceptInvite = async (token: any, password: string): Promise<IUserD
     await Token.deleteMany({ user: user.id, type: tokenTypes.RESET_PASSWORD })
     return user
   } catch (error) {
-    throw new ApiError(httpStatus.UNAUTHORIZED, 'Password reset failed')
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Password reset failed')
   }
 }
 
@@ -107,6 +107,6 @@ export const verifyEmail = async (verifyEmailToken: any): Promise<IUserDoc | nul
     const updatedUser = await updateUserById(user.id, { isEmailVerified: true })
     return updatedUser
   } catch (error) {
-    throw new ApiError(httpStatus.UNAUTHORIZED, 'Email verification failed')
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Email verification failed')
   }
 }

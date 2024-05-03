@@ -8,6 +8,8 @@ import tokenTypes from './token.types'
 import { AccessAndRefreshTokens, ITokenDoc } from './token.interfaces'
 import { IUserDoc } from '../user/user.interfaces'
 import { userService } from '../user'
+import * as admin from "../admin"
+import { IAdminDoc } from '../admin/admin.interfaces'
 
 /**
  * Generate token
@@ -90,7 +92,7 @@ export const verifyToken = async (token: string, type: string): Promise<ITokenDo
  * @param {IUserDoc} user
  * @returns {Promise<AccessAndRefreshTokens>}
  */
-export const generateAuthTokens = async (user: IUserDoc): Promise<AccessAndRefreshTokens> => {
+export const generateAuthTokens = async (user: IUserDoc | IAdminDoc): Promise<AccessAndRefreshTokens> => {
   const accessTokenExpires = moment().add(config.jwt.accessExpirationMinutes, 'minutes')
   const accessToken = generateToken(user.id, accessTokenExpires, tokenTypes.ACCESS)
 
@@ -117,6 +119,23 @@ export const generateAuthTokens = async (user: IUserDoc): Promise<AccessAndRefre
  */
 export const generateResetPasswordToken = async (email: string): Promise<{ resetPasswordToken: string; user: IUserDoc }> => {
   const user = await userService.getUserByEmail(email)
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Account not found for this email')
+  }
+  const expires = moment().add(config.jwt.resetPasswordExpirationMinutes, 'minutes')
+  const resetPasswordToken = generateToken(user.id, expires, tokenTypes.RESET_PASSWORD)
+  await saveToken(resetPasswordToken, user.id, expires, tokenTypes.RESET_PASSWORD)
+  return { resetPasswordToken, user }
+}
+
+
+/**
+ * Generate reset password token
+ * @param {string} email
+ * @returns {Promise<string>}
+ */
+export const generateResetPasswordTokenAdmin = async (email: string): Promise<{ resetPasswordToken: string; user: IAdminDoc }> => {
+  const user = await admin.Administrator.findOne({ email })
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Account not found for this email')
   }

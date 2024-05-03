@@ -14,13 +14,18 @@ export interface SEND_VERIFICATION_MESSAGE {
   name: string
   code: string
   teamName?: string
+  admin?: boolean
 }
 
 const forgotPasswordprocessor: Processor<SEND_VERIFICATION_MESSAGE> = async (job: Job<SEND_VERIFICATION_MESSAGE>) => {
-  const { code, email, name, } = job.attrs.data
+  const { code, email, name, admin } = job.attrs.data
   try {
     if (AppConfig.server !== "test") {
-      await emailService.sendResetPasswordEmail(email, code, name.split(' ')[0] || 'Customer')
+      if (admin) {
+        await emailService.sendResetPasswordEmailAdmin(email, code, name.split(' ')[0] || 'Customer')
+      } else {
+        await emailService.sendResetPasswordEmail(email, code, name.split(' ')[0] || 'Customer')
+      }
     }
   } catch (error) {
     console.log(error)
