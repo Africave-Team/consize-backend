@@ -10,7 +10,7 @@ import Reminders from '../reminders.model'
 import { CourseSettings } from '../../courses/interfaces.settings'
 import Settings from '../../courses/model.settings'
 import { initiateCourseForCohort, initiateCourseForCohortForSingleStudent } from '../../cohorts/service.cohorts'
-import Courses from '@/modules/courses/model.courses'
+import Courses from '../../courses/model.courses'
 
 export const handleCourseTrends: Processor<{ courseId: string, teamId: string }> = async (job: Job<{ courseId: string, teamId: string }>) => {
   try {
