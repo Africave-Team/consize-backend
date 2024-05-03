@@ -1,30 +1,15 @@
-import { CourseInterface, CourseInterfaceModel, CourseStatus, Distribution, Media, MediaType, Sources } from './interfaces.courses'
+import { CourseInterface, CourseInterfaceModel, CourseStatus, Distribution, Sources } from './interfaces.courses'
 import mongoose, { Schema } from 'mongoose'
 import { agenda } from '../scheduler'
 import { v4 } from "uuid"
 import { toJSON } from '../toJSON'
 import { paginate } from '../paginate'
-import { GENERATE_COURSE_TRENDS } from '../scheduler/MessageTypes'
+import { GENERATE_COURSE_TRENDS, COHORT_SCHEDULE } from '../scheduler/MessageTypes'
+import { MediaSchema } from './model.media'
+import { Cohorts } from '../cohorts'
+import { CohortsStatus } from '../cohorts/interface.cohorts'
 
-export const MediaSchema = new Schema<Media>(
-    {
-        awsFileKey: {
-            type: String
-        },
-        url: {
-            type: String,
-        },
-        mediaType: {
-            type: String,
-            enum: Object.values(MediaType),
-            default: MediaType.IMAGE
-        }
-    },
-    {
-        _id: false,
-        timestamps: false
-    }
-)
+
 
 const CourseSchema = new Schema<CourseInterface, CourseInterfaceModel>(
     {
@@ -118,6 +103,11 @@ Courses.watch().
     }) => {
         if (data.updateDescription && data.updateDescription.updatedFields && data.updateDescription.updatedFields.status && data.updateDescription.updatedFields.status === CourseStatus.PUBLISHED) {
             let courseId = data.documentKey._id.toString()
+            // get all cohorts for this course whose status is still pending
+            const cohorts = await Cohorts.find({ courseId, status: CohortsStatus.PENDING, $or: [{ schedule: false }, { schedule: { $exists: false } }] })
+            for (let coh of cohorts) {
+                agenda.now<{ cohortId: string }>(COHORT_SCHEDULE, { cohortId: coh.id })
+            }
             const jobs = await agenda.jobs({ 'data.courseId': courseId })
             jobs.forEach(async (job) => {
                 await job.remove()

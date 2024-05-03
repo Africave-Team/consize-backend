@@ -62,6 +62,17 @@ export const registerStudent = async (payload: CreateStudentPayload): Promise<St
 }
 
 
+export const registerStudentSlack = async (payload: CreateStudentPayload): Promise<StudentInterface> => {
+  let student = await Students.findOne({ slackId: payload.slackId })
+  if (!student) {
+    student = await Students.create({
+      ...payload
+    })
+  }
+  return student
+}
+
+
 
 // otps
 
@@ -165,6 +176,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
     name: student.firstName + ' ' + student.otherNames,
     phoneNumber: student.phoneNumber,
     progress: 0,
+    studentId,
     completed: false,
     droppedOut: false,
     scores: [],
@@ -199,6 +211,7 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
         name: `${student.firstName} ${student.otherNames}`,
         phoneNumber: student.phoneNumber,
         completed: false,
+        studentId: student.id,
         progress: 0,
         droppedOut: false,
         scores: [],
@@ -319,6 +332,7 @@ export const saveQuizDuration = async function (teamId: string, studentId: strin
       data = {
         name: `${student.firstName} ${student.otherNames}`,
         phoneNumber: student.phoneNumber,
+        studentId,
         completed: false,
         droppedOut: false,
         progress: 0,
@@ -398,8 +412,8 @@ export const testCourseSlack = async (slackId: string, courseId: string): Promis
   }
   if (owner.slackToken) {
     await generateCourseFlow(courseId)
-    await startCourseSlack(slackId, courseId, slackId)
-    await sendWelcomeSlack(courseId, slackId, owner.slackToken)
+    const id = await startCourseSlack(slackId, courseId, slackId, owner.slackToken)
+    await sendWelcomeSlack(courseId, slackId, owner.slackToken, id)
   }
 
 }

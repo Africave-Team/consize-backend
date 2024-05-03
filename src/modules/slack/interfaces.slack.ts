@@ -29,11 +29,13 @@ export interface Fetchmembers {
 
 export enum SlackTextMessageTypes {
   PLAINTEXT = "plain_text",
-  MARKDOWN = "mrkdwn"
+  MARKDOWN = "mrkdwn",
 }
 
 export enum SlackActionType {
-  BUTTON = "button"
+  BUTTON = "button",
+  TEXTINPUT = "plain_text_input",
+  SELECT = "static_select"
 }
 
 export interface SlackTextMessage {
@@ -45,7 +47,10 @@ export interface SlackTextMessage {
 export enum MessageBlockType {
   HEADER = "header",
   SECTION = "section",
-  ACTIONS = "actions"
+  ACTIONS = "actions",
+  IMAGE = "image",
+  INPUT = "input",
+  DIVIDER = "divider"
 }
 
 export enum MessageActionButtonStyle {
@@ -58,22 +63,87 @@ export interface SlackMessageBlock {
   text?: SlackTextMessage
   fields?: SlackTextMessage[]
   elements?: SlackActionBlock[]
+  element?: SlackActionBlock
+  image_url?: string
+  block_id?: string
+  alt_text?: string
+  label?: SlackTextMessage
 }
 
 export interface SlackActionBlock {
   type: SlackActionType
-  text: SlackTextMessage
-  style: MessageActionButtonStyle
-  value: string
+  text?: SlackTextMessage
+  style?: MessageActionButtonStyle
+  value?: string
+  multiline?: boolean
+  placeholder?: SlackTextMessage
+  action_id?: string
+  options?: { text: SlackTextMessage, value: string }[]
 }
 
 export interface SlackMessage {
+  type?: string
   text?: string
   blocks?: SlackMessageBlock[]
+  title?: SlackTextMessage
+  submit?: SlackTextMessage
+  callback_id?: string
+  close?: SlackTextMessage
 }
 
 export interface SendSlackMessagePayload {
   channel: string
   message: SlackMessage
   accessToken: string
+}
+
+export interface SendSlackResponsePayload {
+  url: string
+  message: SlackMessage
+}
+
+
+export interface SendSlackModalPayload {
+  token: string
+  trigger_id: string
+  view: SlackMessage
+}
+
+
+export interface SlackResponseAction {
+  action_id: string
+  value: string
+}
+
+export interface SlackResponseChannel {
+  id: string
+  name: string
+}
+export interface SlackResponseUser {
+  id: string
+  name: string
+  username: string
+}
+export interface SlackResponse {
+  actions: SlackResponseAction[]
+  response_url: string
+  user: SlackResponseUser
+  channel: SlackResponseChannel
+  type: string
+  trigger_id: string
+  view: {
+    callback_id: string
+    state: {
+      values: {
+        [id: string]: {
+          [value: string]: {
+            value?: string
+            selected_option?: {
+              value?: string
+            }
+          }
+        }
+      }
+    }
+  }
 }

@@ -1,5 +1,4 @@
 import express, { Request, Response, Router } from 'express'
-import "../../modules/students"
 import authRoute from './auth.route'
 import userRoute from './user.route'
 import teamRoute from './team.route'
@@ -16,6 +15,7 @@ import studentsRoute from './students'
 import whatsappRoute from './whatsapp.route'
 import slackRoute from './slack.route'
 import surveyRoute from "./survey.route"
+import adminRoute from "./admin"
 import config from '../../config/config'
 
 const router = express.Router()
@@ -26,6 +26,10 @@ interface IRoute {
 }
 
 const defaultIRoute: IRoute[] = [
+  {
+    path: '/console',
+    route: adminRoute,
+  },
   {
     path: '/auth',
     route: authRoute,

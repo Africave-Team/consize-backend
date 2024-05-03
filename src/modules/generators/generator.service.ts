@@ -1,11 +1,9 @@
 import puppeteer from 'puppeteer'
-import { Student } from '../students'
 import { uploadFileToCloudStorage } from '../upload/service.upload'
 import { BoardMember, GenerateCertificatePayload, GenerateLeaderboardPayload } from './generator.interfaces'
 import { StudentCourseStats, StudentInterface } from '../students/interface.students'
 import { CourseInterface } from '../courses/interfaces.courses'
 import { TeamsInterface } from '../teams/interfaces.teams'
-import { Course } from '../courses'
 import db from "../rtdb"
 import Teams from '../teams/model.teams'
 import { COURSE_STATS } from '../rtdb/nodes'
@@ -14,10 +12,14 @@ import { agenda } from '../scheduler'
 import config from '../../config/config'
 import { CourseFlowItem, CourseFlowMessageType, handleContinue } from '../webhooks/service.webhooks'
 import { CourseEnrollment, Message } from '../webhooks/interfaces.webhooks'
-import { SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { SEND_SLACK_MESSAGE, SEND_SLACK_RESPONSE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { fetchSignatures } from '../signatures/service.signatures'
 import { completeCourse } from '../students/students.service'
 import { redisClient } from '../redis'
+import { MessageBlockType, SendSlackMessagePayload, SendSlackResponsePayload } from '../slack/interfaces.slack'
+import { handleContinueSlack } from '../slack/slack.services'
+import Students from '../students/model.students'
+import Courses from '../courses/model.courses'
 
 
 export function delay (ms: number) {
@@ -27,8 +29,8 @@ export function delay (ms: number) {
 }
 
 export const sendCourseLeaderboard = async (courseId: string, studentId: string, enrollment: CourseEnrollment): Promise<void> => {
-  const student = await Student.findById(studentId)
-  const course = await Course.findById(courseId)
+  const student = await Students.findById(studentId)
+  const course = await Courses.findById(courseId)
   if (course && student) {
     const owner = await Teams.findById(course.owner)
     if (owner) {
@@ -49,6 +51,35 @@ export const sendCourseLeaderboard = async (courseId: string, studentId: string,
     let msgId = v4()
     await delay(5000)
     await handleContinue(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, student.phoneNumber, msgId, enrollment)
+  }
+}
+
+
+export const sendCourseLeaderboardSlack = async (courseId: string, studentId: string, enrollment: CourseEnrollment, url: string): Promise<void> => {
+  const student = await Students.findById(studentId)
+  const course = await Courses.findById(courseId)
+  if (course && student && student.channelId) {
+    const owner = await Teams.findById(course.owner)
+    if (owner) {
+      const leaderboardUrl = await generateCourseLeaderboard(course, student, owner)
+      if (leaderboardUrl.includes('https://')) {
+        agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
+          url,
+          message: {
+            blocks: [
+              {
+                type: MessageBlockType.IMAGE,
+                image_url: leaderboardUrl,
+                alt_text: "Course leaderboard"
+              }
+            ]
+          }
+        })
+      }
+    }
+    let msgId = v4()
+    await delay(5000)
+    await handleContinueSlack(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, student.channelId, url, msgId, enrollment)
   }
 }
 
@@ -79,7 +110,7 @@ export const generateCourseLeaderboard = async (course: CourseInterface, student
       }
       return {
         name: std.name,
-        isCurrentUser: student.phoneNumber === std.phoneNumber,
+        isCurrentUser: student.id === std.studentId,
         rank: index + 1,
         score
       }
@@ -150,8 +181,8 @@ export const generateCourseLeaderboard = async (course: CourseInterface, student
 
 
 export const sendCourseCertificate = async (courseId: string, studentId: string): Promise<void> => {
-  const student = await Student.findById(studentId)
-  const course = await Course.findById(courseId)
+  const student = await Students.findById(studentId)
+  const course = await Courses.findById(courseId)
   if (course && student) {
     const owner = await Teams.findById(course.owner)
     if (owner) {
@@ -166,6 +197,34 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
           recipient_type: "individual",
           image: {
             link: url
+          }
+        })
+      }
+    }
+  }
+}
+
+export const sendCourseCertificateSlack = async (courseId: string, studentId: string): Promise<void> => {
+  const student = await Students.findById(studentId)
+  const course = await Courses.findById(courseId)
+  if (course && student) {
+    const owner = await Teams.findById(course.owner)
+    if (owner && owner.slackToken) {
+      const url = await generateCourseCertificate(course, student, owner)
+      if (url.includes('https://')) {
+        // send media message with continue button
+        completeCourse(course.owner, studentId, courseId, url)
+        agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+          accessToken: owner.slackToken,
+          channel: student.channelId,
+          message: {
+            blocks: [
+              {
+                type: MessageBlockType.IMAGE,
+                image_url: url,
+                alt_text: "Student course certificate"
+              }
+            ]
           }
         })
       }

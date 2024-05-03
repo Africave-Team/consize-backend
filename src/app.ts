@@ -10,6 +10,7 @@ import httpStatus from 'http-status'
 import config from './config/config'
 import { morgan } from './modules/logger'
 import { jwtStrategy } from './modules/auth'
+import { jwtStrategy as adminJwtStrategy } from './modules/admin'
 import { authLimiter } from './modules/utils'
 import { ApiError, errorConverter, errorHandler } from './modules/errors'
 import './modules/redis'
@@ -47,6 +48,8 @@ app.use(compression())
 // jwt authentication
 app.use(passport.initialize())
 passport.use('jwt', jwtStrategy)
+
+passport.use('jwt-admin', adminJwtStrategy)
 
 // limit repeated failed requests to auth endpoints
 if (config.env === 'production') {

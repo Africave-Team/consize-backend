@@ -1,19 +1,29 @@
-import { Document } from 'mongoose'
-import { IUser } from '../user/user.interfaces'
+import { Document, Model } from 'mongoose'
+import { IUser, IUserDoc } from '../user/user.interfaces'
+import { QueryResult } from '../paginate/paginate'
 
 export interface TeamsInterface extends Document {
     _id: string
     name: string
+    verified: boolean
     owner: string
-    slackToken: string
+    slackToken: string | null
     logo?: string
     createdAt?: Date
     updatedAt?: Date
 }
 
+export interface TeamInterfaceWithOwner extends Omit<TeamsInterface, 'owner'> {
+    owner: IUserDoc
+}
+
 
 export interface ITeamDoc extends TeamsInterface {
 
+}
+
+export interface ITeamModel extends Model<ITeamDoc> {
+    paginate (filter: Record<string, any>, options: Record<string, any>): Promise<QueryResult<ITeamDoc>>
 }
 
 export type NewTeamUser = Omit<IUser, 'isEmailVerified' | 'team' | 'password' | 'avatar'>

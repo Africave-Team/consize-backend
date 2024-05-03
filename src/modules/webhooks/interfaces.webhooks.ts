@@ -89,6 +89,8 @@ export interface CourseEnrollment {
   nextBlock: number
   totalBlocks: number
   quizAttempts: number
+  slackResponseUrl?: string
+  slackToken?: string
   blockStartTime?: Date | null
   lessons?: {
     [id: string]: {
@@ -123,3 +125,8 @@ export const AFTERNOON = TOMORROW + '_3pm'
 export const EVENING = TOMORROW + '_8pm'
 
 export const RESUME_COURSE = "RESUME_COURSE"
+
+
+// slack
+export const ACCEPT_INVITATION = "accept_invitation"
+export const REJECT_INVITATION = "reject_invitation"

@@ -1,20 +1,5 @@
 import Joi from 'joi'
 import { password } from '../validate/custom.validation'
-import { NewRegisteredUser } from '../user/user.interfaces'
-
-export interface NewAccount extends NewRegisteredUser {
-  companyName: string
-}
-const registerBody: Record<keyof NewAccount, any> = {
-  email: Joi.string().required().email(),
-  password: Joi.string().required().custom(password),
-  name: Joi.string().required(),
-  companyName: Joi.string().required(),
-}
-
-export const register = {
-  body: Joi.object().keys(registerBody),
-}
 
 export const login = {
   body: Joi.object().keys({
@@ -51,9 +36,7 @@ export const resetPassword = {
 }
 
 export const verifyEmail = {
-  body: Joi.object().keys({
+  query: Joi.object().keys({
     token: Joi.string().required(),
-    password: Joi.string().required(),
-    logo: Joi.string().required(),
   }),
 }

@@ -3,7 +3,7 @@ import mongoose, { Schema } from 'mongoose'
 import { v4 } from "uuid"
 import { toJSON } from '../toJSON'
 import { paginate } from '../paginate'
-import { MediaSchema } from './model.courses'
+import { MediaSchema } from './model.media'
 
 const BlockSchema = new Schema<BlockInterface, BlockInterfaceModel>(
   {
