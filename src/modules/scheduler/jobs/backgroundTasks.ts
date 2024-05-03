@@ -7,10 +7,10 @@ import config from '../../../config/config'
 import { sendResumptionMessage } from '../../webhooks/service.webhooks'
 import Reminders from '../reminders.model'
 // import { agenda } from '..'
-import { Course } from '../../courses'
 import { CourseSettings } from '../../courses/interfaces.settings'
 import Settings from '../../courses/model.settings'
 import { initiateCourseForCohort, initiateCourseForCohortForSingleStudent } from '../../cohorts/service.cohorts'
+import Courses from '@/modules/courses/model.courses'
 
 export const handleCourseTrends: Processor<{ courseId: string, teamId: string }> = async (job: Job<{ courseId: string, teamId: string }>) => {
   try {
@@ -49,7 +49,7 @@ const handleStartDailyRoutine: Processor<{ courseId: string, studentId: string }
 
       if (reminder.dailyCount === 0) {
         // get the course settings
-        const course = await Course.findById(data.courseId).select("settings")
+        const course = await Courses.findById(data.courseId).select("settings")
         if (course && course.settings) {
           let settings: CourseSettings | null = await Settings.findById(course.settings)
           if (settings) {

@@ -10,7 +10,6 @@ import OTP from './model.otp'
 import db from "../rtdb"
 import moment from 'moment'
 import config from '../../config/config'
-import { Course } from '../courses'
 import { generateCourseFlow, sendWelcome, startCourse } from '../webhooks/service.webhooks'
 import { LessonInterface } from '../courses/interfaces.lessons'
 import { BlockInterface } from '../courses/interfaces.blocks'
@@ -18,6 +17,7 @@ import { COURSE_STATS } from '../rtdb/nodes'
 import Teams from '../teams/model.teams'
 import { QuizInterface } from '../courses/interfaces.quizzes'
 import { sendWelcomeSlack, startCourseSlack } from '../slack/slack.services'
+import Courses from '../courses/model.courses'
 
 export const bulkAddStudents = async (students: Student[]): Promise<string[]> => {
   try {
@@ -159,7 +159,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
   }
 
   // enroll course
-  const course = await Course.findById(courseId)
+  const course = await Courses.findById(courseId)
   if (!course) {
     throw new ApiError(httpStatus.NOT_FOUND, "No course found for this id.")
   }
@@ -402,7 +402,7 @@ export const saveQuizDuration = async function (teamId: string, studentId: strin
 export const testCourseSlack = async (slackId: string, courseId: string): Promise<void> => {
 
   // enroll course
-  const course = await Course.findById(courseId)
+  const course = await Courses.findById(courseId)
   if (!course) {
     throw new ApiError(httpStatus.NOT_FOUND, "No course found for this id.")
   }
@@ -420,7 +420,7 @@ export const testCourseSlack = async (slackId: string, courseId: string): Promis
 
 export const testCourseWhatsapp = async (phoneNumber: string, courseId: string): Promise<void> => {
   // enroll course
-  const course = await Course.findById(courseId)
+  const course = await Courses.findById(courseId)
   if (!course) {
     throw new ApiError(httpStatus.NOT_FOUND, "No course found for this id.")
   }
