@@ -10,7 +10,6 @@ import OTP from './model.otp'
 import db from "../rtdb"
 import moment from 'moment'
 import config from '../../config/config'
-import { Course } from '../courses'
 import { generateCourseFlow, sendWelcome, startCourse } from '../webhooks/service.webhooks'
 import { LessonInterface } from '../courses/interfaces.lessons'
 import { BlockInterface } from '../courses/interfaces.blocks'
