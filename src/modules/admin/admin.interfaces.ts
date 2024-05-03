@@ -31,3 +31,11 @@ export interface IAdminWithTokens {
   user: IAdminDoc
   tokens: AccessAndRefreshTokens
 }
+
+
+
+export interface FetchApiInterface {
+  search?: string
+  page?: string
+  pageSize?: string
+}

@@ -51,7 +51,9 @@ export const resetPassword = {
 }
 
 export const verifyEmail = {
-  query: Joi.object().keys({
+  body: Joi.object().keys({
     token: Joi.string().required(),
+    password: Joi.string().required(),
+    logo: Joi.string().required(),
   }),
 }

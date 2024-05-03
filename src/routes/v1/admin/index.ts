@@ -1,7 +1,7 @@
 import express, { Request, Response, Router } from 'express'
 import authRoute from './auth.routes'
 import coursesRoute from './courses.routes'
-import teamRoute from './teams.routes'
+import companyRoute from './company.routes'
 import config from '../../../config/config'
 
 const router = express.Router()
@@ -17,11 +17,11 @@ const defaultIRoute: IRoute[] = [
     route: authRoute,
   },
   {
-    path: '/teams',
-    route: teamRoute,
+    path: '/company',
+    route: companyRoute,
   },
   {
-    path: '/courses',
+    path: '/course',
     route: coursesRoute
   }
 ]

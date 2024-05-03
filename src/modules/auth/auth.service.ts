@@ -96,7 +96,7 @@ export const acceptInvite = async (token: any, password: string): Promise<IUserD
  * @param {string} verifyEmailToken
  * @returns {Promise<IUserDoc | null>}
  */
-export const verifyEmail = async (verifyEmailToken: any): Promise<IUserDoc | null> => {
+export const verifyEmail = async (verifyEmailToken: string, password: string): Promise<IUserDoc | null> => {
   try {
     const verifyEmailTokenDoc = await verifyToken(verifyEmailToken, tokenTypes.VERIFY_EMAIL)
     const user = await getUserById(verifyEmailTokenDoc.user)
@@ -104,7 +104,7 @@ export const verifyEmail = async (verifyEmailToken: any): Promise<IUserDoc | nul
       throw new Error()
     }
     await Token.deleteMany({ user: user.id, type: tokenTypes.VERIFY_EMAIL })
-    const updatedUser = await updateUserById(user.id, { isEmailVerified: true })
+    const updatedUser = await updateUserById(user.id, { isEmailVerified: true, password })
     return updatedUser
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Email verification failed')

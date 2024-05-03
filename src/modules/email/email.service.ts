@@ -92,6 +92,11 @@ export const sendVerificationEmail = async (to: string, firstName: string, token
   await sendEmail({ to, templateVariables: { firstName, url: `${config.clientUrl}/auth/verify?token=${token}` }, template: "verify", subject: "Let's verify your email" })
 }
 
+export const sendOnboardingEmail = async (to: string, firstName: string, token: string): Promise<void> => {
+  // 5812715
+  await sendEmail({ to, templateVariables: { firstName, url: `${config.clientUrl}/auth/onboard-companies?token=${token}` }, template: "onboard", subject: "Let's onboard your team" })
+}
+
 
 export const sendTeamInvitationEmail = async (to: string, firstName: string, teamName: string, token: string): Promise<void> => {
   await sendEmail({ to, templateVariables: { firstName, url: `${config.clientUrl}/auth/team-invitation?token=${token}` }, template: "invite", subject: "You have been invited to " + teamName })

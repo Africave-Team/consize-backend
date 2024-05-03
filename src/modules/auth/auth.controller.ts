@@ -63,6 +63,10 @@ export const sendVerificationEmail = catchAsync(async (req: Request, res: Respon
 })
 
 export const verifyEmail = catchAsync(async (req: Request, res: Response) => {
-  await authService.verifyEmail(req.query['token'])
+  const { token, password, logo } = req.body
+  const user = await authService.verifyEmail(token, password)
+  if (user) {
+    await teamService.updateTeamInfo(user.team, { logo, verified: true })
+  }
   res.status(httpStatus.NO_CONTENT).send()
 })
