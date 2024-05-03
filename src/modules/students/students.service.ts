@@ -18,6 +18,7 @@ import { COURSE_STATS } from '../rtdb/nodes'
 import Teams from '../teams/model.teams'
 import { QuizInterface } from '../courses/interfaces.quizzes'
 import { sendWelcomeSlack, startCourseSlack } from '../slack/slack.services'
+import Courses from '../courses/model.courses'
 
 export const bulkAddStudents = async (students: Student[]): Promise<string[]> => {
   try {
@@ -159,7 +160,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
   }
 
   // enroll course
-  const course = await Course.findById(courseId)
+  const course = await Courses.findById(courseId)
   if (!course) {
     throw new ApiError(httpStatus.NOT_FOUND, "No course found for this id.")
   }
