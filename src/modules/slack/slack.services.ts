@@ -1151,7 +1151,7 @@ export const sendResumptionOptions = async (url: string, key: string, data: Cour
               {
                 "type": SlackActionType.BUTTON,
                 "text": {
-                  "type": SlackTextMessageTypes.MARKDOWN,
+                  "type": SlackTextMessageTypes.PLAINTEXT,
                   "text": "Morning",
                   "emoji": true
                 },
@@ -1161,7 +1161,7 @@ export const sendResumptionOptions = async (url: string, key: string, data: Cour
               {
                 "type": SlackActionType.BUTTON,
                 "text": {
-                  "type": SlackTextMessageTypes.MARKDOWN,
+                  "type": SlackTextMessageTypes.PLAINTEXT,
                   "text": "Afternoon",
                   "emoji": true
                 },
@@ -1171,7 +1171,7 @@ export const sendResumptionOptions = async (url: string, key: string, data: Cour
               {
                 "type": SlackActionType.BUTTON,
                 "text": {
-                  "type": SlackTextMessageTypes.MARKDOWN,
+                  "type": SlackTextMessageTypes.PLAINTEXT,
                   "text": "Evening",
                   "emoji": true
                 },
@@ -1211,7 +1211,7 @@ export const sendResumptionMessageSlack = async (channelId: string, key: string,
               {
                 "type": SlackActionType.BUTTON,
                 "text": {
-                  "type": SlackTextMessageTypes.MARKDOWN,
+                  "type": SlackTextMessageTypes.PLAINTEXT,
                   "text": "Resume now",
                   "emoji": true
                 },
