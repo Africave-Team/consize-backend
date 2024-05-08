@@ -61,7 +61,6 @@ if (config.env === 'production') {
 app.use("/agendash", Agendash(agenda))
 
 app.use((req, res, next) => {
-  console.log(req.path, req.ip)
   if (!req.path.startsWith('/v1') && !req.path.startsWith('/agendash')) {
     // Apply rate limiter here
     // For example, applying the same limiter as '/v1/auth'
