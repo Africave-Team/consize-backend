@@ -163,14 +163,14 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         case MORNING:
           if (enrollment) {
             let msgId = v4()
-            agenda.schedule(`tomorrow at 9 am}`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            agenda.schedule(`tomorrow at 9 am`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "9:00am")
           }
           break
         case AFTERNOON:
           if (enrollment) {
             let msgId = v4()
-            agenda.schedule(`tomorrow at 3 pm}`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            agenda.schedule(`tomorrow at 3 pm`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "3:00pm")
           }
           break

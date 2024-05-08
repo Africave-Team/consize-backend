@@ -1183,7 +1183,7 @@ export const sendResumptionOptions = async (url: string, key: string, data: Cour
         ]
       }
     })
-    redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
+    await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
@@ -1223,7 +1223,7 @@ export const sendResumptionMessageSlack = async (channelId: string, key: string,
         ]
       }
     })
-    redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
+    await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }

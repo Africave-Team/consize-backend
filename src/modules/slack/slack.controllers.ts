@@ -143,14 +143,14 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
             case MORNING:
               if (enrollment) {
                 let msgId = v4()
-                agenda.schedule(`tomorrow at 9 am}`, RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
+                agenda.schedule(`tomorrow at 9 am`, RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
                 sendScheduleAcknowledgement(response_url, "9:00am")
               }
               break
             case AFTERNOON:
               if (enrollment) {
                 let msgId = v4()
-                agenda.schedule(`tomorrow at 3 pm}`, RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
+                agenda.schedule(`tomorrow at 3 pm`, RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
                 sendScheduleAcknowledgement(response_url, "3:00pm")
               }
               break
@@ -163,7 +163,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
               break
             case SCHEDULE_RESUMPTION:
               if (enrollment) {
-                const key = `${config.redisBaseKey}enrollments:${response_url}:${enrollment.id}`
+                const key = `${config.redisBaseKey}enrollments:slack:${channel.id}:${enrollment.id}`
                 sendResumptionOptions(response_url, key, enrollment)
               }
               break
