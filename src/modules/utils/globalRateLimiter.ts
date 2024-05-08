@@ -1,8 +1,8 @@
 import rateLimit from 'express-rate-limit'
 
 const rateLimiter = rateLimit({
-  windowMs: 35 * 60 * 1000,
-  max: 2,
+  windowMs: 60 * 60 * 1000,
+  max: 1,
   skipSuccessfulRequests: true,
 })
 
