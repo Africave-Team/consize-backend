@@ -147,8 +147,8 @@ const setInitialCourseSettings = async function (id: string) {
       type: PeriodTypes.HOURS
     },
     inactivityPeriod: {
-      value: 1,
-      type: PeriodTypes.DAYS
+      value: 59,
+      type: PeriodTypes.MINUTES
     },
     dropoutEvent: DropoutEvents.LESSON_COMPLETION
   })
