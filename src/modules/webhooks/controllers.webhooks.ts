@@ -160,30 +160,24 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           }
           break
         case TOMORROW:
-          if (enrollment) {
-            let msgId = v4()
-            agenda.schedule(`in ${getMomentTomorrow(9)}`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
-            sendScheduleAcknowledgement(destination, "9:00am")
-          }
-          break
         case MORNING:
           if (enrollment) {
             let msgId = v4()
-            agenda.schedule(`today at noon`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            agenda.schedule(`tomorrow at 9 am}`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "9:00am")
           }
           break
         case AFTERNOON:
           if (enrollment) {
             let msgId = v4()
-            agenda.schedule(`in ${getMomentTomorrow(15)}`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            agenda.schedule(`tomorrow at 3 pm}`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "3:00pm")
           }
           break
         case EVENING:
           if (enrollment) {
             let msgId = v4()
-            agenda.schedule(`in ${getMomentTomorrow(20)}`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            agenda.schedule(`tomorrow at 8 pm`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "8:00pm")
           }
           break
