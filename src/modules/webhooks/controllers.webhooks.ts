@@ -23,7 +23,7 @@ export const getMomentTomorrow = (time: number) => {
   const targetTime = tomorrowDate.set('hour', time).set('minute', 0).set('second', 0)
 
   // Calculate the difference in hours
-  return targetTime.diff(currentTime, 'hours')
+  return targetTime.diff(currentTime, 'minutes')
 }
 
 export const whatsappWebhookSubscriber = catchAsync(async (req: Request, res: Response) => {
