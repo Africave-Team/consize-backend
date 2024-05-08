@@ -104,4 +104,12 @@ module.exports = (agenda: Agenda) => {
   agenda.define<{ cohortId: string, studentId: string }>(COHORT_SCHEDULE_STUDENT, handleCohortScheduleStudent)
   agenda.define<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>(INACTIVITY_REMINDER, handleInactivityReminders)
   agenda.define<{ enrollment: CourseEnrollment, phoneNumber?: string, messageId: string, channelId?: string }>(RESUME_TOMORROW, handleContinueTomorrow)
+
+  const scheduleDailyRoutine = async () => {
+    const jobs = await agenda.jobs({ name: DAILY_ROUTINE })
+    if (jobs.length === 0) {
+      agenda.every('12am', DAILY_ROUTINE)
+    }
+  }
+  scheduleDailyRoutine()
 }
