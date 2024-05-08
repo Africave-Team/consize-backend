@@ -273,7 +273,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         }
       }
 
-      if (response === "Begin Now") {
+      if (response === "Begin now") {
         if (enrollment) {
           let msgId = v4()
           await handleContinue(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, enrollment)
