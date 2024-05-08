@@ -63,10 +63,16 @@ export interface SlackMessageBlock {
   text?: SlackTextMessage
   fields?: SlackTextMessage[]
   elements?: SlackActionBlock[]
+  accessory?: {
+    type: MessageBlockType
+    image_url?: string
+    alt_text?: string
+    elements?: SlackActionBlock[]
+  }
   element?: SlackActionBlock
   image_url?: string
-  block_id?: string
   alt_text?: string
+  block_id?: string
   label?: SlackTextMessage
 }
 
