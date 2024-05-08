@@ -11,7 +11,6 @@ import { agenda } from '../scheduler'
 import { RESUME_TOMORROW, SEND_CERTIFICATE_SLACK, SEND_SLACK_MESSAGE, SEND_SLACK_RESPONSE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import config from '../../config/config'
-import { getMomentTomorrow } from '../webhooks/controllers.webhooks'
 import { Job } from 'agenda'
 import { CourseFlowMessageType } from '../webhooks/service.webhooks'
 import Students from '../students/model.students'
@@ -141,36 +140,30 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
 
               break
             case TOMORROW:
-              if (enrollment) {
-                let msgId = v4()
-                agenda.schedule(`in ${getMomentTomorrow(9)} hours`, RESUME_TOMORROW, { messageId: msgId, enrollment, })
-                sendScheduleAcknowledgement(response_url, "9:00am")
-              }
-              break
             case MORNING:
               if (enrollment) {
                 let msgId = v4()
-                agenda.schedule(`in ${getMomentTomorrow(9)} hours`, RESUME_TOMORROW, { messageId: msgId, enrollment })
+                agenda.schedule(`tomorrow at 9 am}`, RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
                 sendScheduleAcknowledgement(response_url, "9:00am")
               }
               break
             case AFTERNOON:
               if (enrollment) {
                 let msgId = v4()
-                agenda.schedule(`in ${getMomentTomorrow(15)} hours`, RESUME_TOMORROW, { messageId: msgId, enrollment })
+                agenda.schedule(`tomorrow at 3 pm}`, RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
                 sendScheduleAcknowledgement(response_url, "3:00pm")
               }
               break
             case EVENING:
               if (enrollment) {
                 let msgId = v4()
-                agenda.schedule(`in ${getMomentTomorrow(20)} hours`, RESUME_TOMORROW, { messageId: msgId, enrollment })
+                agenda.schedule(`tomorrow at 8 pm`, RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
                 sendScheduleAcknowledgement(response_url, "8:00pm")
               }
               break
             case SCHEDULE_RESUMPTION:
               if (enrollment) {
-                const key = `${config.redisBaseKey}enrollments:slack:${channel.id}:${enrollment.id}`
+                const key = `${config.redisBaseKey}enrollments:${response_url}:${enrollment.id}`
                 sendResumptionOptions(response_url, key, enrollment)
               }
               break

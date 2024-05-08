@@ -6,11 +6,11 @@ import { CourseEnrollment } from '../../webhooks/interfaces.webhooks'
 import config from '../../../config/config'
 import { sendResumptionMessage } from '../../webhooks/service.webhooks'
 import Reminders from '../reminders.model'
-// import { agenda } from '..'
 import { CourseSettings } from '../../courses/interfaces.settings'
 import Settings from '../../courses/model.settings'
 import { initiateCourseForCohort, initiateCourseForCohortForSingleStudent } from '../../cohorts/service.cohorts'
 import Courses from '../../courses/model.courses'
+import { sendResumptionMessageSlack } from '../../slack/slack.services'
 
 export const handleCourseTrends: Processor<{ courseId: string, teamId: string }> = async (job: Job<{ courseId: string, teamId: string }>) => {
   try {
@@ -24,12 +24,17 @@ export const handleCourseTrends: Processor<{ courseId: string, teamId: string }>
   }
 }
 
-const handleContinueTomorrow: Processor<{ enrollment: CourseEnrollment, phoneNumber: string, messageId: string }> = async (job: Job<{ enrollment: CourseEnrollment, phoneNumber: string, messageId: string }>) => {
+const handleContinueTomorrow: Processor<{ enrollment: CourseEnrollment, phoneNumber?: string, messageId: string, channelId?: string }> = async (job: Job<{ enrollment: CourseEnrollment, phoneNumber?: string, channelId?: string, messageId: string }>) => {
   try {
     if (AppConfig.server !== "test") {
       const data = job.attrs.data
-      const { enrollment, phoneNumber } = data
-      await sendResumptionMessage(phoneNumber, `${config.redisBaseKey}enrollments:${phoneNumber}:${enrollment.id}`, enrollment)
+      const { enrollment, phoneNumber, channelId } = data
+      if (phoneNumber && !channelId) {
+        await sendResumptionMessage(phoneNumber, `${config.redisBaseKey}enrollments:${phoneNumber}:${enrollment.id}`, enrollment)
+      }
+      if (channelId && !phoneNumber) {
+        sendResumptionMessageSlack(channelId, `${config.redisBaseKey}enrollments:slack:${channelId}:${enrollment.id}`, enrollment)
+      }
     }
   } catch (error) {
     console.log(error, "error send message")
@@ -107,5 +112,5 @@ module.exports = (agenda: Agenda) => {
   agenda.define<{ courseId: string, studentId: string }>(DAILY_REMINDER, handleDailyReminders)
   agenda.define<{ cohortId: string }>(COHORT_SCHEDULE, handleCohortSchedule)
   agenda.define<{ cohortId: string, studentId: string }>(COHORT_SCHEDULE_STUDENT, handleCohortScheduleStudent)
-  agenda.define<{ enrollment: CourseEnrollment, phoneNumber: string, messageId: string }>(RESUME_TOMORROW, handleContinueTomorrow)
+  agenda.define<{ enrollment: CourseEnrollment, phoneNumber?: string, messageId: string, channelId?: string }>(RESUME_TOMORROW, handleContinueTomorrow)
 }

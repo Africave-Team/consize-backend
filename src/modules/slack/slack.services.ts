@@ -168,9 +168,10 @@ export const createConversation = async function (slackToken: string, slackId: s
 
 // send message
 export const sendSlackMessage = async function (slackToken: string, channelId: string, content: SlackMessage) {
+  if (!content.blocks || !content.blocks[0]) return
   const result: AxiosResponse<{ ok: boolean, user: SlackUser }> = await axios.post(`https://slack.com/api/chat.postMessage`, {
     channel: channelId,
-    ...content
+    ...content.blocks[0]
   }, {
     headers: {
       "Content-Type": "application/json",
@@ -205,8 +206,9 @@ export const sendSlackModalMessage = async function (slackToken: string, trigger
 }
 
 export const sendSlackResponseMessage = async function (url: string, content: SlackMessage) {
+  if (!content.blocks || !content.blocks[0]) return
   const result: AxiosResponse<{ ok: boolean, user: SlackUser }> = await axios.post(url, {
-    ...content,
+    ...content.blocks[0],
     "replace_original": false,
     "response_type": "in_channel"
   }, {
@@ -1376,11 +1378,12 @@ export const sendResumptionOptions = async (url: string, key: string, data: Cour
 }
 
 
-export const sendResumptionMessage = async (url: string, key: string, data: CourseEnrollment): Promise<void> => {
+export const sendResumptionMessageSlack = async (channelId: string, key: string, data: CourseEnrollment): Promise<void> => {
   try {
     let msgId = v4()
-    agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
-      url,
+    agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+      channel: channelId,
+      accessToken: data.slackToken || "",
       message: {
         blocks: [
           {
