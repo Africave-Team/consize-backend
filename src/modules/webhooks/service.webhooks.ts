@@ -597,7 +597,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           if (data.blockStartTime) {
             const diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
             saveBlockDuration(data.team, data.student, diffInSeconds, currentItem.lesson, currentItem.block)
-            updatedData = { ...updatedData, blockStartTime: null }
+            updatedData = { ...updatedData, blockStartTime: null, lastActivity: new Date().toISOString() }
           }
         }
 
@@ -670,6 +670,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             agenda.now<CourseEnrollment>(SEND_LEADERBOARD, {
               ...updatedData
             })
+            updatedData.lastLessonCompleted = new Date().toISOString()
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
 

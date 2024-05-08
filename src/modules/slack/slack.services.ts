@@ -544,7 +544,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
           if (data.blockStartTime) {
             const diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
             saveBlockDuration(data.team, data.student, diffInSeconds, currentItem.lesson, currentItem.block)
-            updatedData = { ...updatedData, blockStartTime: null }
+            updatedData = { ...updatedData, blockStartTime: null, lastActivity: new Date().toISOString() }
           }
         }
 
@@ -629,6 +629,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
               ...updatedData,
               slackResponseUrl: url
             })
+            updatedData.lastLessonCompleted = new Date().toISOString()
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.ENDCOURSE:
