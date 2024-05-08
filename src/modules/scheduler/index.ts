@@ -1,6 +1,7 @@
 import { Agenda } from "agenda"
 import config from '../../config/config'
 import "./jobs/sendMessage"
+import { scheduleDailyRoutine } from '../webhooks/service.webhooks'
 const agenda = new Agenda({
   db: {
     address: `${config.mongoose.url}`,
@@ -20,7 +21,9 @@ jobTypes.forEach((type) => {
 
 if (jobTypes.length) {
   // if there are jobs in the jobsTypes array set up
-  agenda.on("ready", async () => await agenda.start())
+  agenda.on("ready", async () => await agenda.start().then(() => {
+    scheduleDailyRoutine()
+  }))
 }
 
 let graceful = () => {

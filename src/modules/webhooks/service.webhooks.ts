@@ -16,7 +16,7 @@ import Lessons from '../courses/model.lessons'
 import Blocks from '../courses/model.blocks'
 import Quizzes from '../courses/model.quizzes'
 import { agenda } from '../scheduler'
-import { INACTIVITY_REMINDER, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { DAILY_ROUTINE, INACTIVITY_REMINDER, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import { logger } from '../logger'
 import moment from 'moment'
@@ -372,6 +372,14 @@ export const scheduleInactivityMessage = async (enrollment: CourseEnrollment, ph
       await job.remove()
     }
     agenda.schedule(`in ${enrollment.inactivityPeriod.value} ${enrollment.inactivityPeriod.type}`, INACTIVITY_REMINDER, { studentId: enrollment.student, courseId: enrollment.id, slackToken: enrollment.slackToken, slackChannel, phoneNumber })
+  }
+}
+
+export const scheduleDailyRoutine = async () => {
+
+  const jobs = await agenda.jobs({ name: DAILY_ROUTINE })
+  if (jobs.length === 0) {
+    agenda.every('0 1 * * *', DAILY_ROUTINE)
   }
 }
 
