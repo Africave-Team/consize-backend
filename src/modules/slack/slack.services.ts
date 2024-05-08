@@ -24,6 +24,7 @@ import { delay } from '../generators/generator.service'
 import { SurveyResponse } from '../surveys'
 import { ResponseType } from '../surveys/survey.interfaces'
 import Surveys from '../surveys/survey.model'
+import Settings from '../courses/model.settings'
 
 export const handleSlackWebhook = async function () { }
 
@@ -298,6 +299,7 @@ export const startCourseSlack = async (channel: string, courseId: string, studen
   const key = `${config.redisBaseKey}enrollments:slack:${channel}:${courseId}`
   const initialMessageId = v4()
   if (course) {
+    let settings = await Settings.findById(course.settings)
     if (redisClient.isReady) {
       const courseKey = `${config.redisBaseKey}courses:${courseId}`
       const courseFlow = await redisClient.get(courseKey)
@@ -308,6 +310,9 @@ export const startCourseSlack = async (channel: string, courseId: string, studen
           student: studentId,
           id: courseId,
           lastMessageId: initialMessageId,
+          inactivityPeriod: settings?.inactivityPeriod,
+          lastActivity: new Date().toISOString(),
+          lastLessonCompleted: new Date().toISOString(),
           title: course.title,
           description: convertToWhatsAppString(he.decode(course.description)),
           active: true,

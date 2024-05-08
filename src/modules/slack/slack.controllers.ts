@@ -36,7 +36,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
           let enrollments: CourseEnrollment[] = await fetchEnrollmentsSlack(channel.id)
           let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
           const [btnId, messageId] = action.value.split('|')
-          if (messageId) {
+          if (messageId && !btnId?.startsWith("continue_")) {
             if (enrollment) {
               if (enrollment.lastMessageId && enrollment.lastMessageId !== messageId) {
                 return
@@ -218,14 +218,13 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                   const courseId = btnId.replace("continue_", "")
                   // continue a course from the positions message
                   const enrollments: CourseEnrollment[] = await fetchEnrollmentsSlack(channel.id)
-                  console.log(courseId)
-                  for (let _ of enrollments) {
-                    // const key = `${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`
-                    // let msgId = v4()
-                    // if (enrollment.id === courseId) {
-                    //   await handleContinue(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, enrollment)
-                    // }
-                    // redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId, lastMessageId: msgId, currentBlock: enrollment.currentBlock + 1, nextBlock: enrollment.nextBlock + 1 }))
+                  for (let enrollment of enrollments) {
+                    const key = `${config.redisBaseKey}enrollments:slack:${channel.id}:${enrollment.id}`
+                    let msgId = v4()
+                    if (enrollment.id === courseId) {
+                      await handleContinueSlack(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, channel.id, response_url, msgId, enrollment)
+                    }
+                    redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId, lastMessageId: msgId, currentBlock: enrollment.currentBlock + 1, nextBlock: enrollment.nextBlock + 1 }))
                   }
                 }
               }

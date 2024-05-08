@@ -290,63 +290,78 @@ export const sendMessage = async function (message: Message) {
 export const sendInactivityMessage = async (payload: { studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }) => {
   const msgId = v4()
   if (payload.phoneNumber && !payload.slackChannel) {
-    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-      to: payload.phoneNumber,
-      type: "interactive",
-      messaging_product: "whatsapp",
-      recipient_type: "individual",
-      interactive: {
-        body: {
-          text: `You have been idle on this course for sometime. Click 'Continue' to resume`
-        },
-        type: "button",
-        action: {
-          buttons: [
-            {
-              type: "reply",
-              reply: {
-                id: `continue_${payload.courseId}|${msgId}`,
-                title: "Continue"
-              }
-            }
-          ]
-        }
-      }
-    })
-  }
-
-  if (payload.slackChannel && payload.slackToken && !payload.phoneNumber) {
-    agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
-      channel: payload.slackChannel,
-      accessToken: payload.slackToken || "",
-      message: {
-        blocks: [
-          {
-            type: MessageBlockType.SECTION,
-            text: {
-              type: SlackTextMessageTypes.MARKDOWN,
-              text: `You have been idle on this course for sometime. Click 'Continue' to resume`
-            },
+    const key = `${config.redisBaseKey}enrollments:${payload.phoneNumber}:${payload.courseId}`
+    const dtf = await redisClient.get(key)
+    if (dtf) {
+      let redisData: CourseEnrollment = JSON.parse(dtf)
+      redisData.lastMessageId = msgId
+      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+        to: payload.phoneNumber,
+        type: "interactive",
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        interactive: {
+          body: {
+            text: `You have been idle on this course for sometime. Click 'Continue' to resume`
           },
-          {
-            type: MessageBlockType.ACTIONS,
-            elements: [
+          type: "button",
+          action: {
+            buttons: [
               {
-                "type": SlackActionType.BUTTON,
-                "text": {
-                  "type": SlackTextMessageTypes.PLAINTEXT,
-                  "text": "Continue",
-                  "emoji": true
-                },
-                "value": `continue_${payload.courseId}|${msgId}`,
-                style: MessageActionButtonStyle.PRIMARY
+                type: "reply",
+                reply: {
+                  id: `continue_${payload.courseId}|${msgId}`,
+                  title: "Continue"
+                }
               }
             ]
           }
-        ]
-      }
-    })
+        }
+      })
+      await redisClient.set(key, JSON.stringify(redisData))
+    }
   }
+
+  if (payload.slackChannel && payload.slackToken && !payload.phoneNumber) {
+    const key = `${config.redisBaseKey}enrollments:slack:${payload.slackChannel}:${payload.courseId}`
+    const dtf = await redisClient.get(key)
+    if (dtf) {
+      let redisData: CourseEnrollment = JSON.parse(dtf)
+      redisData.lastMessageId = msgId
+      agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+        channel: payload.slackChannel,
+        accessToken: payload.slackToken || "",
+        message: {
+          blocks: [
+            {
+              type: MessageBlockType.SECTION,
+              text: {
+                type: SlackTextMessageTypes.MARKDOWN,
+                text: `You have been idle on this course for sometime. Click 'Continue' to resume`
+              },
+            },
+            {
+              type: MessageBlockType.ACTIONS,
+              elements: [
+                {
+                  "type": SlackActionType.BUTTON,
+                  "text": {
+                    "type": SlackTextMessageTypes.PLAINTEXT,
+                    "text": "Continue",
+                    "emoji": true
+                  },
+                  "value": `continue_${payload.courseId}|${msgId}`,
+                  style: MessageActionButtonStyle.PRIMARY
+                }
+              ]
+            }
+          ]
+        }
+      })
+      await redisClient.set(key, JSON.stringify(redisData))
+    }
+  }
+
 }
 
 export const scheduleInactivityMessage = async (enrollment: CourseEnrollment, phoneNumber?: string, slackChannel?: string) => {
