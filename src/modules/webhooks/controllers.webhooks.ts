@@ -21,9 +21,13 @@ export const getMomentTomorrow = (time: number) => {
 
   // Combine tomorrow's date with 3 PM time
   const targetTime = tomorrowDate.set('hour', time).set('minute', 0).set('second', 0)
+  const durationDifference = moment.duration(targetTime.diff(currentTime))
+
+  // Format the duration as "in X hours, Y minutes"
+  const formattedDuration = `${durationDifference.hours()} hours, ${durationDifference.minutes()} minutes, ${durationDifference.seconds()} seconds`
 
   // Calculate the difference in hours
-  return targetTime.diff(currentTime, 'minutes')
+  return formattedDuration
 }
 
 export const whatsappWebhookSubscriber = catchAsync(async (req: Request, res: Response) => {
@@ -158,28 +162,28 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         case TOMORROW:
           if (enrollment) {
             let msgId = v4()
-            agenda.schedule(`in ${getMomentTomorrow(9)} minutes`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            agenda.schedule(`in ${getMomentTomorrow(9)}`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "9:00am")
           }
           break
         case MORNING:
           if (enrollment) {
             let msgId = v4()
-            agenda.schedule(`in ${getMomentTomorrow(9)} minutes`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            agenda.schedule(`today at noon`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "9:00am")
           }
           break
         case AFTERNOON:
           if (enrollment) {
             let msgId = v4()
-            agenda.schedule(`in ${getMomentTomorrow(15)} minutes`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            agenda.schedule(`in ${getMomentTomorrow(15)}`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "3:00pm")
           }
           break
         case EVENING:
           if (enrollment) {
             let msgId = v4()
-            agenda.schedule(`in ${getMomentTomorrow(20)} minutes`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            agenda.schedule(`in ${getMomentTomorrow(20)}`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "8:00pm")
           }
           break
