@@ -12,7 +12,7 @@ import { RESUME_TOMORROW, SEND_CERTIFICATE_SLACK, SEND_SLACK_MESSAGE, SEND_SLACK
 import { v4 } from 'uuid'
 import config from '../../config/config'
 import { Job } from 'agenda'
-import { CourseFlowMessageType } from '../webhooks/service.webhooks'
+import { CourseFlowMessageType, scheduleInactivityMessage } from '../webhooks/service.webhooks'
 import Students from '../students/model.students'
 import Teams from '../teams/model.teams'
 import { redisClient } from '../redis'
@@ -230,6 +230,10 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 }
               }
               break
+          }
+
+          if (enrollment) {
+            scheduleInactivityMessage(enrollment, undefined, channel.id)
           }
 
         }

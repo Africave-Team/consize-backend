@@ -33,6 +33,8 @@ export const RESUME_TOMORROW = "RESUME_TOMORROW"
 export const DAILY_ROUTINE = "DAILY_ROUTINE"
 export const DAILY_REMINDER = "DAILY_REMINDER"
 
+export const INACTIVITY_REMINDER = "INACTIVITY_REMINDER"
+
 
 
 // schedule cohorts

@@ -1,4 +1,5 @@
 import { MediaType } from '../courses/interfaces.courses'
+import { Period } from '../courses/interfaces.settings'
 
 interface Header {
   type: MediaType
@@ -91,6 +92,7 @@ export interface CourseEnrollment {
   quizAttempts: number
   lastActivity?: string
   lastLessonCompleted?: string
+  inactivityPeriod?: Period | undefined
   slackResponseUrl?: string
   slackToken?: string
   blockStartTime?: Date | null

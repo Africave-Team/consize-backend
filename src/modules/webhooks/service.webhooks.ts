@@ -16,7 +16,7 @@ import Lessons from '../courses/model.lessons'
 import Blocks from '../courses/model.blocks'
 import Quizzes from '../courses/model.quizzes'
 import { agenda } from '../scheduler'
-import { SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { INACTIVITY_REMINDER, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import { logger } from '../logger'
 import moment from 'moment'
@@ -27,6 +27,7 @@ import { Survey, SurveyResponse } from '../surveys'
 import { Question, ResponseType } from '../surveys/survey.interfaces'
 import { COURSE_STATS } from '../rtdb/nodes'
 import { StudentCourseStats } from '../students/interface.students'
+import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
 
 export enum CourseFlowMessageType {
   WELCOME = 'welcome',
@@ -280,7 +281,83 @@ export const sendMessage = async function (message: Message) {
     }
   }).catch((error) => {
     logger.error(JSON.stringify((error)))
-  }).then((data) => logger.info(JSON.stringify((data as AxiosResponse).data)))
+  }).then((data) => {
+    logger.info(JSON.stringify((data as AxiosResponse).data))
+    // schedule inactivity message
+  })
+}
+
+export const sendInactivityMessage = async (payload: { studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }) => {
+  const msgId = v4()
+  if (payload.phoneNumber && !payload.slackChannel) {
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: payload.phoneNumber,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        body: {
+          text: `You have been idle on this course for sometime. Click 'Continue' to resume`
+        },
+        type: "button",
+        action: {
+          buttons: [
+            {
+              type: "reply",
+              reply: {
+                id: `continue_${payload.courseId}|${msgId}`,
+                title: "Continue"
+              }
+            }
+          ]
+        }
+      }
+    })
+  }
+
+  if (payload.slackChannel && payload.slackToken && !payload.phoneNumber) {
+    agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+      channel: payload.slackChannel,
+      accessToken: payload.slackToken || "",
+      message: {
+        blocks: [
+          {
+            type: MessageBlockType.SECTION,
+            text: {
+              type: SlackTextMessageTypes.MARKDOWN,
+              text: `You have been idle on this course for sometime. Click 'Continue' to resume`
+            },
+          },
+          {
+            type: MessageBlockType.ACTIONS,
+            elements: [
+              {
+                "type": SlackActionType.BUTTON,
+                "text": {
+                  "type": SlackTextMessageTypes.PLAINTEXT,
+                  "text": "Continue",
+                  "emoji": true
+                },
+                "value": `continue_${payload.courseId}|${msgId}`,
+                style: MessageActionButtonStyle.PRIMARY
+              }
+            ]
+          }
+        ]
+      }
+    })
+  }
+}
+
+export const scheduleInactivityMessage = async (enrollment: CourseEnrollment, phoneNumber?: string, slackChannel?: string) => {
+  if (enrollment.inactivityPeriod) {
+    const jobs = await agenda.jobs({ name: INACTIVITY_REMINDER, 'data.courseId': enrollment.id, 'data.studentId': enrollment.student })
+    // Check if the job exists
+    for (let job of jobs) {
+      await job.remove()
+    }
+    agenda.schedule(`in ${enrollment.inactivityPeriod.value} ${enrollment.inactivityPeriod.type}`, INACTIVITY_REMINDER, { studentId: enrollment.student, courseId: enrollment.id, slackToken: enrollment.slackToken, slackChannel, phoneNumber })
+  }
 }
 
 export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string, messageId: string): Promise<void> => {
@@ -357,6 +434,7 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
   const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${courseId}`
   const initialMessageId = v4()
   if (course) {
+    const settings = await Settings.findById(course.settings)
     if (redisClient.isReady) {
       const courseKey = `${config.redisBaseKey}courses:${courseId}`
       const courseFlow = await redisClient.get(courseKey)
@@ -366,6 +444,9 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
           team: course.owner,
           student: studentId,
           id: courseId,
+          inactivityPeriod: settings?.inactivityPeriod,
+          lastActivity: new Date().toISOString(),
+          lastLessonCompleted: new Date().toISOString(),
           lastMessageId: initialMessageId,
           title: course.title,
           description: convertToWhatsAppString(he.decode(course.description)),
