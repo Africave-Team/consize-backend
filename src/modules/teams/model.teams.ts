@@ -10,6 +10,9 @@ export const TeamSchema = new Schema<TeamsInterface, ITeamModel>(
         name: {
             type: Schema.Types.String
         },
+        shortCode: {
+            type: String
+        },
         logo: {
             type: Schema.Types.String
         },
