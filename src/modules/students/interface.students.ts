@@ -40,6 +40,7 @@ export interface StudentCourseStats {
   completed?: boolean
   droppedOut?: boolean
   certificate?: string
+  distribution?: string
   progress: number
   scores: number[]
   lessons: {

@@ -16,7 +16,7 @@ import Lessons from '../courses/model.lessons'
 import Blocks from '../courses/model.blocks'
 import Quizzes from '../courses/model.quizzes'
 import { agenda } from '../scheduler'
-import { SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { DAILY_ROUTINE, INACTIVITY_REMINDER, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import { logger } from '../logger'
 import moment from 'moment'
@@ -27,6 +27,9 @@ import { Survey, SurveyResponse } from '../surveys'
 import { Question, ResponseType } from '../surveys/survey.interfaces'
 import { COURSE_STATS } from '../rtdb/nodes'
 import { StudentCourseStats } from '../students/interface.students'
+import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
+import Teams from '../teams/model.teams'
+import randomstring from "randomstring"
 
 export enum CourseFlowMessageType {
   WELCOME = 'welcome',
@@ -280,7 +283,105 @@ export const sendMessage = async function (message: Message) {
     }
   }).catch((error) => {
     logger.error(JSON.stringify((error)))
-  }).then((data) => logger.info(JSON.stringify((data as AxiosResponse).data)))
+  }).then((data) => {
+    logger.info(JSON.stringify((data as AxiosResponse).data))
+    // schedule inactivity message
+  })
+}
+
+export const sendInactivityMessage = async (payload: { studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }) => {
+  const msgId = v4()
+  if (payload.phoneNumber && !payload.slackChannel) {
+    const key = `${config.redisBaseKey}enrollments:${payload.phoneNumber}:${payload.courseId}`
+    const dtf = await redisClient.get(key)
+    if (dtf) {
+      let redisData: CourseEnrollment = JSON.parse(dtf)
+      redisData.lastMessageId = msgId
+      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+        to: payload.phoneNumber,
+        type: "interactive",
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        interactive: {
+          body: {
+            text: `You have been idle on this course for sometime. Click 'Continue' to resume`
+          },
+          type: "button",
+          action: {
+            buttons: [
+              {
+                type: "reply",
+                reply: {
+                  id: `continue_${payload.courseId}|${msgId}`,
+                  title: "Continue"
+                }
+              }
+            ]
+          }
+        }
+      })
+      await redisClient.set(key, JSON.stringify(redisData))
+    }
+  }
+
+  if (payload.slackChannel && payload.slackToken && !payload.phoneNumber) {
+    const key = `${config.redisBaseKey}enrollments:slack:${payload.slackChannel}:${payload.courseId}`
+    const dtf = await redisClient.get(key)
+    if (dtf) {
+      let redisData: CourseEnrollment = JSON.parse(dtf)
+      redisData.lastMessageId = msgId
+      agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+        channel: payload.slackChannel,
+        accessToken: payload.slackToken || "",
+        message: {
+          blocks: [
+            {
+              type: MessageBlockType.SECTION,
+              text: {
+                type: SlackTextMessageTypes.MARKDOWN,
+                text: `You have been idle on this course for sometime. Click 'Continue' to resume`
+              },
+            },
+            {
+              type: MessageBlockType.ACTIONS,
+              elements: [
+                {
+                  "type": SlackActionType.BUTTON,
+                  "text": {
+                    "type": SlackTextMessageTypes.PLAINTEXT,
+                    "text": "Continue",
+                    "emoji": true
+                  },
+                  "value": `continue_${payload.courseId}|${msgId}`,
+                  style: MessageActionButtonStyle.PRIMARY
+                }
+              ]
+            }
+          ]
+        }
+      })
+      await redisClient.set(key, JSON.stringify(redisData))
+    }
+  }
+
+}
+
+export const scheduleInactivityMessage = async (enrollment: CourseEnrollment, phoneNumber?: string, slackChannel?: string) => {
+  if (enrollment.inactivityPeriod) {
+    const jobs = await agenda.jobs({ name: INACTIVITY_REMINDER, 'data.courseId': enrollment.id, 'data.studentId': enrollment.student })
+    // Check if the job exists
+    for (let job of jobs) {
+      await job.remove()
+    }
+    agenda.schedule(`in ${enrollment.inactivityPeriod.value} ${enrollment.inactivityPeriod.type}`, INACTIVITY_REMINDER, { studentId: enrollment.student, courseId: enrollment.id, slackToken: enrollment.slackToken, slackChannel, phoneNumber })
+  }
+}
+
+export const scheduleDailyRoutine = async () => {
+  const jobs = await agenda.jobs({ name: DAILY_ROUTINE })
+  if (jobs.length === 0) {
+    agenda.every('0 1 * * *', DAILY_ROUTINE)
+  }
 }
 
 export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string, messageId: string): Promise<void> => {
@@ -357,6 +458,7 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
   const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${courseId}`
   const initialMessageId = v4()
   if (course) {
+    const settings = await Settings.findById(course.settings)
     if (redisClient.isReady) {
       const courseKey = `${config.redisBaseKey}courses:${courseId}`
       const courseFlow = await redisClient.get(courseKey)
@@ -366,6 +468,9 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
           team: course.owner,
           student: studentId,
           id: courseId,
+          inactivityPeriod: settings?.inactivityPeriod,
+          lastActivity: new Date().toISOString(),
+          lastLessonCompleted: new Date().toISOString(),
           lastMessageId: initialMessageId,
           title: course.title,
           description: convertToWhatsAppString(he.decode(course.description)),
@@ -597,7 +702,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           if (data.blockStartTime) {
             const diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
             saveBlockDuration(data.team, data.student, diffInSeconds, currentItem.lesson, currentItem.block)
-            updatedData = { ...updatedData, blockStartTime: null }
+            updatedData = { ...updatedData, blockStartTime: null, lastActivity: new Date().toISOString() }
           }
         }
 
@@ -670,6 +775,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             agenda.now<CourseEnrollment>(SEND_LEADERBOARD, {
               ...updatedData
             })
+            updatedData.lastLessonCompleted = new Date().toISOString()
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
 

@@ -24,6 +24,7 @@ import { delay } from '../generators/generator.service'
 import { SurveyResponse } from '../surveys'
 import { ResponseType } from '../surveys/survey.interfaces'
 import Surveys from '../surveys/survey.model'
+import Settings from '../courses/model.settings'
 
 export const handleSlackWebhook = async function () { }
 
@@ -242,13 +243,11 @@ export const sendWelcomeSlack = async (currentIndex: string, slackId: string, to
                 blocks: [
                   {
                     type: MessageBlockType.SECTION,
-                    fields: [
-                      {
-                        type: SlackTextMessageTypes.MARKDOWN,
-                        text: `Welcome *${user.profile.first_name}*\n\n${item.content}`
+                    text: {
+                      type: SlackTextMessageTypes.MARKDOWN,
+                      text: `Welcome *${user.profile.first_name}*\n\n${item.content}`
 
-                      }
-                    ]
+                    }
                   },
                   {
                     type: MessageBlockType.ACTIONS,
@@ -300,6 +299,7 @@ export const startCourseSlack = async (channel: string, courseId: string, studen
   const key = `${config.redisBaseKey}enrollments:slack:${channel}:${courseId}`
   const initialMessageId = v4()
   if (course) {
+    let settings = await Settings.findById(course.settings)
     if (redisClient.isReady) {
       const courseKey = `${config.redisBaseKey}courses:${courseId}`
       const courseFlow = await redisClient.get(courseKey)
@@ -310,6 +310,9 @@ export const startCourseSlack = async (channel: string, courseId: string, studen
           student: studentId,
           id: courseId,
           lastMessageId: initialMessageId,
+          inactivityPeriod: settings?.inactivityPeriod,
+          lastActivity: new Date().toISOString(),
+          lastLessonCompleted: new Date().toISOString(),
           title: course.title,
           description: convertToWhatsAppString(he.decode(course.description)),
           active: true,
@@ -439,15 +442,11 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
 
     blocks.push({
       type: MessageBlockType.SECTION,
-      fields: [
-        {
-          type: SlackTextMessageTypes.MARKDOWN,
-          text: data.content
-        }
-      ]
-    })
-
-    blocks.push({
+      text: {
+        type: SlackTextMessageTypes.MARKDOWN,
+        text: data.content
+      }
+    }, {
       type: MessageBlockType.ACTIONS,
       elements: buttons
     })
@@ -508,18 +507,15 @@ export const sendQuiz = async (item: CourseFlowItem, url: string, messageId: str
 
     blocks.push({
       type: MessageBlockType.SECTION,
-      fields: [
-        {
-          type: SlackTextMessageTypes.MARKDOWN,
-          text: item.content
-        }
-      ]
-    })
-
-    blocks.push({
+      text: {
+        type: SlackTextMessageTypes.MARKDOWN,
+        text: item.content
+      },
+    }, {
       type: MessageBlockType.ACTIONS,
       elements: buttons
     })
+
 
     agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
       url,
@@ -527,110 +523,6 @@ export const sendQuiz = async (item: CourseFlowItem, url: string, messageId: str
         blocks
       }
     })
-  } catch (error) {
-    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
-  }
-}
-
-export const sendMultiSurvey = async (item: CourseFlowItem, url: string, messageId: string): Promise<void> => {
-  try {
-    if (item.surveyQuestion) {
-      let buttons: SlackActionBlock[] = [
-        {
-          type: SlackActionType.BUTTON,
-          style: MessageActionButtonStyle.PRIMARY,
-          text: {
-            text: "A",
-            type: SlackTextMessageTypes.PLAINTEXT,
-            emoji: true
-          },
-          value: SURVEY_A + `|${messageId}`
-        },
-        {
-          type: SlackActionType.BUTTON,
-          style: MessageActionButtonStyle.PRIMARY,
-          text: {
-            text: "B",
-            type: SlackTextMessageTypes.PLAINTEXT,
-            emoji: true
-          },
-          value: SURVEY_B + `|${messageId}`,
-        },
-        {
-          type: SlackActionType.BUTTON,
-          style: MessageActionButtonStyle.PRIMARY,
-          text: {
-            text: "C",
-            type: SlackTextMessageTypes.PLAINTEXT,
-            emoji: true
-          },
-          value: SURVEY_C + `|${messageId}`,
-        }
-      ]
-
-      let blocks: SlackMessageBlock[] = []
-
-
-      blocks.push({
-        type: MessageBlockType.SECTION,
-        fields: [
-          {
-            type: SlackTextMessageTypes.MARKDOWN,
-            text: item.content
-          }
-        ]
-      })
-
-      blocks.push({
-        type: MessageBlockType.ACTIONS,
-        elements: buttons
-      })
-
-      agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
-        url,
-        message: {
-          blocks
-        }
-      })
-    }
-  } catch (error) {
-    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
-  }
-}
-
-export const sendFreeformSurvey = async (item: CourseFlowItem, url: string): Promise<void> => {
-  try {
-    if (item.surveyQuestion) {
-      let blocks: SlackMessageBlock[] = []      // blocks.push({
-      //   type: MessageBlockType.SECTION,
-      //   fields: [
-      //     {
-      //       type: SlackTextMessageTypes.MARKDOWN,
-      //       text: item.content
-      //     }
-      //   ]
-      // })
-
-      blocks.push({
-        "type": MessageBlockType.INPUT,
-        "element": {
-          "type": SlackActionType.TEXTINPUT,
-          multiline: true,
-        },
-        "label": {
-          "type": SlackTextMessageTypes.PLAINTEXT,
-          "text": item.surveyQuestion.question,
-          "emoji": true
-        }
-      })
-
-      agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
-        url,
-        message: {
-          blocks
-        }
-      })
-    }
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
@@ -657,7 +549,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
           if (data.blockStartTime) {
             const diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
             saveBlockDuration(data.team, data.student, diffInSeconds, currentItem.lesson, currentItem.block)
-            updatedData = { ...updatedData, blockStartTime: null }
+            updatedData = { ...updatedData, blockStartTime: null, lastActivity: new Date().toISOString() }
           }
         }
 
@@ -670,12 +562,10 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                 blocks: [
                   {
                     type: MessageBlockType.SECTION,
-                    fields: [
-                      {
-                        type: SlackTextMessageTypes.MARKDOWN,
-                        text: item.content
-                      }
-                    ]
+                    text: {
+                      type: SlackTextMessageTypes.MARKDOWN,
+                      text: item.content
+                    },
                   },
                   {
                     type: MessageBlockType.ACTIONS,
@@ -731,12 +621,10 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                 blocks: [
                   {
                     type: MessageBlockType.SECTION,
-                    fields: [
-                      {
-                        type: SlackTextMessageTypes.MARKDOWN,
-                        text: item.content.replace('{progress}', Math.ceil(progress).toString()).replace('{score}', score).replace('{course_rank}', (rank >= 0 ? rank + 1 : 1).toString())
-                      }
-                    ]
+                    text: {
+                      type: SlackTextMessageTypes.MARKDOWN,
+                      text: item.content.replace('{progress}', Math.ceil(progress).toString()).replace('{score}', score).replace('{course_rank}', (rank >= 0 ? rank + 1 : 1).toString())
+                    }
                   }
                 ]
               }
@@ -746,6 +634,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
               ...updatedData,
               slackResponseUrl: url
             })
+            updatedData.lastLessonCompleted = new Date().toISOString()
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.ENDCOURSE:
@@ -758,12 +647,10 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
               blocks = [
                 {
                   type: MessageBlockType.SECTION,
-                  fields: [
-                    {
-                      type: SlackTextMessageTypes.MARKDOWN,
-                      text: item.content.replace('{survey}', `\n\nClick the following button to take the survey.`)
-                    }
-                  ]
+                  text: {
+                    type: SlackTextMessageTypes.MARKDOWN,
+                    text: item.content.replace('{survey}', `\n\nClick the following button to take the survey.`)
+                  },
                 },
                 {
                   type: MessageBlockType.ACTIONS,
@@ -785,12 +672,10 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
               blocks = [
                 {
                   type: MessageBlockType.SECTION,
-                  fields: [
-                    {
-                      type: SlackTextMessageTypes.MARKDOWN,
-                      text: item.content.replace('{survey}', '')
-                    }
-                  ]
+                  text: {
+                    type: SlackTextMessageTypes.MARKDOWN,
+                    text: item.content.replace('{survey}', '')
+                  }
                 }
               ]
               // if no survey for this course, then send the certificate
@@ -817,12 +702,11 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                 blocks: [
                   {
                     type: MessageBlockType.SECTION,
-                    fields: [
-                      {
-                        type: SlackTextMessageTypes.MARKDOWN,
-                        text: item.content
-                      }
-                    ]
+                    text:
+                    {
+                      type: SlackTextMessageTypes.MARKDOWN,
+                      text: item.content
+                    },
                   },
                   {
                     type: MessageBlockType.ACTIONS,
@@ -881,12 +765,10 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                   },
                   {
                     type: MessageBlockType.SECTION,
-                    fields: [
-                      {
-                        type: SlackTextMessageTypes.MARKDOWN,
-                        text: item.content
-                      }
-                    ]
+                    text: {
+                      type: SlackTextMessageTypes.MARKDOWN,
+                      text: item.content
+                    },
                   },
                   {
                     type: MessageBlockType.ACTIONS,
@@ -914,14 +796,6 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
             updatedData = { ...updatedData, blockStartTime: new Date() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
-          case CourseFlowMessageType.SURVEY_MULTI_CHOICE:
-            await sendMultiSurvey(item, url, messageId)
-            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
-            break
-          case CourseFlowMessageType.SURVEY_FREE_FORM:
-            await sendFreeformSurvey(item, url)
-            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
-            break
 
           case CourseFlowMessageType.END_SURVEY:
             agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
@@ -930,12 +804,11 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                 blocks: [
                   {
                     type: MessageBlockType.SECTION,
-                    fields: [
-                      {
-                        type: SlackTextMessageTypes.MARKDOWN,
-                        text: item.content
-                      }
-                    ]
+                    text: {
+                      type: SlackTextMessageTypes.MARKDOWN,
+                      text: item.content
+                    }
+
                   }
                 ]
               }
@@ -1086,9 +959,7 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ur
           blocks: [
             {
               type: MessageBlockType.SECTION,
-              fields: [
-                payload
-              ]
+              text: payload,
             },
             {
               type: MessageBlockType.ACTIONS,
@@ -1235,9 +1106,7 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, u
           blocks: [
             {
               type: MessageBlockType.SECTION,
-              fields: [
-                payload
-              ]
+              text: payload,
             },
             {
               type: MessageBlockType.ACTIONS,
@@ -1268,53 +1137,6 @@ export const handleSurvey = async (answer: number, data: CourseEnrollment, surve
   }
 }
 
-
-
-export const handleSurveyFreeform = async (answer: string, data: CourseEnrollment, url: string, messageId: string, channel: string): Promise<void> => {
-  const courseKey = `${config.redisBaseKey}courses:${data.id}`
-  const courseFlow = await redisClient.get(courseKey)
-  const key = `${config.redisBaseKey}enrollments:slack:${channel}:${data?.id}`
-  if (courseFlow) {
-    const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
-    const item = courseFlowData[data.currentBlock - 1]
-    if (item && item.surveyId) {
-      // save the survey response
-      if (item.surveyQuestion) {
-        await SurveyResponse.create({
-          survey: item.surveyId,
-          team: data.team,
-          surveyQuestion: item.surveyQuestion.id,
-          course: data.id,
-          student: data.student,
-          response: answer,
-          responseType: ResponseType.FREE_FORM
-        })
-      }
-      // check if the next block is a survey
-      let nextBlock = courseFlowData[data.currentBlock]
-      if (nextBlock) {
-        if (nextBlock.surveyId) {
-          // if next block is survey, check if it is multi-choice survey or freeform
-          if (nextBlock.type === CourseFlowMessageType.SURVEY_MULTI_CHOICE) {
-            // if it is multi, send multi survey
-            sendMultiSurvey(nextBlock, url, messageId)
-          } else {
-            // else send freeform
-            sendFreeformSurvey(nextBlock, url)
-          }
-          // update redis and rtdb
-          saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
-          let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: data.currentBlock + 1, nextBlock: data.nextBlock + 1 }
-          redisClient.set(key, JSON.stringify({ ...updatedData }))
-        } else if (nextBlock.type === CourseFlowMessageType.END_SURVEY) {
-          handleContinueSlack(data.currentBlock, courseKey, channel, url, v4(), data)
-        }
-      }
-    }
-  }
-}
-
-
 export const sendResumptionOptions = async (url: string, key: string, data: CourseEnrollment): Promise<void> => {
   try {
     let msgId = v4()
@@ -1324,12 +1146,10 @@ export const sendResumptionOptions = async (url: string, key: string, data: Cour
         blocks: [
           {
             type: MessageBlockType.SECTION,
-            fields: [
-              {
-                type: SlackTextMessageTypes.MARKDOWN,
-                text: `You have chosen to resume this course tomorrow. \n\nSelect a time tomorrow to resume this course.\n\n\n*Morning*: Resume at 9am tomorrown\n*Afternoon*: Resume at 3pm tomorrown\n*Evening*: Resume at 8pm tomorrow`
-              }
-            ]
+            text: {
+              type: SlackTextMessageTypes.MARKDOWN,
+              text: `You have chosen to resume this course tomorrow. \n\nSelect a time tomorrow to resume this course.\n\n\n*Morning*: Resume at 9am tomorrown\n*Afternoon*: Resume at 3pm tomorrown\n*Evening*: Resume at 8pm tomorrow`
+            },
           },
           {
             type: MessageBlockType.ACTIONS,
@@ -1337,7 +1157,7 @@ export const sendResumptionOptions = async (url: string, key: string, data: Cour
               {
                 "type": SlackActionType.BUTTON,
                 "text": {
-                  "type": SlackTextMessageTypes.MARKDOWN,
+                  "type": SlackTextMessageTypes.PLAINTEXT,
                   "text": "Morning",
                   "emoji": true
                 },
@@ -1347,7 +1167,7 @@ export const sendResumptionOptions = async (url: string, key: string, data: Cour
               {
                 "type": SlackActionType.BUTTON,
                 "text": {
-                  "type": SlackTextMessageTypes.MARKDOWN,
+                  "type": SlackTextMessageTypes.PLAINTEXT,
                   "text": "Afternoon",
                   "emoji": true
                 },
@@ -1357,7 +1177,7 @@ export const sendResumptionOptions = async (url: string, key: string, data: Cour
               {
                 "type": SlackActionType.BUTTON,
                 "text": {
-                  "type": SlackTextMessageTypes.MARKDOWN,
+                  "type": SlackTextMessageTypes.PLAINTEXT,
                   "text": "Evening",
                   "emoji": true
                 },
@@ -1369,28 +1189,27 @@ export const sendResumptionOptions = async (url: string, key: string, data: Cour
         ]
       }
     })
-    redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
+    await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
 }
 
 
-export const sendResumptionMessage = async (url: string, key: string, data: CourseEnrollment): Promise<void> => {
+export const sendResumptionMessageSlack = async (channelId: string, key: string, data: CourseEnrollment): Promise<void> => {
   try {
     let msgId = v4()
-    agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
-      url,
+    agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+      channel: channelId,
+      accessToken: data.slackToken || "",
       message: {
         blocks: [
           {
             type: MessageBlockType.SECTION,
-            fields: [
-              {
-                type: SlackTextMessageTypes.MARKDOWN,
-                text: `You scheduled to resume the course *${data.title} today at this time.*\n\nYou can resume your scheduled course by clicking the "Resume now" button below`
-              }
-            ]
+            text: {
+              type: SlackTextMessageTypes.MARKDOWN,
+              text: `You scheduled to resume the course *${data.title} today at this time.*\n\nYou can resume your scheduled course by clicking the "Resume now" button below`
+            },
           },
           {
             type: MessageBlockType.ACTIONS,
@@ -1398,7 +1217,7 @@ export const sendResumptionMessage = async (url: string, key: string, data: Cour
               {
                 "type": SlackActionType.BUTTON,
                 "text": {
-                  "type": SlackTextMessageTypes.MARKDOWN,
+                  "type": SlackTextMessageTypes.PLAINTEXT,
                   "text": "Resume now",
                   "emoji": true
                 },
@@ -1410,7 +1229,7 @@ export const sendResumptionMessage = async (url: string, key: string, data: Cour
         ]
       }
     })
-    redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
+    await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
@@ -1424,12 +1243,10 @@ export const sendScheduleAcknowledgement = async (url: string, time: string): Pr
         blocks: [
           {
             type: MessageBlockType.SECTION,
-            fields: [
-              {
-                type: SlackTextMessageTypes.MARKDOWN,
-                text: `You have chosen to resume this course at ${time} tomorrow. \n\nWe will continue this course for you at this time.`
-              }
-            ]
+            text: {
+              type: SlackTextMessageTypes.MARKDOWN,
+              text: `You have chosen to resume this course at ${time} tomorrow. \n\nWe will continue this course for you at this time.`
+            }
           }
         ]
       }

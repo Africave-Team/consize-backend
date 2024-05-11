@@ -1,4 +1,5 @@
 import { MediaType } from '../courses/interfaces.courses'
+import { Period } from '../courses/interfaces.settings'
 
 interface Header {
   type: MediaType
@@ -89,6 +90,9 @@ export interface CourseEnrollment {
   nextBlock: number
   totalBlocks: number
   quizAttempts: number
+  lastActivity?: string
+  lastLessonCompleted?: string
+  inactivityPeriod?: Period | undefined
   slackResponseUrl?: string
   slackToken?: string
   blockStartTime?: Date | null
@@ -130,3 +134,13 @@ export const RESUME_COURSE = "RESUME_COURSE"
 // slack
 export const ACCEPT_INVITATION = "accept_invitation"
 export const REJECT_INVITATION = "reject_invitation"
+
+
+export interface DailyReminderNotificationPayload {
+  courseId: string,
+  studentId: string,
+  settingsId: string,
+  distribution: string,
+  ownerId: string
+  last: boolean
+}

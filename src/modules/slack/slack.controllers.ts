@@ -11,9 +11,8 @@ import { agenda } from '../scheduler'
 import { RESUME_TOMORROW, SEND_CERTIFICATE_SLACK, SEND_SLACK_MESSAGE, SEND_SLACK_RESPONSE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import config from '../../config/config'
-import { getMomentTomorrow } from '../webhooks/controllers.webhooks'
 import { Job } from 'agenda'
-import { CourseFlowMessageType } from '../webhooks/service.webhooks'
+import { CourseFlowMessageType, scheduleInactivityMessage } from '../webhooks/service.webhooks'
 import Students from '../students/model.students'
 import Teams from '../teams/model.teams'
 import { redisClient } from '../redis'
@@ -37,7 +36,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
           let enrollments: CourseEnrollment[] = await fetchEnrollmentsSlack(channel.id)
           let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
           const [btnId, messageId] = action.value.split('|')
-          if (messageId) {
+          if (messageId && !btnId?.startsWith("continue_")) {
             if (enrollment) {
               if (enrollment.lastMessageId && enrollment.lastMessageId !== messageId) {
                 return
@@ -141,30 +140,24 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
 
               break
             case TOMORROW:
-              if (enrollment) {
-                let msgId = v4()
-                agenda.schedule(`in ${getMomentTomorrow(9)} hours`, RESUME_TOMORROW, { messageId: msgId, enrollment, })
-                sendScheduleAcknowledgement(response_url, "9:00am")
-              }
-              break
             case MORNING:
               if (enrollment) {
                 let msgId = v4()
-                agenda.schedule(`in ${getMomentTomorrow(9)} hours`, RESUME_TOMORROW, { messageId: msgId, enrollment })
+                agenda.schedule(`tomorrow at 9 am`, RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
                 sendScheduleAcknowledgement(response_url, "9:00am")
               }
               break
             case AFTERNOON:
               if (enrollment) {
                 let msgId = v4()
-                agenda.schedule(`in ${getMomentTomorrow(15)} hours`, RESUME_TOMORROW, { messageId: msgId, enrollment })
+                agenda.schedule(`tomorrow at 3 pm`, RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
                 sendScheduleAcknowledgement(response_url, "3:00pm")
               }
               break
             case EVENING:
               if (enrollment) {
                 let msgId = v4()
-                agenda.schedule(`in ${getMomentTomorrow(20)} hours`, RESUME_TOMORROW, { messageId: msgId, enrollment })
+                agenda.schedule(`tomorrow at 8 pm`, RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
                 sendScheduleAcknowledgement(response_url, "8:00pm")
               }
               break
@@ -225,18 +218,21 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                   const courseId = btnId.replace("continue_", "")
                   // continue a course from the positions message
                   const enrollments: CourseEnrollment[] = await fetchEnrollmentsSlack(channel.id)
-                  console.log(courseId)
-                  for (let _ of enrollments) {
-                    // const key = `${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`
-                    // let msgId = v4()
-                    // if (enrollment.id === courseId) {
-                    //   await handleContinue(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, enrollment)
-                    // }
-                    // redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId, lastMessageId: msgId, currentBlock: enrollment.currentBlock + 1, nextBlock: enrollment.nextBlock + 1 }))
+                  for (let enrollment of enrollments) {
+                    const key = `${config.redisBaseKey}enrollments:slack:${channel.id}:${enrollment.id}`
+                    let msgId = v4()
+                    if (enrollment.id === courseId) {
+                      await handleContinueSlack(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, channel.id, response_url, msgId, enrollment)
+                    }
+                    redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId, lastMessageId: msgId, currentBlock: enrollment.currentBlock + 1, nextBlock: enrollment.nextBlock + 1 }))
                   }
                 }
               }
               break
+          }
+
+          if (enrollment) {
+            scheduleInactivityMessage(enrollment, undefined, channel.id)
           }
 
         }

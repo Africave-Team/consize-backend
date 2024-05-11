@@ -4,7 +4,7 @@ import httpStatus from 'http-status'
 import { QueryResult } from '../paginate/paginate'
 import db from "../rtdb"
 import { COURSE_STATS, COURSE_TRENDS } from '../rtdb/nodes'
-import { CourseInterface, CourseStatus, CreateCoursePayload } from './interfaces.courses'
+import { CourseInterface, CourseStatus, CreateCoursePayload, Distribution } from './interfaces.courses'
 import Course from './model.courses'
 import { CreateLessonPayload, LessonInterface } from './interfaces.lessons'
 import Lessons from './model.lessons'
@@ -16,8 +16,15 @@ import Settings from './model.settings'
 import { CourseSettings, DropoutEvents, LearnerGroup, LearnerGroupLaunchTime, PeriodTypes } from './interfaces.settings'
 import Students from '../students/model.students'
 import { StudentCourseStats } from '../students/interface.students'
-import moment from 'moment'
+import moment, { Moment } from 'moment'
 import { CourseStatistics } from '../rtdb/interfaces.rtdb'
+import { agenda } from '../scheduler'
+import { DAILY_REMINDER, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { CourseEnrollment, DailyReminderNotificationPayload, Message } from '../webhooks/interfaces.webhooks'
+import config from '../../config/config'
+import { redisClient } from '../redis'
+import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
+import { v4 } from 'uuid'
 
 interface SessionStudent extends StudentCourseStats {
   id: string
@@ -140,8 +147,8 @@ const setInitialCourseSettings = async function (id: string) {
       type: PeriodTypes.HOURS
     },
     inactivityPeriod: {
-      value: 1,
-      type: PeriodTypes.DAYS
+      value: 59,
+      type: PeriodTypes.MINUTES
     },
     dropoutEvent: DropoutEvents.LESSON_COMPLETION
   })
@@ -862,4 +869,290 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
     await trendsDbRef.set(trendsData)
 
   }
+}
+
+export const handleStudentSlack = async ({ studentId, courseId, settingsId, last }: DailyReminderNotificationPayload) => {
+  let settings = await Settings.findById(settingsId)
+  let msgId = v4()
+  if (settings) {
+    // get student info
+    let student = await Students.findById(studentId)
+    if (student && student.channelId) {
+      // redis key
+      const key = `${config.redisBaseKey}enrollments:slack:${student.channelId}:${courseId}`
+      let dt = await redisClient.get(key)
+      if (dt) {
+        const enrollment: CourseEnrollment | null = JSON.parse(dt)
+        if (enrollment && enrollment.slackToken) {
+          let lastActivity: Moment
+          if (!enrollment.lastActivity) {
+            lastActivity = moment().subtract(1, "day").startOf('day')
+          } else {
+            lastActivity = moment(enrollment.lastActivity)
+          }
+          let daysSinceLastActivity = moment().diff(lastActivity, "days")
+
+          let lastLessonCompleted: Moment
+          if (!enrollment.lastLessonCompleted) {
+            lastLessonCompleted = moment().subtract(1, "day").startOf('day')
+          } else {
+            lastLessonCompleted = moment(enrollment.lastLessonCompleted)
+          }
+          let daysSinceLastLesson = moment().diff(lastLessonCompleted, "days")
+
+          if (moment().isAfter(lastActivity)) {
+            if (daysSinceLastActivity < settings.reminderDuration.value) {
+              // send a reminder
+
+              agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+                channel: student.channelId,
+                accessToken: enrollment.slackToken || "",
+                message: {
+                  blocks: [
+                    {
+                      type: MessageBlockType.SECTION,
+                      text: {
+                        type: SlackTextMessageTypes.MARKDOWN,
+                        text: `This is to remind you of your ongoing progress in the following course \n\n*${enrollment.title}*\n\n${enrollment.description}\n\n*Progress*: ${((enrollment.nextBlock / enrollment.totalBlocks) * 100).toFixed(0)}%`
+                      },
+                    },
+                    {
+                      type: MessageBlockType.ACTIONS,
+                      elements: [
+                        {
+                          "type": SlackActionType.BUTTON,
+                          "text": {
+                            "type": SlackTextMessageTypes.PLAINTEXT,
+                            "text": "Continue",
+                            "emoji": true
+                          },
+                          "value": `continue_${enrollment.id}|${msgId}`,
+                          style: MessageActionButtonStyle.PRIMARY
+                        }
+                      ]
+                    }
+                  ]
+                }
+              })
+            }
+            if (last) {
+              let dropout = false
+              if (settings.dropoutEvent === DropoutEvents.INACTIVITY) {
+
+                if (daysSinceLastActivity >= settings.dropoutWaitPeriod.value) {
+                  // send drop out message
+                  dropout = true
+                }
+
+              } else {
+
+                if (daysSinceLastLesson >= settings.dropoutWaitPeriod.value) {
+                  // send drop out message
+                  dropout = true
+                }
+              }
+
+              if (dropout) {
+                agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+                  channel: student.channelId,
+                  accessToken: enrollment.slackToken || "",
+                  message: {
+                    blocks: [
+                      {
+                        type: MessageBlockType.SECTION,
+                        text: {
+                          type: SlackTextMessageTypes.MARKDOWN,
+                          text: `This is to remind you of your ongoing progress in the following course \n\n*${enrollment.title}*\n\n${enrollment.description}\n\n*Progress*: ${((enrollment.nextBlock / enrollment.totalBlocks) * 100).toFixed(0)}%\n\nDo you wish to drop out of this course?`
+                        },
+                      },
+                      {
+                        type: MessageBlockType.ACTIONS,
+                        elements: [
+                          {
+                            "type": SlackActionType.BUTTON,
+                            "text": {
+                              "type": SlackTextMessageTypes.PLAINTEXT,
+                              "text": "Continue",
+                              "emoji": true
+                            },
+                            "value": `continue_${enrollment.id}|${msgId}`,
+                            style: MessageActionButtonStyle.PRIMARY
+                          },
+                          {
+                            "type": SlackActionType.BUTTON,
+                            "text": {
+                              "type": SlackTextMessageTypes.PLAINTEXT,
+                              "text": "Dropout",
+                              "emoji": true
+                            },
+                            "value": `dropout_${enrollment.id}|${msgId}`,
+                            style: MessageActionButtonStyle.PRIMARY
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                })
+              }
+            }
+            // update redis record
+            enrollment.lastActivity = lastActivity.toISOString()
+            enrollment.lastLessonCompleted = lastLessonCompleted.toISOString()
+            await redisClient.set(key, JSON.stringify(enrollment))
+          }
+        }
+      }
+
+    }
+  }
+}
+export const handleStudentWhatsapp = async ({ courseId, studentId, settingsId, last }: DailyReminderNotificationPayload) => {
+  let settings = await Settings.findById(settingsId)
+  let msgId = v4()
+  if (settings) {
+    // get student info
+    let student = await Students.findById(studentId)
+    if (student && student.phoneNumber) {
+      // redis key
+      const key = `${config.redisBaseKey}enrollments:${student.phoneNumber}:${courseId}`
+      let dt = await redisClient.get(key)
+      if (dt) {
+        const enrollment: CourseEnrollment | null = JSON.parse(dt)
+        if (enrollment) {
+          let lastActivity: Moment
+          if (!enrollment.lastActivity) {
+            lastActivity = moment().subtract(1, "day").startOf('day')
+          } else {
+            lastActivity = moment(enrollment.lastActivity)
+          }
+          let daysSinceLastActivity = moment().diff(lastActivity, "days")
+
+          let lastLessonCompleted: Moment
+          if (!enrollment.lastLessonCompleted) {
+            lastLessonCompleted = moment().subtract(1, "day").startOf('day')
+          } else {
+            lastLessonCompleted = moment(enrollment.lastLessonCompleted)
+          }
+          let daysSinceLastLesson = moment().diff(lastLessonCompleted, "days")
+
+          if (moment().isAfter(lastActivity)) {
+            if (daysSinceLastActivity < settings.reminderDuration.value) {
+              // send a reminder
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: student.phoneNumber,
+                type: "interactive",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                interactive: {
+                  body: {
+                    text: `This is to remind you of your ongoing progress in the following course \n\n*${enrollment.title}*\n\n${enrollment.description}\n\n*Progress*: ${((enrollment.nextBlock / enrollment.totalBlocks) * 100).toFixed(0)}%`
+                  },
+                  type: "button",
+                  action: {
+                    buttons: [
+                      {
+                        type: "reply",
+                        reply: {
+                          id: `continue_${enrollment.id}|${msgId}`,
+                          title: "Continue"
+                        }
+                      }
+                    ]
+                  }
+                }
+              })
+            }
+            if (last) {
+              let dropout = false
+              if (settings.dropoutEvent === DropoutEvents.INACTIVITY) {
+
+                if (daysSinceLastActivity >= settings.dropoutWaitPeriod.value) {
+                  // send drop out message
+                  dropout = true
+                }
+
+              } else {
+
+                if (daysSinceLastLesson >= settings.dropoutWaitPeriod.value) {
+                  // send drop out message
+                  dropout = true
+                }
+              }
+
+              if (dropout) {
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: student.phoneNumber,
+                  type: "interactive",
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  interactive: {
+                    body: {
+                      text: `This is to remind you of your ongoing progress in the following course \n\n*${enrollment.title}*\n\n${enrollment.description}\n\n*Progress*: ${((enrollment.nextBlock / enrollment.totalBlocks) * 100).toFixed(0)}%\n\nDo you wish to drop out of this course?`
+                    },
+                    type: "button",
+                    action: {
+                      buttons: [
+                        {
+                          type: "reply",
+                          reply: {
+                            id: `continue_${enrollment.id}|${msgId}`,
+                            title: "Continue"
+                          }
+                        },
+                        {
+                          type: "reply",
+                          reply: {
+                            id: `dropout_${enrollment.id}|${msgId}`,
+                            title: "Dropout"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                })
+              }
+            }
+            // update redis record
+            enrollment.lastActivity = lastActivity.toISOString()
+            enrollment.lastLessonCompleted = lastLessonCompleted.toISOString()
+            await redisClient.set(key, JSON.stringify(enrollment))
+          }
+        }
+      }
+
+    }
+  }
+}
+
+const handleCourseReminders = async (courseId: string, ownerId: string, settingsId: string, distribution?: Distribution) => {
+  const dbRef = db.ref(COURSE_STATS).child(ownerId).child(courseId).child('students')
+  // get settings
+  const settings = await Settings.findById(settingsId)
+  if (settings) {
+    const snapshot = await dbRef.once('value')
+    let data: { [studentId: string]: StudentCourseStats } | null = snapshot.val()
+    if (data) {
+      const students = Object.entries(data).map(([_, value]) => ({ ...value }))
+      await Promise.allSettled(students.filter(e => !e.completed).map(async (student) => {
+        settings.reminderSchedule.map((schedule, index) => agenda.schedule<DailyReminderNotificationPayload>(`today at ${schedule}`, DAILY_REMINDER, {
+          courseId, studentId: student.studentId, settingsId, distribution: distribution || Distribution.WHATSAPP, ownerId, last: index === settings.reminderSchedule.length
+        }))
+        return student
+      }))
+    }
+  }
+}
+
+
+export const initiateDailyRoutine = async () => {
+  const courses = await Course.find({ status: CourseStatus.PUBLISHED })
+  await Promise.allSettled(courses.map((course) => handleCourseReminders(course.id, course.owner, course.settings, course.distribution)))
+}
+
+export const handleSendReminders = async (courseId: string, studentId: string) => {
+  console.log(courseId, studentId)
+}
+
+export const handleSendDropoutMessage = async (courseId: string, studentId: string) => {
+  console.log(courseId, studentId)
 }

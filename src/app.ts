@@ -78,7 +78,6 @@ app.use('/v1', routes)
 app.use((_req, _res, next) => {
   next(new ApiError(httpStatus.NOT_FOUND, 'Not found'))
 })
-
 // convert error to ApiError, if needed
 app.use(errorConverter)
 

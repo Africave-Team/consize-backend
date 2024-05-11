@@ -5,7 +5,7 @@ import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE } from './interfaces.webhooks'
-import { convertToWhatsAppString, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleSurveyFreeform, handleSurveyMulti, sendResumptionOptions, sendScheduleAcknowledgement } from "./service.webhooks"
+import { convertToWhatsAppString, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
@@ -21,9 +21,13 @@ export const getMomentTomorrow = (time: number) => {
 
   // Combine tomorrow's date with 3 PM time
   const targetTime = tomorrowDate.set('hour', time).set('minute', 0).set('second', 0)
+  const durationDifference = moment.duration(targetTime.diff(currentTime))
+
+  // Format the duration as "in X hours, Y minutes"
+  const formattedDuration = `${durationDifference.hours()} hours, ${durationDifference.minutes()} minutes, ${durationDifference.seconds()} seconds`
 
   // Calculate the difference in hours
-  return targetTime.diff(currentTime, 'minutes')
+  return formattedDuration
 }
 
 export const whatsappWebhookSubscriber = catchAsync(async (req: Request, res: Response) => {
@@ -157,30 +161,24 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           }
           break
         case TOMORROW:
-          if (enrollment) {
-            let msgId = v4()
-            agenda.schedule(`in ${getMomentTomorrow(9)} minutes`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
-            sendScheduleAcknowledgement(destination, "9:00am")
-          }
-          break
         case MORNING:
           if (enrollment) {
             let msgId = v4()
-            agenda.schedule(`in ${getMomentTomorrow(9)} minutes`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            agenda.schedule(`tomorrow at 9 am`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "9:00am")
           }
           break
         case AFTERNOON:
           if (enrollment) {
             let msgId = v4()
-            agenda.schedule(`in ${getMomentTomorrow(15)} minutes`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            agenda.schedule(`tomorrow at 3 pm`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "3:00pm")
           }
           break
         case EVENING:
           if (enrollment) {
             let msgId = v4()
-            agenda.schedule(`in ${getMomentTomorrow(20)} minutes`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            agenda.schedule(`tomorrow at 8 pm`, RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "8:00pm")
           }
           break
@@ -205,6 +203,10 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             }
           }
           break
+      }
+      // schedule inactivity message
+      if (enrollment) {
+        scheduleInactivityMessage(enrollment, destination)
       }
 
     } else if (type === "text") {

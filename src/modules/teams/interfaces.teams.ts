@@ -5,6 +5,7 @@ import { QueryResult } from '../paginate/paginate'
 export interface TeamsInterface extends Document {
     _id: string
     name: string
+    shortCode: string
     verified: boolean
     owner: string
     slackToken: string | null

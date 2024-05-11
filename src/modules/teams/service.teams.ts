@@ -8,11 +8,11 @@ import { QueryResult } from '../paginate/paginate'
 import { IUserDoc } from '../user/user.interfaces'
 import { FilterQuery } from 'mongoose'
 
-
+import randomstring from "randomstring"
 
 export const createTeam = async (name: string, ownerId: string): Promise<TeamsInterface> => {
   const team = await Team.create({
-    name, owner: ownerId
+    name, owner: ownerId, shortCode: randomstring.generate({ length: 5, charset: 'alphanumeric' }).toLowerCase()
   })
   return team
 }

@@ -1,16 +1,13 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
-import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE, GENERATE_COURSE_TRENDS, RESUME_TOMORROW } from '../MessageTypes'
-import { generateCurrentCourseTrends } from '../../courses/service.courses'
-import { CourseEnrollment } from '../../webhooks/interfaces.webhooks'
+import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE, GENERATE_COURSE_TRENDS, INACTIVITY_REMINDER, RESUME_TOMORROW } from '../MessageTypes'
+import { generateCurrentCourseTrends, handleStudentSlack, handleStudentWhatsapp, initiateDailyRoutine } from '../../courses/service.courses'
+import { CourseEnrollment, DailyReminderNotificationPayload } from '../../webhooks/interfaces.webhooks'
 import config from '../../../config/config'
-import { sendResumptionMessage } from '../../webhooks/service.webhooks'
-import Reminders from '../reminders.model'
-// import { agenda } from '..'
-import { CourseSettings } from '../../courses/interfaces.settings'
-import Settings from '../../courses/model.settings'
+import { sendInactivityMessage, sendResumptionMessage } from '../../webhooks/service.webhooks'
 import { initiateCourseForCohort, initiateCourseForCohortForSingleStudent } from '../../cohorts/service.cohorts'
-import Courses from '../../courses/model.courses'
+import { sendResumptionMessageSlack } from '../../slack/slack.services'
+import { Distribution } from '../../courses/interfaces.courses'
 
 export const handleCourseTrends: Processor<{ courseId: string, teamId: string }> = async (job: Job<{ courseId: string, teamId: string }>) => {
   try {
@@ -24,43 +21,16 @@ export const handleCourseTrends: Processor<{ courseId: string, teamId: string }>
   }
 }
 
-const handleContinueTomorrow: Processor<{ enrollment: CourseEnrollment, phoneNumber: string, messageId: string }> = async (job: Job<{ enrollment: CourseEnrollment, phoneNumber: string, messageId: string }>) => {
+const handleContinueTomorrow: Processor<{ enrollment: CourseEnrollment, phoneNumber?: string, messageId: string, channelId?: string }> = async (job: Job<{ enrollment: CourseEnrollment, phoneNumber?: string, channelId?: string, messageId: string }>) => {
   try {
     if (AppConfig.server !== "test") {
       const data = job.attrs.data
-      const { enrollment, phoneNumber } = data
-      await sendResumptionMessage(phoneNumber, `${config.redisBaseKey}enrollments:${phoneNumber}:${enrollment.id}`, enrollment)
-    }
-  } catch (error) {
-    console.log(error, "error send message")
-  }
-}
-
-const handleStartDailyRoutine: Processor<{ courseId: string, studentId: string }> = async (job: Job<{ courseId: string, studentId: string }>) => {
-  try {
-    if (AppConfig.server !== "test") {
-      const data = job.attrs.data
-      let reminder = await Reminders.findOne({ course: data.courseId, student: data.studentId })
-      if (!reminder) {
-        reminder = await Reminders.create({
-          course: data.courseId, student: data.studentId, dailyCount: 0, lastActivity: new Date()
-        })
+      const { enrollment, phoneNumber, channelId } = data
+      if (phoneNumber && !channelId) {
+        await sendResumptionMessage(phoneNumber, `${config.redisBaseKey}enrollments:${phoneNumber}:${enrollment.id}`, enrollment)
       }
-
-      if (reminder.dailyCount === 0) {
-        // get the course settings
-        const course = await Courses.findById(data.courseId).select("settings")
-        if (course && course.settings) {
-          let settings: CourseSettings | null = await Settings.findById(course.settings)
-          if (settings) {
-            let time = settings.reminderSchedule[0]
-            if (time) {
-              // agenda.schedule()
-
-            }
-
-          }
-        }
+      if (channelId && !phoneNumber) {
+        sendResumptionMessageSlack(channelId, `${config.redisBaseKey}enrollments:slack:${channelId}:${enrollment.id}`, enrollment)
       }
     }
   } catch (error) {
@@ -68,11 +38,25 @@ const handleStartDailyRoutine: Processor<{ courseId: string, studentId: string }
   }
 }
 
-const handleDailyReminders: Processor<{ courseId: string, studentId: string }> = async (job: Job<{ courseId: string, studentId: string }>) => {
+const handleStartDailyRoutine: Processor<any> = async () => {
+  try {
+    if (AppConfig.server !== "test") {
+      initiateDailyRoutine()
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
+const handleDailyReminders: Processor<DailyReminderNotificationPayload> = async (job: Job<DailyReminderNotificationPayload>) => {
   try {
     if (AppConfig.server !== "test") {
       const data = job.attrs.data
-      console.log(data)
+      if (data.distribution === Distribution.SLACK) {
+        handleStudentSlack(data)
+      } else {
+        handleStudentWhatsapp(data)
+      }
     }
   } catch (error) {
     console.log(error, "error send message")
@@ -84,6 +68,17 @@ const handleCohortSchedule: Processor<{ cohortId: string }> = async (job: Job<{ 
     if (AppConfig.server !== "test") {
       const data = job.attrs.data
       initiateCourseForCohort(data.cohortId)
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
+const handleInactivityReminders: Processor<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }> = async (job: Job<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>) => {
+  try {
+    if (AppConfig.server !== "test") {
+      const data = job.attrs.data
+      await sendInactivityMessage(data)
     }
   } catch (error) {
     console.log(error, "error send message")
@@ -103,9 +98,10 @@ const handleCohortScheduleStudent: Processor<{ cohortId: string, studentId: stri
 
 module.exports = (agenda: Agenda) => {
   agenda.define<{ courseId: string, teamId: string }>(GENERATE_COURSE_TRENDS, handleCourseTrends)
-  agenda.define<{ courseId: string, studentId: string }>(DAILY_ROUTINE, handleStartDailyRoutine)
-  agenda.define<{ courseId: string, studentId: string }>(DAILY_REMINDER, handleDailyReminders)
+  agenda.define<any>(DAILY_ROUTINE, handleStartDailyRoutine)
+  agenda.define<DailyReminderNotificationPayload>(DAILY_REMINDER, handleDailyReminders)
   agenda.define<{ cohortId: string }>(COHORT_SCHEDULE, handleCohortSchedule)
   agenda.define<{ cohortId: string, studentId: string }>(COHORT_SCHEDULE_STUDENT, handleCohortScheduleStudent)
-  agenda.define<{ enrollment: CourseEnrollment, phoneNumber: string, messageId: string }>(RESUME_TOMORROW, handleContinueTomorrow)
+  agenda.define<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>(INACTIVITY_REMINDER, handleInactivityReminders)
+  agenda.define<{ enrollment: CourseEnrollment, phoneNumber?: string, messageId: string, channelId?: string }>(RESUME_TOMORROW, handleContinueTomorrow)
 }
