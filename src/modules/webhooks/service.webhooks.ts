@@ -28,8 +28,6 @@ import { Question, ResponseType } from '../surveys/survey.interfaces'
 import { COURSE_STATS } from '../rtdb/nodes'
 import { StudentCourseStats } from '../students/interface.students'
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
-import Teams from '../teams/model.teams'
-import randomstring from "randomstring"
 
 export enum CourseFlowMessageType {
   WELCOME = 'welcome',
