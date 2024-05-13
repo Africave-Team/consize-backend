@@ -10,6 +10,7 @@ export interface SlackUser {
   }
   is_bot: boolean
   is_app_user: boolean
+  tz: string
 }
 
 export interface SlackChannel {

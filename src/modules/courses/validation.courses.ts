@@ -1,5 +1,5 @@
 import Joi from 'joi'
-import { CreateCoursePayload, Distribution, Media, MediaType } from './interfaces.courses'
+import { CreateCoursePayload, Media, MediaType } from './interfaces.courses'
 import { CreateLessonPayload } from './interfaces.lessons'
 import { CreateBlockPayload } from './interfaces.blocks'
 import { CreateQuizPayload } from './interfaces.quizzes'
@@ -8,7 +8,6 @@ const createCourseRequest: Record<keyof CreateCoursePayload, any> = {
   free: Joi.boolean(),
   bundle: Joi.boolean(),
   private: Joi.boolean(),
-  distribution: Joi.string().required().valid(...Object.values(Distribution)),
   headerMedia: Joi.object<Media>().keys({
     awsFileKey: Joi.string().optional(),
     mediaType: Joi.string().valid(...Object.values(MediaType)),

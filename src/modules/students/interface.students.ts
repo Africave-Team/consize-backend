@@ -10,6 +10,7 @@ export interface Student {
   slackId: string
   channelId: string
   email: string
+  tz: string
   custom?: any
 }
 
@@ -29,6 +30,7 @@ export interface CreateStudentPayload {
   phoneNumber: string
   firstName: string
   otherNames: string
+  tz: string
   slackId?: string
   custom?: any
 }

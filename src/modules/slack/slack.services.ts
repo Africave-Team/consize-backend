@@ -10,7 +10,7 @@ import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, Se
 import { CourseFlowItem, CourseFlowMessageType, convertToWhatsAppString, generateCourseFlow } from '../webhooks/service.webhooks'
 import { agenda } from '../scheduler'
 import { GENERATE_COURSE_TRENDS, SEND_CERTIFICATE_SLACK, SEND_LEADERBOARD_SLACK, SEND_SLACK_MESSAGE, SEND_SLACK_MODAL, SEND_SLACK_RESPONSE } from '../scheduler/MessageTypes'
-import { CourseInterface } from '../courses/interfaces.courses'
+import { CourseInterface, Distribution } from '../courses/interfaces.courses'
 import Courses from '../courses/model.courses'
 import { v4 } from 'uuid'
 import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, MORNING, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE, SCHEDULE_RESUMPTION, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from '../webhooks/interfaces.webhooks'
@@ -43,7 +43,18 @@ export const handleSlackTokenExchange = async function (code: string, teamId: st
   if (result && result.status === 200) {
     if (result.data && result.data.ok) {
       const { access_token } = result.data
-      await teamService.updateTeamInfo(teamId, { slackToken: access_token })
+      const team = await teamService.fetchTeamById(teamId)
+      if (team) {
+        let channels = [...team.channels]
+        let index = channels.findIndex(e => e.channel === Distribution.SLACK)
+        if (index >= 0 && channels[index]) {
+          // @ts-ignore
+          channels[index].token = access_token
+          // @ts-ignore
+          channels[index].enabled = true
+        }
+        await teamService.updateTeamInfo(teamId, { slackToken: access_token, channels })
+      }
     } else {
       throw new ApiError(httpStatus.BAD_REQUEST, result.data.error)
     }
@@ -109,7 +120,8 @@ export const fetchSlackMembers = async function (slackToken: string) {
       },
       is_app_user: e.is_app_user,
       is_bot: e.is_bot,
-      deleted: e.deleted
+      deleted: e.deleted,
+      tz: e.tz
     }))
   }
 

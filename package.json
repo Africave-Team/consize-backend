@@ -131,6 +131,7 @@
     "joi": "^17.5.0",
     "jsonwebtoken": "^9.0.0",
     "moment": "^2.29.4",
+    "moment-timezone": "^0.5.45",
     "mongoose": "^7.0.2",
     "morgan": "^1.10.0",
     "ncp": "^2.0.0",

@@ -9,10 +9,21 @@ import { IUserDoc } from '../user/user.interfaces'
 import { FilterQuery } from 'mongoose'
 
 import randomstring from "randomstring"
+import { Distribution } from '../courses/interfaces.courses'
 
 export const createTeam = async (name: string, ownerId: string): Promise<TeamsInterface> => {
   const team = await Team.create({
-    name, owner: ownerId, shortCode: randomstring.generate({ length: 5, charset: 'alphanumeric' }).toLowerCase()
+    name, owner: ownerId, shortCode: randomstring.generate({ length: 5, charset: 'alphanumeric' }).toLowerCase(),
+    channels: [
+      {
+        channel: Distribution.WHATSAPP,
+        enabled: false
+      },
+      {
+        channel: Distribution.SLACK,
+        enabled: false
+      }
+    ]
   })
   return team
 }

@@ -1146,7 +1146,7 @@ const handleCourseReminders = async (courseId: string, ownerId: string, settings
 
 export const initiateDailyRoutine = async () => {
   const courses = await Course.find({ status: CourseStatus.PUBLISHED })
-  await Promise.allSettled(courses.map((course) => handleCourseReminders(course.id, course.owner, course.settings, course.distribution)))
+  await Promise.allSettled(courses.map((course) => handleCourseReminders(course.id, course.owner, course.settings)))
 }
 
 export const handleSendReminders = async (courseId: string, studentId: string) => {

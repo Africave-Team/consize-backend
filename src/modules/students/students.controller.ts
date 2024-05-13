@@ -15,8 +15,8 @@ export const checkStudentInfo = catchAsync(async (req: Request, res: Response) =
 })
 
 export const registerStudent = catchAsync(async (req: Request, res: Response) => {
-  const { email, phoneNumber, firstName, otherNames, custom } = req.body
-  const student = await studentService.registerStudent({ email, phoneNumber, firstName, otherNames, custom })
+  const { email, phoneNumber, firstName, otherNames, custom, tz } = req.body
+  const student = await studentService.registerStudent({ email, phoneNumber, firstName, otherNames, custom, tz })
   if (!student.verified) {
     // dispatch the event to send OTP for this user
     await studentService.sendOTP(student.id, student.phoneNumber)
@@ -36,6 +36,24 @@ export const enrollStudentToCourse = catchAsync(async (req: Request, res: Respon
   const { course } = req.body
   if (course && student) {
     await studentService.enrollStudentToCourse(student, course)
+  }
+  res.status(200).send({ message: "Enrollment created" })
+})
+
+
+export const testCourseWhatsapp = catchAsync(async (req: Request, res: Response) => {
+  const { course, phoneNumber } = req.body
+  if (course && phoneNumber) {
+    await studentService.testCourseWhatsapp(phoneNumber, course)
+  }
+  res.status(200).send({ message: "Enrollment created" })
+})
+
+
+export const testCourseSlack = catchAsync(async (req: Request, res: Response) => {
+  const { course, slackId } = req.body
+  if (course && slackId) {
+    await studentService.testCourseSlack(slackId, course)
   }
   res.status(200).send({ message: "Enrollment created" })
 })

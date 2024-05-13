@@ -23,6 +23,9 @@ const StudentSchema = new Schema<StudentInterface>({
   otherNames: {
     type: String
   },
+  tz: {
+    type: String
+  },
   phoneNumber: {
     type: String
   },

@@ -10,8 +10,8 @@ import { Student, studentService } from '../students'
 import { StudentInterface } from '../students/interface.students'
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
 import { agenda } from '../scheduler'
-import { COHORT_SCHEDULE, SEND_SLACK_MESSAGE } from '../scheduler/MessageTypes'
-import moment from 'moment'
+import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, SEND_SLACK_MESSAGE } from '../scheduler/MessageTypes'
+import moment from 'moment-timezone'
 import { ACCEPT_INVITATION, REJECT_INVITATION } from '../webhooks/interfaces.webhooks'
 
 export const createCohort = async ({ courseId, distribution, name, members, channels, students, schedule, date, time }: CreateCohortInterface): Promise<CohortsInterface> => {
@@ -30,6 +30,7 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
 
     // list of student ids
     let cohortMembers: string[] = []
+    let cohortMembersInfo: { id: string, tz: string }[] = []
     // resolve slack or whatsapp
     if (distribution === Distribution.SLACK && team && team.slackToken) {
         let slackIds: string[] = []
@@ -56,15 +57,16 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
                     slackId: user.id,
                     firstName: user.profile.first_name,
                     otherNames: user.profile.last_name,
-                    phoneNumber: user.profile.phone
+                    phoneNumber: user.profile.phone,
+                    tz: user.tz
                 })
             }
             return null
         }))
 
-        let list = studentsList.filter(e => e !== null) as StudentInterface[]
-        cohortMembers = [...cohortMembers, ...existingStudents.map(e => e.id), ...list.map(e => e.id)]
-
+        let list = studentsList.filter((e) => e !== null) as StudentInterface[]
+        cohortMembers = [...cohortMembers, ...existingStudents.map((e) => e.id), ...list.map(e => e.id)]
+        cohortMembersInfo = [...cohortMembersInfo, ...existingStudents.map((e) => ({ id: e.id, tz: e.tz })), ...list.map((e) => ({ id: e.id, tz: e.tz }))]
         // send onboarding messages to all profiles
         if (team !== null && team.slackToken) {
             await Promise.allSettled(profiles.map(async (user): Promise<void> => {
@@ -128,7 +130,16 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
     } else {
         if (students) {
             const studentsData = await Promise.all(students.map(e => studentService.findStudentById(e)))
-            cohortMembers = studentsData.map(e => e && e.id)
+            cohortMembers = studentsData.filter(e => e && e.id).map(e => {
+                if (e !== null) {
+                    cohortMembersInfo.push({
+                        id: e._id,
+                        tz: e.tz
+                    })
+                    return e._id
+                }
+                return ""
+            })
         }
     }
     const cohort = new Cohorts({ name, date, time, members: cohortMembers, schedule, distribution, courseId, status: CohortsStatus.PENDING })
@@ -139,8 +150,9 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
         const combinedDateTime = moment(`${date} ${time}`, 'YYYY-MM-DD HH:mm')
 
         // Calculate the difference in minutes between now and the combined date
-        const differenceInMinutes = combinedDateTime.diff(moment(), 'minutes')
-        agenda.schedule<{ cohortId: string }>(`in ${differenceInMinutes} minutes`, COHORT_SCHEDULE, { cohortId: cohort.id })
+        for (let student of cohortMembersInfo) {
+            agenda.schedule<{ cohortId: string, studentId: string }>(combinedDateTime.tz(student.tz).toDate(), COHORT_SCHEDULE_STUDENT, { cohortId: cohort.id, studentId: student.id })
+        }
     } else {
         if (courseInformation.status === CourseStatus.PUBLISHED) {
             agenda.now<{ cohortId: string }>(COHORT_SCHEDULE, { cohortId: cohort.id })
@@ -150,8 +162,16 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
 }
 
 export const fetchCohorts = async (courseId: string): Promise<CohortsInterface[]> => {
-    const cohorts = await Cohorts.find({ courseId: courseId })
+    const cohorts = await Cohorts.find({ courseId: courseId }).populate("members")
     return cohorts
+}
+
+export const deleteCohort = async (cohortId: string): Promise<void> => {
+    const jobs = await agenda.jobs({ 'data.cohortId': cohortId })
+    for (let job of jobs) {
+        job.remove()
+    }
+    await Cohorts.deleteOne({ _id: cohortId })
 }
 
 

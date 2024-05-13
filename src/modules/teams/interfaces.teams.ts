@@ -1,6 +1,7 @@
 import { Document, Model } from 'mongoose'
 import { IUser, IUserDoc } from '../user/user.interfaces'
 import { QueryResult } from '../paginate/paginate'
+import { Distribution } from '../courses/interfaces.courses'
 
 export interface TeamsInterface extends Document {
     _id: string
@@ -9,9 +10,16 @@ export interface TeamsInterface extends Document {
     verified: boolean
     owner: string
     slackToken: string | null
+    channels: DistributionChannel[]
     logo?: string
     createdAt?: Date
     updatedAt?: Date
+}
+
+export interface DistributionChannel {
+    channel: Distribution,
+    enabled: boolean
+    token?: string
 }
 
 export interface TeamInterfaceWithOwner extends Omit<TeamsInterface, 'owner'> {
