@@ -1181,7 +1181,7 @@ export const resolveTeamCourseWithShortcode = async (code: string) => {
   let name = ""
   if (team) {
     name = team.name
-    courses = await Course.find({ owner: team.id, status: CourseStatus.PUBLISHED })
+    courses = await Course.find({ owner: team.id, status: CourseStatus.PUBLISHED }).limit(10)
   }
 
   return { courses, name }
