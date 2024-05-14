@@ -11,7 +11,7 @@ import { redisClient } from '../redis'
 import { v4 } from 'uuid'
 import Blocks from '../courses/model.blocks'
 import moment from 'moment-timezone'
-import { resolveTeamCourseWithShortcode } from '../courses/service.courses'
+import { resolveCourseWithShortcode, resolveTeamCourseWithShortcode } from '../courses/service.courses'
 // import { logger } from '../logger'
 
 export const getMomentTomorrow = (time: number) => {
@@ -281,29 +281,11 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const { name, courses } = await resolveTeamCourseWithShortcode(code)
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: destination,
-                type: "interactive",
+                type: "text",
                 messaging_product: "whatsapp",
                 recipient_type: "individual",
-                "interactive": {
-                  "type": "list",
-                  "body": {
-                    "text": `Here are the courses published by ${name}`
-                  },
-                  "action": {
-                    "button": "View courses",
-                    "sections": [
-                      {
-                        "title": `${name}'s courses`,
-                        "rows": [
-                          ...courses.map((course) => ({
-                            "id": course.id,
-                            "title": course.title.substring(0, 24),
-                            "description": convertToWhatsAppString(he.decode(course.description)).substring(0, 72) as string,
-                          }))
-                        ]
-                      }
-                    ]
-                  }
+                "text": {
+                  "body": `These are courses published by ${name}\n\Send the corresponding number as a text message to enroll in that particular course\n\n${courses.map((course, index) => `${index + 1}. *${course.title}*`)}`
                 }
               })
             }
@@ -312,15 +294,20 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               let contents = response.split('\n')
               let length = contents.length
               let code = contents[length - 1].replaceAll('_', '')
-              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                to: destination,
-                type: "text",
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                text: {
-                  body: code
-                }
-              })
+              const course = await resolveCourseWithShortcode(code)
+              if (!course) {
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: destination,
+                  type: "text",
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  text: {
+                    body: "We could not find any course for this organization with that identifier"
+                  }
+                })
+              } else {
+
+              }
             }
           } else if (enrollment) {
             handleSurveyFreeform(response, enrollment, destination, v4())

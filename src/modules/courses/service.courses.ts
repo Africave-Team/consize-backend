@@ -1177,7 +1177,7 @@ export const handleSendDropoutMessage = async (courseId: string, studentId: stri
 
 export const resolveTeamCourseWithShortcode = async (code: string) => {
   const team = await Teams.findOne({ shortCode: code })
-  let courses: Pick<CourseInterface, 'title' | 'description' | 'id'>[] = []
+  let courses: CourseInterface[] = []
   let name = ""
   if (team) {
     name = team.name
@@ -1189,7 +1189,7 @@ export const resolveTeamCourseWithShortcode = async (code: string) => {
 
 
 export const resolveCourseWithShortcode = async (code: string) => {
-  let course: Pick<CourseInterface, 'title' | 'description' | 'id'> | null = await Course.findOne({ shortCode: code })
+  let course: CourseInterface | null = await Course.findOne({ shortCode: code })
 
   return course
 }
