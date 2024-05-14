@@ -269,7 +269,42 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           // await sendWelcome("4f260e57-d4d7-45e1-aa17-7754362f7115", destination, messageid)
           break
         default:
-          if (enrollment) {
+          let teamCourses = response.includes("I want to see courses")
+          let singleCourse = response.includes("I want to start the course")
+          if (teamCourses || singleCourse) {
+            if (teamCourses) {
+              // get the course short code
+              let contents = response.split('\nTeam ID is')
+              let length = contents.length
+              let code = contents[length - 1]
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: destination,
+                type: "text",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                text: {
+                  body: code
+                }
+              })
+              return
+            }
+            if (singleCourse) {
+              // get the course short code
+              let contents = response.split('\n')
+              let length = contents.length
+              let code = contents[length - 1]
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: destination,
+                type: "text",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                text: {
+                  body: code
+                }
+              })
+              return
+            }
+          } else if (enrollment) {
             handleSurveyFreeform(response, enrollment, destination, v4())
           }
           break
