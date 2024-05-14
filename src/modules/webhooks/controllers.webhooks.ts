@@ -277,16 +277,16 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               let contents = response.split('\nTeam ID is')
               let length = contents.length
               let code = contents[length - 1].replaceAll('_', '')
-              console.log(contents)
-              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                to: destination,
-                type: "text",
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                text: {
-                  body: code
-                }
-              })
+              console.log(contents, code)
+              // agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              //   to: destination,
+              //   type: "text",
+              //   messaging_product: "whatsapp",
+              //   recipient_type: "individual",
+              //   text: {
+              //     body: code
+              //   }
+              // })
               return
             }
             if (singleCourse) {
@@ -294,15 +294,16 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               let contents = response.split('\n')
               let length = contents.length
               let code = contents[length - 1].replaceAll('_', '')
-              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                to: destination,
-                type: "text",
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                text: {
-                  body: code
-                }
-              })
+              // agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              //   to: destination,
+              //   type: "text",
+              //   messaging_product: "whatsapp",
+              //   recipient_type: "individual",
+              //   text: {
+              //     body: code
+              //   }
+              // })
+              console.log(code, contents)
               return
             }
           } else if (enrollment) {
