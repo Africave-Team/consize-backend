@@ -332,7 +332,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
 
           if (selected) {
             // check if the student exists
-            const student = await studentService.findStudentByPhoneNumber(destination)
+            const student = await Students.findOne({ phoneNumber: destination })
             if (student) {
               await studentService.enrollStudentToCourse(student.id, selected)
             } else {
