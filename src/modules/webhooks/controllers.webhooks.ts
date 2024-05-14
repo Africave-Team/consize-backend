@@ -367,6 +367,9 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   let courseId = await redisClient.get(keySelected)
                   if (courseId && student) {
                     await studentService.enrollStudentToCourse(student.id, courseId)
+                    redisClient.del(fieldKey)
+                    redisClient.del(fieldsKey)
+                    redisClient.del(keySelected)
                   }
                 }
               }
@@ -385,6 +388,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const student = await Students.findOne({ phoneNumber: destination })
               if (student) {
                 await studentService.enrollStudentToCourse(student.id, selected)
+                redisClient.del(key)
               } else {
                 const keySelected = `${config.redisBaseKey}selected:${destination}`
                 await redisClient.set(keySelected, selected)
@@ -413,6 +417,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                       })
                       await redisClient.set(fieldKey, fields[0].field)
                       await redisClient.set(fieldsKey, JSON.stringify(fields))
+                      redisClient.del(key)
                       // send the question for fields[0]
                       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                         to: destination,
@@ -542,7 +547,45 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   }
                 })
               } else {
-
+                const student = await Students.findOne({ phoneNumber: destination })
+                if (student) {
+                  await studentService.enrollStudentToCourse(student.id, course.id)
+                } else {
+                  // get course settings
+                  const settings = await Settings.findById(course.settings)
+                  if (settings) {
+                    const fields = settings.enrollmentFormFields.filter(e => e.defaultField && e.variableName !== "phoneNumber").sort((a, b) => b.position - a.position).map((field) => {
+                      return {
+                        question: `What is your ${field.fieldName}`,
+                        field: field.variableName,
+                        done: false
+                      }
+                    })
+                    if (fields[0]) {
+                      fields.push({
+                        question: `What is your timezone?\n\n`,
+                        field: "tz",
+                        done: false
+                      })
+                      // create the student
+                      await Students.create({
+                        phoneNumber: destination,
+                      })
+                      await redisClient.set(fieldKey, fields[0].field)
+                      await redisClient.set(fieldsKey, JSON.stringify(fields))
+                      // send the question for fields[0]
+                      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                        to: destination,
+                        type: "text",
+                        messaging_product: "whatsapp",
+                        recipient_type: "individual",
+                        text: {
+                          body: `Please answer the following questions, starting with this one\n\n${fields[0].question}\n\n\Type and send your responses as a text message.`
+                        }
+                      })
+                    }
+                  }
+                }
               }
             }
           } else if (enrollment) {
