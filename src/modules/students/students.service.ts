@@ -25,9 +25,13 @@ export const bulkAddStudents = async (students: Student[]): Promise<string[]> =>
     for (let student of students) {
       let result = await Students.findOne({ phoneNumber: student.phoneNumber })
       if (result) {
+        if (!result.verified) {
+          result.verified = true
+          await result.save()
+        }
         studentIds.push(result.id)
       } else {
-        result = await Students.create(student)
+        result = await Students.create({ ...student, verified: true })
         studentIds.push(result.id)
       }
     }

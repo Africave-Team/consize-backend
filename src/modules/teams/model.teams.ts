@@ -1,8 +1,27 @@
-import { ITeamModel, TeamsInterface } from './interfaces.teams'
+import { DistributionChannel, ITeamModel, TeamsInterface } from './interfaces.teams'
 import mongoose, { Schema } from 'mongoose'
 import { v4 } from "uuid"
 import { toJSON } from '../toJSON'
 import { paginate } from '../paginate'
+import { Distribution } from '../courses/interfaces.courses'
+
+const ChannelSchema = new Schema<DistributionChannel>(
+    {
+        channel: {
+            type: String,
+            enum: Object.values(Distribution)
+        },
+        enabled: {
+            type: Boolean
+        },
+        token: {
+            type: String
+        }
+    },
+    {
+        _id: false
+    }
+)
 
 export const TeamSchema = new Schema<TeamsInterface, ITeamModel>(
     {
@@ -12,6 +31,9 @@ export const TeamSchema = new Schema<TeamsInterface, ITeamModel>(
         },
         shortCode: {
             type: String
+        },
+        channels: {
+            type: [ChannelSchema]
         },
         logo: {
             type: Schema.Types.String

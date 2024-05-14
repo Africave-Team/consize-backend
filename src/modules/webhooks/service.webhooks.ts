@@ -16,7 +16,7 @@ import Lessons from '../courses/model.lessons'
 import Blocks from '../courses/model.blocks'
 import Quizzes from '../courses/model.quizzes'
 import { agenda } from '../scheduler'
-import { DAILY_ROUTINE, INACTIVITY_REMINDER, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { DAILY_ROUTINE, INACTIVITY_REMINDER, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import { logger } from '../logger'
 import moment from 'moment'
@@ -26,8 +26,10 @@ import { delay } from '../generators/generator.service'
 import { Survey, SurveyResponse } from '../surveys'
 import { Question, ResponseType } from '../surveys/survey.interfaces'
 import { COURSE_STATS } from '../rtdb/nodes'
-import { StudentCourseStats } from '../students/interface.students'
+import { StudentCourseStats, StudentInterface } from '../students/interface.students'
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
+import Students from '../students/model.students'
+// import randomstring from "randomstring"
 
 export enum CourseFlowMessageType {
   WELCOME = 'welcome',
@@ -288,6 +290,14 @@ export const sendMessage = async function (message: Message) {
 }
 
 export const sendInactivityMessage = async (payload: { studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }) => {
+  const jobs = await agenda.jobs({
+    name: RESUME_TOMORROW,
+    'data.enrollment.student': payload.studentId,
+    nextRunAt: { $ne: null }
+  })
+  if (jobs.length > 0) {
+    return
+  }
   const msgId = v4()
   if (payload.phoneNumber && !payload.slackChannel) {
     const key = `${config.redisBaseKey}enrollments:${payload.phoneNumber}:${payload.courseId}`
@@ -320,9 +330,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
       })
       await redisClient.set(key, JSON.stringify(redisData))
     }
-  }
-
-  if (payload.slackChannel && payload.slackToken && !payload.phoneNumber) {
+  } else if (payload.slackChannel && payload.slackToken && !payload.phoneNumber) {
     const key = `${config.redisBaseKey}enrollments:slack:${payload.slackChannel}:${payload.courseId}`
     const dtf = await redisClient.get(key)
     if (dtf) {
@@ -453,9 +461,10 @@ export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string
 
 export const startCourse = async (phoneNumber: string, courseId: string, studentId: string): Promise<string> => {
   const course: CourseInterface | null = await Courses.findById(courseId)
+  const student: StudentInterface | null = await Students.findById(studentId)
   const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${courseId}`
   const initialMessageId = v4()
-  if (course) {
+  if (course && student) {
     const settings = await Settings.findById(course.settings)
     if (redisClient.isReady) {
       const courseKey = `${config.redisBaseKey}courses:${courseId}`
@@ -464,6 +473,7 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
         const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
         const redisData: CourseEnrollment = {
           team: course.owner,
+          tz: student.tz,
           student: studentId,
           id: courseId,
           inactivityPeriod: settings?.inactivityPeriod,

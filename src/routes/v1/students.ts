@@ -17,4 +17,7 @@ router.route('/otp')
 
 router.route('/:student/enrollments')
   .post(validate(studentValidators.enrollStudent), studentController.enrollStudentToCourse)
+
+router.post('/test-course/whatsapp', studentController.testCourseWhatsapp)
+router.post('/test-course/slack', studentController.testCourseSlack)
 export default router

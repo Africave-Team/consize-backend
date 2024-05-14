@@ -39,10 +39,10 @@ interface Course {
     status: CourseStatus
     free: boolean
     settings: string
+    shortCode: string
     bundle: boolean
     private: boolean
     source: Sources
-    distribution?: Distribution
     price?: number
     currentCohort?: string
     audiences?: string
@@ -56,7 +56,6 @@ export interface CreateCoursePayload {
     headerMedia: Media
     title: string
     description: string
-    distribution?: Distribution
     price?: number
     audiences?: string
     currentCohort?: string
