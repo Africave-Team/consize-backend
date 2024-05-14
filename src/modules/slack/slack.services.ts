@@ -19,7 +19,7 @@ import Teams from '../teams/model.teams'
 import { COURSE_STATS } from '../rtdb/nodes'
 import { saveBlockDuration, saveCourseProgress, saveQuizDuration } from '../students/students.service'
 import moment from 'moment'
-import { StudentCourseStats } from '../students/interface.students'
+import { StudentCourseStats, StudentInterface } from '../students/interface.students'
 import { delay } from '../generators/generator.service'
 import { SurveyResponse } from '../surveys'
 import { ResponseType } from '../surveys/survey.interfaces'
@@ -308,9 +308,10 @@ export async function fetchEnrollmentsSlack (channel: string): Promise<CourseEnr
 
 export const startCourseSlack = async (channel: string, courseId: string, studentId: string, token: string): Promise<string> => {
   const course: CourseInterface | null = await Courses.findById(courseId)
+  const student: StudentInterface | null = await Students.findById(studentId)
   const key = `${config.redisBaseKey}enrollments:slack:${channel}:${courseId}`
   const initialMessageId = v4()
-  if (course) {
+  if (course && student) {
     let settings = await Settings.findById(course.settings)
     if (redisClient.isReady) {
       const courseKey = `${config.redisBaseKey}courses:${courseId}`
@@ -319,6 +320,7 @@ export const startCourseSlack = async (channel: string, courseId: string, studen
         const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
         const redisData: CourseEnrollment = {
           team: course.owner,
+          tz: student.tz,
           student: studentId,
           id: courseId,
           lastMessageId: initialMessageId,
