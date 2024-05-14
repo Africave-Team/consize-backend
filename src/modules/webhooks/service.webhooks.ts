@@ -321,9 +321,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
       })
       await redisClient.set(key, JSON.stringify(redisData))
     }
-  }
-
-  if (payload.slackChannel && payload.slackToken && !payload.phoneNumber) {
+  } else if (payload.slackChannel && payload.slackToken && !payload.phoneNumber) {
     const key = `${config.redisBaseKey}enrollments:slack:${payload.slackChannel}:${payload.courseId}`
     const dtf = await redisClient.get(key)
     if (dtf) {

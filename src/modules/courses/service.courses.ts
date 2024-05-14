@@ -19,7 +19,7 @@ import { StudentCourseStats } from '../students/interface.students'
 import moment, { Moment } from 'moment'
 import { CourseStatistics } from '../rtdb/interfaces.rtdb'
 import { agenda } from '../scheduler'
-import { DAILY_REMINDER, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { DAILY_REMINDER, RESUME_TOMORROW, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { CourseEnrollment, DailyReminderNotificationPayload, Message } from '../webhooks/interfaces.webhooks'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -872,6 +872,15 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
 }
 
 export const handleStudentSlack = async ({ studentId, courseId, settingsId, last }: DailyReminderNotificationPayload) => {
+  // check if there is a RESUME_TOMORROW event scheduled for this student
+  const jobs = await agenda.jobs({
+    name: RESUME_TOMORROW,
+    'data.enrollment.student': studentId,
+    nextRunAt: { $ne: null }
+  })
+  if (jobs.length > 0) {
+    return
+  }
   let settings = await Settings.findById(settingsId)
   let msgId = v4()
   if (settings) {
@@ -1007,6 +1016,14 @@ export const handleStudentSlack = async ({ studentId, courseId, settingsId, last
   }
 }
 export const handleStudentWhatsapp = async ({ courseId, studentId, settingsId, last }: DailyReminderNotificationPayload) => {
+  const jobs = await agenda.jobs({
+    name: RESUME_TOMORROW,
+    'data.enrollment.student': studentId,
+    nextRunAt: { $ne: null }
+  })
+  if (jobs.length > 0) {
+    return
+  }
   let settings = await Settings.findById(settingsId)
   let msgId = v4()
   if (settings) {
