@@ -274,7 +274,8 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           if (teamCourses || singleCourse) {
             if (teamCourses) {
               // get the course short code
-              let contents = response.split('\nTeam ID is')
+              console.log(response)
+              let contents = response.split('\nteam id is')
               let length = contents.length
               let code = contents[length - 1].replaceAll('_', '')
               console.log(contents, code)
