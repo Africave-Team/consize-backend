@@ -466,8 +466,8 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           let teamCourses = response.includes("want to see courses")
           let singleCourse = response.includes("want to start the course")
           field = await redisClient.get(fieldKey)
-          fieldsRaw = await redisClient.get(fieldsKey)
           if (field) {
+            fieldsRaw = await redisClient.get(fieldsKey)
             let payload: any = {}
             payload[field] = response
             await Students.updateOne({ phoneNumber: destination }, { $set: payload })
