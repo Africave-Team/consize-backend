@@ -274,38 +274,33 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           if (teamCourses || singleCourse) {
             if (teamCourses) {
               // get the course short code
-              console.log(response)
               let contents = response.split('\n')
               let length = contents.length
               let code = contents[length - 1].replaceAll('_', '')
-              console.log(contents, code)
-              // agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              //   to: destination,
-              //   type: "text",
-              //   messaging_product: "whatsapp",
-              //   recipient_type: "individual",
-              //   text: {
-              //     body: code
-              //   }
-              // })
-              return
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: destination,
+                type: "text",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                text: {
+                  body: code
+                }
+              })
             }
             if (singleCourse) {
               // get the course short code
               let contents = response.split('\n')
               let length = contents.length
               let code = contents[length - 1].replaceAll('_', '')
-              // agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              //   to: destination,
-              //   type: "text",
-              //   messaging_product: "whatsapp",
-              //   recipient_type: "individual",
-              //   text: {
-              //     body: code
-              //   }
-              // })
-              console.log(code, contents)
-              return
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: destination,
+                type: "text",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                text: {
+                  body: code
+                }
+              })
             }
           } else if (enrollment) {
             handleSurveyFreeform(response, enrollment, destination, v4())
