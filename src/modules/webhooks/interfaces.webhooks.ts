@@ -81,6 +81,7 @@ export interface CourseEnrollment {
   team: string
   student: string
   id: string
+  tz: string
   title: string
   description: string
   lastMessageId: string

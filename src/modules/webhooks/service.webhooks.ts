@@ -26,8 +26,9 @@ import { delay } from '../generators/generator.service'
 import { Survey, SurveyResponse } from '../surveys'
 import { Question, ResponseType } from '../surveys/survey.interfaces'
 import { COURSE_STATS } from '../rtdb/nodes'
-import { StudentCourseStats } from '../students/interface.students'
+import { StudentCourseStats, StudentInterface } from '../students/interface.students'
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
+import Students from '../students/model.students'
 // import randomstring from "randomstring"
 
 export enum CourseFlowMessageType {
@@ -452,9 +453,10 @@ export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string
 
 export const startCourse = async (phoneNumber: string, courseId: string, studentId: string): Promise<string> => {
   const course: CourseInterface | null = await Courses.findById(courseId)
+  const student: StudentInterface | null = await Students.findById(studentId)
   const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${courseId}`
   const initialMessageId = v4()
-  if (course) {
+  if (course && student) {
     const settings = await Settings.findById(course.settings)
     if (redisClient.isReady) {
       const courseKey = `${config.redisBaseKey}courses:${courseId}`
@@ -463,6 +465,7 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
         const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
         const redisData: CourseEnrollment = {
           team: course.owner,
+          tz: student.tz,
           student: studentId,
           id: courseId,
           inactivityPeriod: settings?.inactivityPeriod,
