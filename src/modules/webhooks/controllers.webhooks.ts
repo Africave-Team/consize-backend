@@ -269,9 +269,8 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           // await sendWelcome("4f260e57-d4d7-45e1-aa17-7754362f7115", destination, messageid)
           break
         default:
-          console.log(response)
-          let teamCourses = response.includes("I want to see courses")
-          let singleCourse = response.includes("I want to start the course")
+          let teamCourses = response.includes("want to see courses")
+          let singleCourse = response.includes("want to start the course")
           if (teamCourses || singleCourse) {
             if (teamCourses) {
               // get the course short code
