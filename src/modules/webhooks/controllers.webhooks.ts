@@ -298,7 +298,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                           ...courses.map((course) => ({
                             "id": course.id,
                             "title": course.title.substring(0, 24),
-                            "description": convertToWhatsAppString(course.description).substring(0, 72) as string,
+                            "description": convertToWhatsAppString(he.decode(course.description)).substring(0, 72) as string,
                           }))
                         ]
                       }
