@@ -11,6 +11,7 @@ import { redisClient } from '../redis'
 import { v4 } from 'uuid'
 import Blocks from '../courses/model.blocks'
 import moment from 'moment-timezone'
+import { resolveTeamCourseWithShortcode } from '../courses/service.courses'
 // import { logger } from '../logger'
 
 export const getMomentTomorrow = (time: number) => {
@@ -277,6 +278,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               let contents = response.split('\n')
               let length = contents.length
               let code = contents[length - 1].replaceAll('_', '')
+              const { name, courses } = await resolveTeamCourseWithShortcode(code)
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: destination,
                 type: "interactive",
@@ -285,31 +287,21 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 "interactive": {
                   "type": "list",
                   "body": {
-                    "text": "Message goes in here " + code
+                    "text": `Here are the courses published by ${name}`
                   },
                   "action": {
-                    "button": "View options",
+                    "button": "View courses",
                     "sections": [
                       {
-                        "title": "Title",
+                        "title": `${name}'s courses`,
                         "rows": [
-                          {
-                            "id": "unique-row-identifier-1",
-                            "title": "row-title-content",
-                            "description": "row-description-content",
-                          }
+                          ...courses.map((course) => ({
+                            "id": course.id,
+                            "title": course.title.substring(0, 24),
+                            "description": course.description.substring(0, 72),
+                          }))
                         ]
-                      },
-                      {
-                        "title": "Title",
-                        "rows": [
-                          {
-                            "id": "unique-row-identifier-2",
-                            "title": "row-title-content",
-                            "description": "row-description-content",
-                          }
-                        ]
-                      },
+                      }
                     ]
                   }
                 }
