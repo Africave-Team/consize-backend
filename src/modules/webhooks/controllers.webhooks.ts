@@ -276,7 +276,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               // get the course short code
               let contents = response.split('\nTeam ID is')
               let length = contents.length
-              let code = contents[length - 1]
+              let code = contents[length - 1].replaceAll('_', '')
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: destination,
                 type: "text",
@@ -292,7 +292,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               // get the course short code
               let contents = response.split('\n')
               let length = contents.length
-              let code = contents[length - 1]
+              let code = contents[length - 1].replaceAll('_', '')
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: destination,
                 type: "text",
