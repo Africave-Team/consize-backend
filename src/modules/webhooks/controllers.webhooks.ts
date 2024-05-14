@@ -285,7 +285,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 messaging_product: "whatsapp",
                 recipient_type: "individual",
                 "text": {
-                  "body": `These are courses published by ${name}\n\Send the corresponding number as a text message to enroll in that particular course\n\n${courses.map((course, index) => `${index + 1}. *${course.title}*`)}`
+                  "body": `These are courses published by ${name}\n\Send the corresponding number as a text message to enroll in that particular course\n\n${courses.map((course, index) => `${index + 1}. *${course.title.trim()}*\n`)}`
                 }
               })
             }
