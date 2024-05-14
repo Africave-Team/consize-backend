@@ -24,14 +24,27 @@ export interface ReplyButton {
   }
 }
 
+interface InteractiveMessageSectionRow {
+  id: string,
+  title: string
+  description: string
+}
+
+interface InteractiveMessageSection {
+  title: string
+  rows: InteractiveMessageSectionRow[]
+}
+
 interface InteractiveMessage {
   type: "interactive"
   interactive: {
-    type: "button"
+    type: "button" | "list"
     header?: Header
     body: MessageBody
     action: {
-      buttons: ReplyButton[]
+      buttons?: ReplyButton[]
+      button?: string
+      sections?: InteractiveMessageSection[]
     }
   }
 }

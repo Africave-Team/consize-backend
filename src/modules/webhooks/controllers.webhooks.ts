@@ -279,11 +279,39 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               let code = contents[length - 1].replaceAll('_', '')
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: destination,
-                type: "text",
+                type: "interactive",
                 messaging_product: "whatsapp",
                 recipient_type: "individual",
-                text: {
-                  body: code
+                "interactive": {
+                  "type": "list",
+                  "body": {
+                    "text": "your-text-message-content " + code
+                  },
+                  "action": {
+                    "button": "cta-button-content",
+                    "sections": [
+                      {
+                        "title": "your-section-title-content",
+                        "rows": [
+                          {
+                            "id": "unique-row-identifier",
+                            "title": "row-title-content",
+                            "description": "row-description-content",
+                          }
+                        ]
+                      },
+                      {
+                        "title": "your-section-title-content",
+                        "rows": [
+                          {
+                            "id": "unique-row-identifier",
+                            "title": "row-title-content",
+                            "description": "row-description-content",
+                          }
+                        ]
+                      },
+                    ]
+                  }
                 }
               })
             }
