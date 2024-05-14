@@ -12,7 +12,54 @@ import { v4 } from 'uuid'
 import Blocks from '../courses/model.blocks'
 import moment from 'moment-timezone'
 import { resolveCourseWithShortcode, resolveTeamCourseWithShortcode } from '../courses/service.courses'
+import { studentService } from '../students'
+import { courseService } from '../courses'
+import Settings from '../courses/model.settings'
+import Students from '../students/model.students'
 // import { logger } from '../logger'
+
+const timezones = [
+  {
+    "name": "Eastern Time (ET)",
+    "timezone": "America/New_York"
+  },
+  {
+    "name": "Central Time (CT)",
+    "timezone": "America/Chicago"
+  },
+  {
+    "name": "Mountain Time (MT)",
+    "timezone": "America/Denver"
+  },
+  {
+    "name": "Pacific Time (PT)",
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "GMT (Greenwich Mean Time)",
+    "timezone": "GMT"
+  },
+  {
+    "name": "CET (Central European Time)",
+    "timezone": "Europe/Paris"
+  },
+  {
+    "name": "EET (Eastern European Time)",
+    "timezone": "Europe/Istanbul"
+  },
+  {
+    "name": "WAT (West Africa Time)",
+    "timezone": "Africa/Lagos"
+  },
+  {
+    "name": "CAT (Central Africa Time)",
+    "timezone": "Africa/Johannesburg"
+  },
+  {
+    "name": "EAT (East Africa Time)",
+    "timezone": "Africa/Nairobi"
+  }
+]
 
 export const getMomentTomorrow = (time: number) => {
   const currentTime = moment()
@@ -222,6 +269,8 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       }
 
     } else if (type === "text") {
+      const fieldKey = `${config.redisBaseKey}field:${destination}`
+      const fieldsKey = `${config.redisBaseKey}fields:${destination}`
       const response = messageBody[0].text.body.toLowerCase()
       switch (response) {
         case "/sos":
@@ -263,6 +312,94 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             }
           })
           break
+        case "1":
+        case "2":
+        case "3":
+        case "4":
+        case "5":
+        case "6":
+        case "7":
+        case "8":
+        case "9":
+        case "10":
+          const key = `${config.redisBaseKey}last_request:${destination}`
+          const dt = await redisClient.get(key)
+          let courses: string[] = []
+          if (dt) {
+            courses = [...JSON.parse(dt)]
+          }
+          const selected = courses[Number(response)]
+
+          if (selected) {
+            // check if the student exists
+            const student = await studentService.findStudentByPhoneNumber(destination)
+            if (student) {
+              await studentService.enrollStudentToCourse(student.id, selected)
+            } else {
+              const keySelected = `${config.redisBaseKey}selected:${destination}`
+              await redisClient.set(keySelected, selected)
+              // get the course
+              const course = await courseService.fetchSingleCourse({ courseId: selected })
+              if (course) {
+                // get course settings
+                const settings = await Settings.findById(course.settings)
+                if (settings) {
+                  const fields = settings.enrollmentFormFields.filter(e => e.defaultField && e.variableName !== "phoneNumber").sort((a, b) => b.position - a.position).map((field) => {
+                    return {
+                      question: `What is your ${field.fieldName}`,
+                      field: field.variableName,
+                      done: false
+                    }
+                  })
+                  if (fields[0]) {
+                    fields.push({
+                      question: `What is your timezone?\n\n`,
+                      field: "tz",
+                      done: false
+                    })
+                    // create the student
+                    await Students.create({
+                      phoneNumber: destination,
+                    })
+                    await redisClient.set(fieldKey, fields[0].field)
+                    await redisClient.set(fieldsKey, JSON.stringify(fields))
+                    // send the question for fields[0]
+                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                      to: destination,
+                      type: "text",
+                      messaging_product: "whatsapp",
+                      recipient_type: "individual",
+                      text: {
+                        body: `Please answer the following questions, starting with this one\n\n${fields[0].question}\n\n\Type and send your responses as a text message.`
+                      }
+                    })
+                  }
+                }
+              } else {
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: destination,
+                  type: "text",
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  text: {
+                    body: "You have provided an invalid entry, please try again"
+                  }
+                })
+              }
+
+            }
+          } else {
+            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: destination,
+              type: "text",
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              text: {
+                body: "You have provided an invalid entry, please try again"
+              }
+            })
+          }
+          break
 
         case "/enroll":
           // await generateCourseFlow("4f260e57-d4d7-45e1-aa17-7754362f7115")
@@ -272,22 +409,70 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         default:
           let teamCourses = response.includes("want to see courses")
           let singleCourse = response.includes("want to start the course")
-          if (teamCourses || singleCourse) {
+          const field = await redisClient.get(fieldKey)
+          const fieldsRaw = await redisClient.get(fieldsKey)
+          if (field) {
+            let payload: any = {}
+            payload[field] = response
+            await Students.updateOne({ phoneNumber: destination }, { $set: payload })
+            if (fieldsRaw) {
+              let fields: {
+                field: string,
+                question: string,
+                done: boolean
+              }[] = JSON.parse(fieldsRaw)
+              let index = fields.findIndex(e => e.field === field)
+              if (index >= 0) {
+                // @ts-ignore
+                fields[index].done = true
+              }
+              let left = fields.filter(e => !e.done)
+              if (left.length > 0 && left[0]) {
+                let next = left[0]
+                await redisClient.set(fieldKey, next.field)
+                await redisClient.set(fieldsKey, JSON.stringify(fields))
+                // send the question for the next 
+                let message = `${next.question}\n\n\Type and send your responses as a text message.`
+                if (next.field === 'tz') {
+                  message = `Select an appropriate timezone. \n\nThis will help us send you reminders at appropriate times\n\nSend the corresponding number as a text message\n${timezones.map((zone, index) => `\n${index + 1}. *${zone.name.trim()}*`).join('.')}`
+                }
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: destination,
+                  type: "text",
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  text: {
+                    body: message
+                  }
+                })
+              } else {
+                const student = await Students.findOneAndUpdate({ phoneNumber: destination }, { $set: { verified: true } })
+                // 
+                const keySelected = `${config.redisBaseKey}selected:${destination}`
+                let courseId = await redisClient.get(keySelected)
+                if (courseId && student) {
+                  await studentService.enrollStudentToCourse(student.id, courseId)
+                }
+              }
+            }
+          } else if (teamCourses || singleCourse) {
             if (teamCourses) {
               // get the course short code
               let contents = response.split('\n')
               let length = contents.length
               let code = contents[length - 1].replaceAll('_', '')
               const { name, courses } = await resolveTeamCourseWithShortcode(code)
+              const key = `${config.redisBaseKey}last_request:${destination}`
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: destination,
                 type: "text",
                 messaging_product: "whatsapp",
                 recipient_type: "individual",
                 "text": {
-                  "body": `These are courses published by *${name}*\n\nSend the corresponding number as a text message to enroll in that particular course\n${courses.map((course, index) => `\n${index + 1}. *${course.title.trim()}*`)}`
+                  "body": `These are courses published by *${name}*\n\nSend the corresponding number as a text message to enroll in that particular course\n${courses.map((course, index) => `\n${index + 1}. *${course.title.trim()}*`).join('.')}`
                 }
               })
+              await redisClient.set(key, JSON.stringify(courses.map(e => e.id)))
             }
             if (singleCourse) {
               // get the course short code
