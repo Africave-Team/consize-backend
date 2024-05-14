@@ -555,6 +555,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 } else {
                   // get course settings
                   const settings = await Settings.findById(course.settings)
+                  console.log(settings, "settings")
                   if (settings) {
                     const fields = settings.enrollmentFormFields.filter(e => e.defaultField && e.variableName !== "phoneNumber").sort((a, b) => b.position - a.position).map((field) => {
                       return {
