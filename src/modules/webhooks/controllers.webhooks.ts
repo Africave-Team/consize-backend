@@ -285,26 +285,26 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 "interactive": {
                   "type": "list",
                   "body": {
-                    "text": "your-text-message-content " + code
+                    "text": "Message goes in here " + code
                   },
                   "action": {
-                    "button": "cta-button-content",
+                    "button": "View options",
                     "sections": [
                       {
-                        "title": "your-section-title-content",
+                        "title": "Title",
                         "rows": [
                           {
-                            "id": "unique-row-identifier",
+                            "id": "unique-row-identifier-1",
                             "title": "row-title-content",
                             "description": "row-description-content",
                           }
                         ]
                       },
                       {
-                        "title": "your-section-title-content",
+                        "title": "Title",
                         "rows": [
                           {
-                            "id": "unique-row-identifier",
+                            "id": "unique-row-identifier-2",
                             "title": "row-title-content",
                             "description": "row-description-content",
                           }
