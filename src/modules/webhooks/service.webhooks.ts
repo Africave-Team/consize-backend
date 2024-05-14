@@ -16,7 +16,7 @@ import Lessons from '../courses/model.lessons'
 import Blocks from '../courses/model.blocks'
 import Quizzes from '../courses/model.quizzes'
 import { agenda } from '../scheduler'
-import { DAILY_ROUTINE, INACTIVITY_REMINDER, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { DAILY_ROUTINE, INACTIVITY_REMINDER, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import { logger } from '../logger'
 import moment from 'moment'
@@ -290,6 +290,14 @@ export const sendMessage = async function (message: Message) {
 }
 
 export const sendInactivityMessage = async (payload: { studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }) => {
+  const jobs = await agenda.jobs({
+    name: RESUME_TOMORROW,
+    'data.enrollment.student': payload.studentId,
+    nextRunAt: { $ne: null }
+  })
+  if (jobs.length > 0) {
+    return
+  }
   const msgId = v4()
   if (payload.phoneNumber && !payload.slackChannel) {
     const key = `${config.redisBaseKey}enrollments:${payload.phoneNumber}:${payload.courseId}`
