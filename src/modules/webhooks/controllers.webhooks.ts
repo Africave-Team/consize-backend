@@ -326,7 +326,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         case "10":
           field = await redisClient.get(fieldKey)
           if (field && field === "tz") {
-            let selected = timezones[Number(response)]
+            let selected = timezones[Number(response) - 1]
             if (selected) {
               await Students.updateOne({ phoneNumber: destination }, { $set: { tz: selected.timezone } })
               fieldsRaw = await redisClient.get(fieldsKey)
@@ -381,7 +381,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             if (dt) {
               courses = [...JSON.parse(dt)]
             }
-            const selected = courses[Number(response)]
+            const selected = courses[Number(response) - 1]
 
             if (selected) {
               // check if the student exists
@@ -466,7 +466,6 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           let teamCourses = response.includes("want to see courses")
           let singleCourse = response.includes("want to start the course")
           field = await redisClient.get(fieldKey)
-          console.log(field, teamCourses, singleCourse)
           if (field) {
             fieldsRaw = await redisClient.get(fieldsKey)
             let payload: any = {}
