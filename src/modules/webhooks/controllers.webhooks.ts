@@ -536,7 +536,6 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               let length = contents.length
               let code = contents[length - 1].replaceAll('_', '')
               const course = await resolveCourseWithShortcode(code)
-              console.log(course)
               if (!course) {
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                   to: destination,
@@ -549,13 +548,11 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 })
               } else {
                 const student = await Students.findOne({ phoneNumber: destination })
-                console.log(student)
                 if (student) {
                   await studentService.enrollStudentToCourse(student.id, course.id)
                 } else {
                   // get course settings
                   const settings = await Settings.findById(course.settings)
-                  console.log(settings, "settings")
                   if (settings) {
                     const fields = settings.enrollmentFormFields.filter(e => e.defaultField && e.variableName !== "phoneNumber").sort((a, b) => b.position - a.position).map((field) => {
                       return {
@@ -564,7 +561,6 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                         done: false
                       }
                     })
-                    console.log(fields, settings.enrollmentFormFields)
                     if (fields[0]) {
                       fields.push({
                         question: `What is your timezone?\n\n`,
