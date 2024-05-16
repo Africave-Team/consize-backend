@@ -25,6 +25,7 @@ import config from '../../config/config'
 import { redisClient } from '../redis'
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
 import { v4 } from 'uuid'
+import Teams from '../teams/model.teams'
 
 interface SessionStudent extends StudentCourseStats {
   id: string
@@ -1172,4 +1173,23 @@ export const handleSendReminders = async (courseId: string, studentId: string) =
 
 export const handleSendDropoutMessage = async (courseId: string, studentId: string) => {
   console.log(courseId, studentId)
+}
+
+export const resolveTeamCourseWithShortcode = async (code: string) => {
+  const team = await Teams.findOne({ shortCode: code })
+  let courses: CourseInterface[] = []
+  let name = ""
+  if (team) {
+    name = team.name
+    courses = await Course.find({ owner: team.id, status: CourseStatus.PUBLISHED }).limit(10)
+  }
+
+  return { courses, name }
+}
+
+
+export const resolveCourseWithShortcode = async (code: string) => {
+  let course: CourseInterface | null = await Course.findOne({ shortCode: code })
+
+  return course
 }
