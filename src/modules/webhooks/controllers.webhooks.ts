@@ -532,9 +532,9 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             }
             if (singleCourse) {
               // get the course short code
-              let contents = response.split('\n')
+              let contents = response.split('(id: _')
               let length = contents.length
-              let code = contents[length - 1].replaceAll('_', '')
+              let code = contents[length - 1].replaceAll('_)', '')
               const course = await resolveCourseWithShortcode(code)
               if (!course) {
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
