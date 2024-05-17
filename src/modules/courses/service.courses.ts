@@ -26,6 +26,7 @@ import { redisClient } from '../redis'
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
 import { v4 } from 'uuid'
 import Teams from '../teams/model.teams'
+import randomstring from "randomstring"
 
 interface SessionStudent extends StudentCourseStats {
   id: string
@@ -63,7 +64,12 @@ enum PageType {
 
 
 export const createCourse = async (coursePayload: CreateCoursePayload, teamId: string): Promise<CourseInterface> => {
-  const course = new Course({ ...coursePayload, owner: teamId })
+  const course = new Course({
+    ...coursePayload, owner: teamId, shortCode: randomstring.generate({
+      length: 5,
+      charset: "alphanumeric"
+    }).toLowerCase()
+  })
   await course.save()
   setInitialCourseStats(course.id, teamId)
   setInitialCourseSettings(course.id)
