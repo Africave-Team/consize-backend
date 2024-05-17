@@ -209,7 +209,7 @@ export const searchTeamCourses = async ({ teamId, search }: { teamId: string, se
 }
 
 export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: string, courseId: string }): Promise<CourseInterface | null> => {
-  const course = await Course.findOne({ owner: teamId, _id: courseId }).populate({
+  let course = await Course.findOne({ owner: teamId, _id: courseId }).populate({
     path: "lessons",
     populate: {
       path: "blocks",
@@ -223,6 +223,16 @@ export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: stri
       path: 'quizzes' // Populating quizzes at the lesson level
     }
   }).populate("courses").lean()
+  if (course) {
+    if (!course.shortCode) {
+      let code = randomstring.generate({
+        length: 5,
+        charset: "alphanumeric"
+      }).toLowerCase()
+      await Course.updateOne({ _id: courseId }, { $set: { shortCode: code } })
+      course.shortCode = code
+    }
+  }
   return course
 }
 
