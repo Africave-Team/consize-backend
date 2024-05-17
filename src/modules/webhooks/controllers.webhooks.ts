@@ -514,9 +514,9 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           } else if (teamCourses || singleCourse) {
             if (teamCourses) {
               // get the course short code
-              let contents = response.split('\n')
+              let contents = response.split('(id: _')
               let length = contents.length
-              let code = contents[length - 1].replaceAll('_', '')
+              let code = contents[length - 1].replaceAll('_)', '')
               const { name, courses } = await resolveTeamCourseWithShortcode(code)
               const key = `${config.redisBaseKey}last_request:${destination}`
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
