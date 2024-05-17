@@ -19,4 +19,8 @@ router.delete('/settings/remove-learner-group/:id/:groupId', courseControllers.r
 
 router.patch('/settings/launchtimes/:id/:groupId', courseControllers.setLearnerGroupLaunchTime)
 
+// AI apis
+router.post('/ai', validate(courseValidators.createCourseAi), courseControllers.createCourseAI)
+router.post('/ai/generate-outline', validate(courseValidators.generateCourseOutlineAI), courseControllers.generateCourseOutline)
+
 export default router

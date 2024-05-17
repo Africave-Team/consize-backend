@@ -45,7 +45,6 @@ interface Course {
     source: Sources
     price?: number
     currentCohort?: string
-    audiences?: string
     survey?: string
 }
 
@@ -57,7 +56,6 @@ export interface CreateCoursePayload {
     title: string
     description: string
     price?: number
-    audiences?: string
     currentCohort?: string
     survey?: string
 }

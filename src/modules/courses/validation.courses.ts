@@ -16,13 +16,26 @@ const createCourseRequest: Record<keyof CreateCoursePayload, any> = {
   title: Joi.string().required(),
   description: Joi.string().required(),
   price: Joi.number().optional(),
-  audiences: Joi.string().optional(),
   currentCohort: Joi.string().optional(),
   survey: Joi.string().optional()
 }
 
+const createCourseAIRequest: Record<keyof { jobId: string }, any> = {
+  jobId: Joi.string().required(),
+}
+
 export const createCourse = {
   body: Joi.object().keys(createCourseRequest),
+}
+export const createCourseAi = {
+  body: Joi.object().keys(createCourseAIRequest),
+}
+export const generateCourseOutlineAI = {
+  body: Joi.object().keys({
+    jobId: Joi.string().optional(),
+    title: Joi.string().required(),
+    lessonCount: Joi.number().required()
+  }),
 }
 export const updateCourse = {
   body: Joi.object<Partial<CreateCoursePayload>>().keys({
@@ -36,8 +49,7 @@ export const updateCourse = {
     }).unknown(true),
     title: Joi.string(),
     description: Joi.string(),
-    price: Joi.number().optional(),
-    audiences: Joi.string().optional(),
+    price: Joi.number().optional()
   }).unknown(true),
   params: Joi.object().keys({
     course: Joi.string().required()

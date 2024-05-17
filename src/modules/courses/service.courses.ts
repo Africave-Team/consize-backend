@@ -4,7 +4,7 @@ import httpStatus from 'http-status'
 import { QueryResult } from '../paginate/paginate'
 import db from "../rtdb"
 import { COURSE_STATS, COURSE_TRENDS } from '../rtdb/nodes'
-import { CourseInterface, CourseStatus, CreateCoursePayload, Distribution } from './interfaces.courses'
+import { CourseInterface, CourseStatus, CreateCoursePayload, Distribution, Sources } from './interfaces.courses'
 import Course from './model.courses'
 import { CreateLessonPayload, LessonInterface } from './interfaces.lessons'
 import Lessons from './model.lessons'
@@ -19,13 +19,15 @@ import { StudentCourseStats } from '../students/interface.students'
 import moment, { Moment } from 'moment'
 import { CourseStatistics } from '../rtdb/interfaces.rtdb'
 import { agenda } from '../scheduler'
-import { DAILY_REMINDER, RESUME_TOMORROW, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { DAILY_REMINDER, GENERATE_COURSE_OUTLINE_AI, RESUME_TOMORROW, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { CourseEnrollment, DailyReminderNotificationPayload, Message } from '../webhooks/interfaces.webhooks'
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
 import { v4 } from 'uuid'
 import Teams from '../teams/model.teams'
+import randomstring from "randomstring"
+import { generateOutlinePrompt } from './prompts'
 
 interface SessionStudent extends StudentCourseStats {
   id: string
@@ -63,7 +65,12 @@ enum PageType {
 
 
 export const createCourse = async (coursePayload: CreateCoursePayload, teamId: string): Promise<CourseInterface> => {
-  const course = new Course({ ...coursePayload, owner: teamId })
+  const course = new Course({
+    ...coursePayload, owner: teamId, shortCode: randomstring.generate({
+      length: 5,
+      charset: "alphanumeric"
+    }).toLowerCase()
+  })
   await course.save()
   setInitialCourseStats(course.id, teamId)
   setInitialCourseSettings(course.id)
@@ -1192,4 +1199,49 @@ export const resolveCourseWithShortcode = async (code: string) => {
   let course: CourseInterface | null = await Course.findOne({ shortCode: code })
 
   return course
+}
+
+// AI course creation
+export const createAICourse = async function ({ title, lessonCount, teamId }: { title: string, lessonCount: number, teamId: string }) {
+  // create the course, get the course id
+  const course = new Course({
+    title,
+    source: Sources.AI,
+    owner: teamId, shortCode: randomstring.generate({
+      length: 5,
+      charset: "alphanumeric"
+    }).toLowerCase()
+  })
+  await course.save()
+  setInitialCourseStats(course.id, teamId)
+  setInitialCourseSettings(course.id)
+  const prompt = generateOutlinePrompt(title, lessonCount)
+  agenda.now<{ courseId: string, prompt: string }>(GENERATE_COURSE_OUTLINE_AI, {
+    courseId: course.id,
+    prompt
+  })
+  return course
+}
+
+
+export const generateCourseOutlineAI = async function ({ title, lessonCount, jobId }: { title: string, lessonCount: number, jobId?: string }) {
+  // create the course, get the course id
+  let id
+  if (jobId) {
+    id = jobId
+  } else {
+    id = v4()
+  }
+  const prompt = generateOutlinePrompt(title, lessonCount)
+  agenda.now<{ courseId: string, prompt: string, title: string, lessonCount: number }>(GENERATE_COURSE_OUTLINE_AI, {
+    courseId: id,
+    prompt,
+    title,
+    lessonCount
+  })
+  return {
+    id,
+    title,
+    lessonCount
+  }
 }
