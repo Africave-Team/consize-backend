@@ -200,7 +200,7 @@ export const buildSection = async function (payload: BuildSectionPayload) {
                   let index = followupQuiz[0].options.findIndex((e) => e.toLowerCase() === answer.toLowerCase())
                   const q = await courseService.addBlockQuiz({
                     question: followupQuiz[0].question,
-                    choices: followupQuiz[0].options,
+                    choices: followupQuiz[0].options.map(e => e.toLowerCase()),
                     correctAnswerContext: `${followupQuiz[0].explanation}`,
                     correctAnswerIndex: index,
                     revisitChunk: "",
