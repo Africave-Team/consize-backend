@@ -118,7 +118,7 @@ export const buildCourse = async function (jobId: string, teamId: string) {
         title: lesson.lesson_name
       }, course.id)
       for (let section of Object.values(lesson.sections)) {
-        await progressRef.child(lesson.lesson_name).child(section[0]).set({ status: "RUNNING", courseId: course.id, lessonId: lessonDetail.id })
+        await progressRef.child(lesson.lesson_name).child(section[0].replace(/\./g, "")).set({ status: "RUNNING", courseId: course.id, lessonId: lessonDetail.id })
         agenda.now<BuildSectionPayload>(GENERATE_SECTION_AI, {
           seedContent: section[1],
           seedTitle: section[0],
