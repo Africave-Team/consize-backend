@@ -68,7 +68,7 @@ export const buildCourseOutline = async function (payload: { courseId: string, p
         await dbRef
           .child(payload.courseId)
           .update({
-            result: JSON.parse(data.choices[0].message.content),
+            result: JSON.parse(data.choices[0].message.content.replace("```json", '').replace("```", "")),
           })
       }
     }
