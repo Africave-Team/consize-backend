@@ -26,3 +26,28 @@ interface Curriculum {
   description: string
   lessons: Lessons
 }
+
+export interface BuildSectionPayload {
+  jobId: string
+  seedTitle: string,
+  seedContent: string,
+  lessonId: string,
+  lessonName: string
+  title: string
+  courseId: string
+}
+
+export interface SectionResultAI {
+  id: string
+  sectionName: string
+  sectionContent: string
+}
+
+export interface QuizAI {
+  id: string
+  question: string
+  options: string[]
+  correct_answer: string
+  hint: string
+  explanation: string
+}

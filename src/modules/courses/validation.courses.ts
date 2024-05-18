@@ -1,5 +1,5 @@
 import Joi from 'joi'
-import { CreateCoursePayload, Media, MediaType } from './interfaces.courses'
+import { CreateCoursePayload, Media, MediaType, Sources } from './interfaces.courses'
 import { CreateLessonPayload } from './interfaces.lessons'
 import { CreateBlockPayload } from './interfaces.blocks'
 import { CreateQuizPayload } from './interfaces.quizzes'
@@ -16,6 +16,7 @@ const createCourseRequest: Record<keyof CreateCoursePayload, any> = {
   title: Joi.string().required(),
   description: Joi.string().required(),
   price: Joi.number().optional(),
+  source: Joi.string().optional().valid(...Object.values(Sources)),
   currentCohort: Joi.string().optional(),
   survey: Joi.string().optional()
 }

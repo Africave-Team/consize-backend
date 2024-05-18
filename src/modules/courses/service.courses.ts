@@ -4,7 +4,7 @@ import httpStatus from 'http-status'
 import { QueryResult } from '../paginate/paginate'
 import db from "../rtdb"
 import { COURSE_STATS, COURSE_TRENDS } from '../rtdb/nodes'
-import { CourseInterface, CourseStatus, CreateCoursePayload, Distribution, Sources } from './interfaces.courses'
+import { CourseInterface, CourseStatus, CreateCoursePayload, Distribution } from './interfaces.courses'
 import Course from './model.courses'
 import { CreateLessonPayload, LessonInterface } from './interfaces.lessons'
 import Lessons from './model.lessons'
@@ -28,6 +28,7 @@ import { v4 } from 'uuid'
 import Teams from '../teams/model.teams'
 import randomstring from "randomstring"
 import { generateOutlinePrompt } from './prompts'
+import { buildCourse } from '../ai/services'
 
 interface SessionStudent extends StudentCourseStats {
   id: string
@@ -193,7 +194,7 @@ export const fetchTeamCourses = async ({ teamId, page, pageSize, filter }: { tea
         break
     }
   }
-  return Course.paginate(q, { page, limit: pageSize, populate: 'lessons,courses' })
+  return Course.paginate(q, { page, limit: pageSize, populate: 'lessons,courses', sortBy: 'updatedAt:desc' })
 
 }
 
@@ -1202,24 +1203,9 @@ export const resolveCourseWithShortcode = async (code: string) => {
 }
 
 // AI course creation
-export const createAICourse = async function ({ title, lessonCount, teamId }: { title: string, lessonCount: number, teamId: string }) {
+export const createAICourse = async function ({ jobId, teamId }: { jobId: string, teamId: string }) {
   // create the course, get the course id
-  const course = new Course({
-    title,
-    source: Sources.AI,
-    owner: teamId, shortCode: randomstring.generate({
-      length: 5,
-      charset: "alphanumeric"
-    }).toLowerCase()
-  })
-  await course.save()
-  setInitialCourseStats(course.id, teamId)
-  setInitialCourseSettings(course.id)
-  const prompt = generateOutlinePrompt(title, lessonCount)
-  agenda.now<{ courseId: string, prompt: string }>(GENERATE_COURSE_OUTLINE_AI, {
-    courseId: course.id,
-    prompt
-  })
+  const course = await buildCourse(jobId, teamId)
   return course
 }
 
