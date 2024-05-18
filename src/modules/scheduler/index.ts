@@ -11,7 +11,7 @@ const agenda = new Agenda({
 
 // list the different jobs availale throughout your app
 // if you are adding the job types dynamically and saving them in the database you will get it here
-let jobTypes = ["sendMessage", "backgroundTasks"]
+let jobTypes = ["sendMessage", "backgroundTasks", "aiJobs"]
 
 // loop through the job_list folder and pass in the agenda instance
 jobTypes.forEach((type) => {

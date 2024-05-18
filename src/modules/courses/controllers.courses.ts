@@ -312,3 +312,16 @@ export const setLearnerGroupLaunchTime = catchAsync(async (req: Request, res: Re
   res.status(200).send({ message: "Settings updated" })
 })
 
+
+// AI apis
+export const createCourseAI = catchAsync(async (req: Request, res: Response) => {
+  const createdCourse = await courseService.createAICourse({ ...req.body, teamId: req.user.team })
+  res.status(httpStatus.OK).send({ data: createdCourse, message: "Your course has been created successfully" })
+})
+
+
+export const generateCourseOutline = catchAsync(async (req: Request, res: Response) => {
+  const { lessonCount, title, jobId } = req.body
+  const data = await courseService.generateCourseOutlineAI({ title, lessonCount, jobId })
+  res.status(200).send({ message: "Job has been queued", data })
+})
