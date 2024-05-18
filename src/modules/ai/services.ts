@@ -118,7 +118,7 @@ export const buildCourse = async function (jobId: string, teamId: string) {
         title: lesson.lesson_name
       }, course.id)
       for (let section of Object.values(lesson.sections)) {
-        await progressRef.child(lesson.lesson_name).child(section[0].replace(/\./g, "")).set({ status: "RUNNING", courseId: course.id, lessonId: lessonDetail.id })
+        await progressRef.child(lesson.lesson_name.replace(/\./g, "")).child(section[0].replace(/\./g, "")).set({ status: "RUNNING", courseId: course.id, lessonId: lessonDetail.id })
         agenda.now<BuildSectionPayload>(GENERATE_SECTION_AI, {
           seedContent: section[1],
           seedTitle: section[0],
@@ -136,7 +136,7 @@ export const buildCourse = async function (jobId: string, teamId: string) {
 }
 
 export const buildSection = async function (payload: BuildSectionPayload) {
-  const dbRef = db.ref('ai-jobs').child(payload.jobId).child("progress").child(payload.lessonName).child(payload.seedTitle)
+  const dbRef = db.ref('ai-jobs').child(payload.jobId).child("progress").child(payload.lessonName.replace(/\./g, "")).child(payload.seedTitle.replace(/\./g, ""))
   // make the open ai call here
 
   const MAX_RETRIES = 3
