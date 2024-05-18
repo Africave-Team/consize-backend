@@ -65,11 +65,22 @@ export const buildCourseOutline = async function (payload: { courseId: string, p
 
     const handleRequestComplete = async (data: OpenAI.Chat.Completions.ChatCompletion) => {
       if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
-        await dbRef
-          .child(payload.courseId)
-          .update({
-            result: JSON.parse(data.choices[0].message.content.replace("```json", '').replace("```", "")),
-          })
+        try {
+          console.log(data.choices[0].message.content)
+          let result = JSON.parse(data.choices[0].message.content.replace("```json", '').replace("```", ""))
+          await dbRef
+            .child(payload.courseId)
+            .update({
+              result,
+            })
+        } catch (error) {
+          await dbRef
+            .child(payload.courseId)
+            .update({
+              status: "FAILED",
+              error: (error as any).message
+            })
+        }
       }
     }
     openAICall(0, handleRequestComplete)
