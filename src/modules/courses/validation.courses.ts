@@ -128,4 +128,5 @@ export const createQuiz: Record<keyof CreateQuizPayload, any> = {
   correctAnswerIndex: Joi.number().required(),
   revisitChunk: Joi.string().required(),
   hint: Joi.string().optional(),
+  block: Joi.string().optional(),
 }

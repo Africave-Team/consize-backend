@@ -15,6 +15,7 @@ import studentsRoute from './students'
 import whatsappRoute from './whatsapp.route'
 import slackRoute from './slack.route'
 import surveyRoute from "./survey.route"
+import aiRoute from "./ai.routes"
 import adminRoute from "./admin"
 import config from '../../config/config'
 
@@ -29,6 +30,10 @@ const defaultIRoute: IRoute[] = [
   {
     path: '/console',
     route: adminRoute,
+  },
+  {
+    path: '/ai',
+    route: aiRoute,
   },
   {
     path: '/auth',

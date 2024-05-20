@@ -16,6 +16,7 @@ interface Quiz {
 
 export interface CreateQuizPayload {
   question: string
+  block?: string
   correctAnswerContext: string
   wrongAnswerContext: string
   choices: string[]

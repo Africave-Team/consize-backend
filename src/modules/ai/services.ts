@@ -6,7 +6,11 @@ import { courseService } from '../courses'
 import { MediaType, Sources } from '../courses/interfaces.courses'
 import { agenda } from '../scheduler'
 import { GENERATE_SECTION_AI } from '../scheduler/MessageTypes'
-import { generateFollowupQuestionPrompt, generateQuizPrompt, generateSectionPrompt } from '../courses/prompts'
+import { generateFollowupQuestionPrompt, generateQuizPrompt, generateSectionNoSeedPrompt, generateSectionPrompt } from '../courses/prompts'
+import Courses from '../courses/model.courses'
+import Lessons from '../courses/model.lessons'
+import { ApiError } from '../errors'
+import httpStatus from 'http-status'
 const openai = new OpenAI({
   apiKey: config.openAI.key
 })
@@ -135,6 +139,24 @@ export const buildCourse = async function (jobId: string, teamId: string) {
   return null
 }
 
+function addCharacterAfterThirdFullStop (input: string, character: string) {
+  let count = 0
+  const sections = input.split('.')
+  let lastIndex = sections.length - 1
+  let lastSection = sections[lastIndex]
+  if (lastSection && lastSection.length < 10) {
+    input = input.replace(`.${lastSection}`, lastSection)
+  }
+  const result = input.replace(/(\.)/g, (_, p1) => {
+    count++
+    if (count % 3 === 0) {
+      return p1 + character
+    }
+    return p1
+  })
+  return result
+}
+
 export const buildSection = async function (payload: BuildSectionPayload) {
   const dbRef = db.ref('ai-jobs').child(payload.jobId).child("progress").child(payload.lessonName.replace(/\./g, "")).child(payload.seedTitle.replace(/\./g, ""))
   // make the open ai call here
@@ -167,17 +189,7 @@ export const buildSection = async function (payload: BuildSectionPayload) {
       }
     }
   }
-  function addCharacterAfterThirdFullStop (input: string, character: string) {
-    let count = 0
-    const result = input.replace(/(\.)/g, (_, p1) => {
-      count++
-      if (count % 3 === 0) {
-        return p1 + character
-      }
-      return p1
-    })
-    return result
-  }
+
 
   let prompt1 = generateSectionPrompt(payload.title, payload.lessonName, payload.seedTitle, payload.seedContent)
   await openAICall(0, prompt1, async (data) => {
@@ -236,6 +248,7 @@ export const buildSection = async function (payload: BuildSectionPayload) {
                     correctAnswerContext: `${quiz[0].explanation}`,
                     correctAnswerIndex: Number(quiz[0].correct_answer),
                     hint: quiz[0].hint,
+                    block: block.id,
                     revisitChunk: quiz[0].explanation,
                     wrongAnswerContext: `${quiz[0].explanation}`
                   }, payload.lessonId, payload.courseId)
@@ -270,7 +283,75 @@ export const buildSection = async function (payload: BuildSectionPayload) {
   })
 }
 
-export const buildLessonSection = async function () { }
+export const buildLessonSection = async function ({ courseId, lessonId, seedTitle }: { courseId: string, lessonId: string, seedTitle: string }) {
+  const course = await Courses.findById(courseId)
+  const lesson = await Lessons.findById(lessonId)
+  if (!course) throw new ApiError(httpStatus.NOT_FOUND, "Course not found")
+  if (!lesson) throw new ApiError(httpStatus.NOT_FOUND, "Course not found")
+  const data = await openai.chat.completions.create({
+    messages: [{ "role": "system", "content": "You are a helpful assistant." },
+    { "role": "user", "content": generateSectionNoSeedPrompt(course.title, lesson.title, seedTitle) }],
+    model: "gpt-3.5-turbo",
+  })
+
+  if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+    let section = JSON.parse(data.choices[0].message.content.replace("```json", '').replace("```", ""))
+    let sectionContent = addCharacterAfterThirdFullStop(section.sectionContent, '<br/><br/>')
+    return { ...section, sectionContent }
+  } else {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Failed to build this section. Try again")
+  }
+}
+
+export const rewriteLessonSection = async function ({ courseId, lessonId, seedTitle, seedContent }: { courseId: string, lessonId: string, seedTitle: string, seedContent: string }) {
+  const course = await Courses.findById(courseId)
+  const lesson = await Lessons.findById(lessonId)
+  if (!course) throw new ApiError(httpStatus.NOT_FOUND, "Course not found")
+  if (!lesson) throw new ApiError(httpStatus.NOT_FOUND, "Course not found")
+  const data = await openai.chat.completions.create({
+    messages: [{ "role": "system", "content": "You are a helpful assistant." },
+    { "role": "user", "content": generateSectionPrompt(course.title, lesson.title, seedTitle, seedContent) }],
+    model: "gpt-3.5-turbo",
+  })
+
+  if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+    let section = JSON.parse(data.choices[0].message.content.replace("```json", '').replace("```", ""))
+    let sectionContent = addCharacterAfterThirdFullStop(section.sectionContent, '<br/><br/>')
+    return { ...section, sectionContent }
+  } else {
+    throw new Error("Failed to build this section. Try again")
+  }
+}
+
+export const buildLessonSectionQuiz = async function ({ content, followup }: { content: string, followup: boolean }) {
+  const data = await openai.chat.completions.create({
+    messages: [{ "role": "system", "content": "You are a helpful assistant." },
+    { "role": "user", "content": followup ? generateFollowupQuestionPrompt(content) : generateQuizPrompt(content) }],
+    model: "gpt-3.5-turbo",
+  })
+
+  if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+    let result = JSON.parse(data.choices[0].message.content.replace("```json", '').replace("```", "")).questions
+    return result[0]
+  } else {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Failed to build this section. Try again")
+  }
+}
+
+export const rewriteLessonSectionQuiz = async function ({ content, followup }: { followup: boolean, content: string }) {
+  const data = await openai.chat.completions.create({
+    messages: [{ "role": "system", "content": "You are a helpful assistant." },
+    { "role": "user", "content": followup ? generateFollowupQuestionPrompt(content) : generateQuizPrompt(content) }],
+    model: "gpt-3.5-turbo",
+  })
+
+  if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+    let result = JSON.parse(data.choices[0].message.content.replace("```json", '').replace("```", "")).questions
+    return result[0]
+  } else {
+    throw new Error("Failed to build this section. Try again")
+  }
+}
 
 
 
