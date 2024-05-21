@@ -18,7 +18,7 @@ sudo apt-get install -y certbot python3-certbot-apache
 
 sudo a2enmod proxy proxy_http proxy_balancer lbmethod_byrequests
 
-sudo apt-get install -y chromium-browser libgbm-dev
+sudo apt-get install -y chromium-browser libgbm-dev ffmpeg
 
 # Restart Apache
 sudo systemctl restart apache2

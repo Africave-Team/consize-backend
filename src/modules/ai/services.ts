@@ -104,7 +104,7 @@ export const buildCourse = async function (jobId: string, teamId: string) {
       title: jobData.title,
       headerMedia: {
         mediaType: MediaType.IMAGE,
-        url: "https://picsum.photos/200/300.jpg?image=0",
+        url: "https://picsum.photos/200/300.jpg",
         awsFileKey: ""
       },
       source: Sources.AI,

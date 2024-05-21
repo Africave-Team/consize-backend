@@ -50,6 +50,7 @@ export enum MessageBlockType {
   SECTION = "section",
   ACTIONS = "actions",
   IMAGE = "image",
+  VIDEO = "video",
   INPUT = "input",
   DIVIDER = "divider"
 }
@@ -72,6 +73,9 @@ export interface SlackMessageBlock {
   }
   element?: SlackActionBlock
   image_url?: string
+  video_url?: string
+  thumbnail_url?: string
+  title?: SlackTextMessage
   alt_text?: string
   block_id?: string
   label?: SlackTextMessage

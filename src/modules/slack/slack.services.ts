@@ -452,7 +452,19 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
           image_url: data.mediaUrl || '',
           alt_text: 'Block header image'
         })
+      } else if (data.mediaType === "video") {
+        blocks.push({
+          "type": MessageBlockType.VIDEO,
+          "title": {
+            "type": SlackTextMessageTypes.PLAINTEXT,
+            "text": "Video title"
+          },
+          "alt_text": "alt text for vide",
+          "thumbnail_url": data.thumbnailUrl || "https://picsum.photos/200/300.jpg",
+          "video_url": data.mediaUrl
+        },)
       } else {
+
         content = `${content}\n\n${data.mediaUrl}`
       }
     }

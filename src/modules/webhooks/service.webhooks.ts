@@ -3,7 +3,7 @@ import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
 import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
-import axios, { AxiosResponse } from 'axios'
+import axios from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import Courses from '../courses/model.courses'
@@ -22,7 +22,7 @@ import { logger } from '../logger'
 import moment from 'moment'
 import { LessonInterface } from '../courses/interfaces.lessons'
 import { saveBlockDuration, saveCourseProgress, saveQuizDuration } from '../students/students.service'
-import { delay } from '../generators/generator.service'
+import { delay, generateVideoThumbnail } from '../generators/generator.service'
 import { Survey, SurveyResponse } from '../surveys'
 import { Question, ResponseType } from '../surveys/survey.interfaces'
 import { COURSE_STATS } from '../rtdb/nodes'
@@ -55,6 +55,7 @@ export interface CourseFlowItem {
   content: string
   mediaType?: MediaType
   mediaUrl?: string
+  thumbnailUrl?: string
   block?: BlockInterface
   lesson?: LessonInterface
   quiz?: QuizInterface
@@ -165,6 +166,9 @@ export const generateCourseFlow = async function (courseId: string) {
                 if (blockData.bodyMedia && blockData.bodyMedia.url && blockData.bodyMedia.url.length > 10) {
                   flo.mediaType = blockData.bodyMedia.mediaType
                   flo.mediaUrl = blockData.bodyMedia.url
+                  if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
+                    flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
+                  }
                 }
                 flow.push(flo)
               }
@@ -178,6 +182,9 @@ export const generateCourseFlow = async function (courseId: string) {
               if (blockData.bodyMedia && blockData.bodyMedia.url && blockData.bodyMedia.url.length > 10) {
                 flo.mediaType = blockData.bodyMedia.mediaType
                 flo.mediaUrl = blockData.bodyMedia.url
+                if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
+                  flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
+                }
               }
               flow.push(flo)
             }
@@ -282,9 +289,9 @@ export const sendMessage = async function (message: Message) {
       "Content-Type": "application/json"
     }
   }).catch((error) => {
-    logger.error(JSON.stringify((error)))
-  }).then((data) => {
-    logger.info(JSON.stringify((data as AxiosResponse).data))
+    console.error(error)
+  }).then(() => {
+    console.info("done sending whatsapp message")
     // schedule inactivity message
   })
 }

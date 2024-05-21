@@ -5,9 +5,14 @@ import { StudentCourseStats, StudentInterface } from '../students/interface.stud
 import { CourseInterface } from '../courses/interfaces.courses'
 import { TeamsInterface } from '../teams/interfaces.teams'
 import db from "../rtdb"
+import { existsSync, mkdirSync, unlinkSync } from "fs"
+import path from "path"
 import Teams from '../teams/model.teams'
 import { COURSE_STATS } from '../rtdb/nodes'
 import { v4 } from 'uuid'
+import { Storage } from '@google-cloud/storage'
+import ffmpeg from 'fluent-ffmpeg'
+import serviceAccount from '../../gcp-details.json'
 import { agenda } from '../scheduler'
 import config from '../../config/config'
 import { CourseFlowItem, CourseFlowMessageType, handleContinue } from '../webhooks/service.webhooks'
@@ -20,6 +25,10 @@ import { MessageBlockType, SendSlackMessagePayload, SendSlackResponsePayload } f
 import { handleContinueSlack } from '../slack/slack.services'
 import Students from '../students/model.students'
 import Courses from '../courses/model.courses'
+
+const projectRoot = process.cwd()
+const localVideoPath = path.join(projectRoot, '.temp')
+const localThumbnailPath = path.join(projectRoot, ".temp")
 
 
 export function delay (ms: number) {
@@ -313,4 +322,95 @@ export const generateCourseCertificate = async (course: CourseInterface, student
     return await uploadFileToCloudStorage(imageBuffer, destination)
   }
   return ''
+}
+
+async function downloadFile (url: string) {
+  const options = {
+    destination: localVideoPath + '/video.mp4',
+  }
+  const storage = new Storage({
+    projectId: serviceAccount.project_id,
+    credentials: {
+      client_email: serviceAccount.client_email,
+      private_key: serviceAccount.private_key?.split(String.raw`\n`).join("\n"),
+    },
+  })
+
+  const bucketName = 'kippa-cdn-public'
+  let [_, destination] = decodeURI(url).split(`/${bucketName}/`)
+  if (destination) {
+    await storage.bucket(bucketName).file(destination).download(options)
+    console.log(`Downloaded ${destination} to ${localVideoPath}`)
+
+  }
+}
+
+async function createThumbnail () {
+  return new Promise((resolve, reject) => {
+    ffmpeg(localVideoPath + "/video.mp4")
+      .screenshots({
+        timestamps: ['00:00:10.000'],
+        filename: 'thumbnail.png',
+        folder: localThumbnailPath,
+        count: 1,
+        size: '320x240'
+      })
+      .on('end', (data) => {
+        resolve(data)
+      })
+      .on('error', (error) => {
+        reject(error)
+      })
+  })
+}
+
+export const generateVideoThumbnail = async function (fileUrl: string): Promise<string> {
+  let thumbailUrl = ""
+  try {
+    if (!existsSync(localVideoPath)) {
+      mkdirSync(localVideoPath)
+    }
+    await downloadFile(fileUrl)
+    if (!existsSync(localThumbnailPath)) {
+      mkdirSync(localThumbnailPath)
+    }
+    await createThumbnail()
+
+    const storage = new Storage({
+      projectId: serviceAccount.project_id,
+      credentials: {
+        client_email: serviceAccount.client_email,
+        private_key: serviceAccount.private_key?.split(String.raw`\n`).join("\n"),
+      },
+    })
+
+    if (existsSync(localThumbnailPath + "/thumbnail.png")) {
+      const bucketName = 'kippa-cdn-public'
+      let [_, destination] = fileUrl.split(`/${bucketName}/`)
+      if (!destination) {
+        destination = "microlearn-images/thumbnail.png"
+      } else {
+        destination = `${destination.replace('mp4', 'png')}`
+      }
+      await storage.bucket(bucketName).upload(localThumbnailPath + '/thumbnail.png', {
+        destination: destination,
+      })
+      thumbailUrl = encodeURI(`https://storage.googleapis.com/kippa-cdn-public/${destination}`)
+    }
+    if (existsSync(localVideoPath + "/video.mp4")) {
+      unlinkSync(localVideoPath + "/video.mp4")
+    }
+    if (existsSync(localThumbnailPath + "/thumbnail.png")) {
+      unlinkSync(localThumbnailPath + "/thumbnail.png")
+    }
+    return thumbailUrl
+  } catch (error) {
+    if (existsSync(localVideoPath + "/video.mp4")) {
+      unlinkSync(localVideoPath + "/video.mp4")
+    }
+    if (existsSync(localThumbnailPath + "/thumbnail.png")) {
+      unlinkSync(localThumbnailPath + "/thumbnail.png")
+    }
+    return thumbailUrl
+  }
 }
