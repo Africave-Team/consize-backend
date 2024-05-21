@@ -19,7 +19,7 @@ import { StudentCourseStats } from '../students/interface.students'
 import moment, { Moment } from 'moment'
 import { CourseStatistics } from '../rtdb/interfaces.rtdb'
 import { agenda } from '../scheduler'
-import { DAILY_REMINDER, RESUME_TOMORROW, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { DAILY_REMINDER, GENERATE_COURSE_OUTLINE_AI, RESUME_TOMORROW, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { CourseEnrollment, DailyReminderNotificationPayload, Message } from '../webhooks/interfaces.webhooks'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -27,6 +27,8 @@ import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, Sl
 import { v4 } from 'uuid'
 import Teams from '../teams/model.teams'
 import randomstring from "randomstring"
+import { generateOutlinePrompt } from './prompts'
+import { buildCourse } from '../ai/services'
 
 interface SessionStudent extends StudentCourseStats {
   id: string
@@ -192,7 +194,7 @@ export const fetchTeamCourses = async ({ teamId, page, pageSize, filter }: { tea
         break
     }
   }
-  return Course.paginate(q, { page, limit: pageSize, populate: 'lessons,courses' })
+  return Course.paginate(q, { page, limit: pageSize, populate: 'lessons,courses', sortBy: 'updatedAt:desc' })
 
 }
 
@@ -1208,4 +1210,34 @@ export const resolveCourseWithShortcode = async (code: string) => {
   let course: CourseInterface | null = await Course.findOne({ shortCode: code })
 
   return course
+}
+
+// AI course creation
+export const createAICourse = async function ({ jobId, teamId }: { jobId: string, teamId: string }) {
+  // create the course, get the course id
+  const course = await buildCourse(jobId, teamId)
+  return course
+}
+
+
+export const generateCourseOutlineAI = async function ({ title, lessonCount, jobId }: { title: string, lessonCount: number, jobId?: string }) {
+  // create the course, get the course id
+  let id
+  if (jobId) {
+    id = jobId
+  } else {
+    id = v4()
+  }
+  const prompt = generateOutlinePrompt(title, lessonCount)
+  agenda.now<{ courseId: string, prompt: string, title: string, lessonCount: number }>(GENERATE_COURSE_OUTLINE_AI, {
+    courseId: id,
+    prompt,
+    title,
+    lessonCount
+  })
+  return {
+    id,
+    title,
+    lessonCount
+  }
 }

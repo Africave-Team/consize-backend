@@ -45,7 +45,6 @@ interface Course {
     source: Sources
     price?: number
     currentCohort?: string
-    audiences?: string
     survey?: string
 }
 
@@ -56,8 +55,8 @@ export interface CreateCoursePayload {
     headerMedia: Media
     title: string
     description: string
+    source?: Sources
     price?: number
-    audiences?: string
     currentCohort?: string
     survey?: string
 }

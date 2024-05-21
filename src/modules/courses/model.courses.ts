@@ -42,10 +42,12 @@ const CourseSchema = new Schema<CourseInterface, CourseInterfaceModel>(
             ref: "Teams"
         },
         free: {
-            type: Boolean
+            type: Boolean,
+            default: true
         },
         bundle: {
-            type: Boolean
+            type: Boolean,
+            default: false
         },
         price: {
             type: Number
@@ -64,15 +66,13 @@ const CourseSchema = new Schema<CourseInterface, CourseInterfaceModel>(
             default: [],
             ref: "Lessons"
         },
-        audiences: {
-            type: String,
-        },
         currentCohort: {
             type: String,
             ref: "Cohorts"
         },
         private: {
-            type: Boolean
+            type: Boolean,
+            default: false
         },
         survey: {
             type: String

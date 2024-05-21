@@ -4,6 +4,7 @@ import 'dotenv/config'
 const envVarsSchema = Joi.object()
   .keys({
     ENV: Joi.string().required(),
+    OPENAI_API_KEY: Joi.string().required(),
     NODE_ENV: Joi.string().valid('production', 'development', 'test').required(),
     REDIS_HOST: Joi.string().required().description('REDIS Host url'),
     REDIS_PASSWORD: Joi.string().required().description('REDIS password'),
@@ -51,6 +52,9 @@ const config = {
     subscriptionKey: envVars.FACEBOOK_SECRET,
     token: envVars.WHATSAPP_TOKEN,
     phoneNumberId: envVars.WHATSAPP_PHONENUMBER_ID
+  },
+  openAI: {
+    key: envVars.OPENAI_API_KEY
   },
   whatsappSubscriptionKey: envVars.FACEBOOK_SECRET,
   whatsappToken: envVars.WHATSAPP_TOKEN,
