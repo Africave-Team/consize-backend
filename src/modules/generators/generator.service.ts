@@ -341,7 +341,6 @@ async function downloadFile (url: string) {
   if (destination) {
     await storage.bucket(bucketName).file(destination).download(options)
     console.log(`Downloaded ${destination} to ${localVideoPath}`)
-
   }
 }
 
@@ -356,9 +355,11 @@ async function createThumbnail () {
         size: '320x240'
       })
       .on('end', (data) => {
+        console.log(data, "finished")
         resolve(data)
       })
       .on('error', (error) => {
+        console.log(error, "error")
         reject(error)
       })
   })
