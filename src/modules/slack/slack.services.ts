@@ -444,13 +444,17 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
     }
 
     let blocks: SlackMessageBlock[] = []
-
+    let content = data.content
     if (data.mediaUrl) {
-      blocks.push({
-        type: MessageBlockType.IMAGE,
-        image_url: data.mediaUrl || '',
-        alt_text: 'Block header image'
-      })
+      if (data.mediaType === "image") {
+        blocks.push({
+          type: MessageBlockType.IMAGE,
+          image_url: data.mediaUrl || '',
+          alt_text: 'Block header image'
+        })
+      } else {
+        content = `${content}\n\n${data.mediaUrl}`
+      }
     }
 
 
@@ -458,7 +462,7 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
       type: MessageBlockType.SECTION,
       text: {
         type: SlackTextMessageTypes.MARKDOWN,
-        text: data.content
+        text: content
       }
     }, {
       type: MessageBlockType.ACTIONS,
