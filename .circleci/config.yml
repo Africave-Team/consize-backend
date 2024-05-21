@@ -21,7 +21,7 @@ jobs:
       # SSH into the server
       - run:
           name: SSH into the server
-          command: ssh -o StrictHostKeyChecking=no -T ${SSH_USERNAME}@${SERVER_ADDRESS_PROD} "source ~/.nvm/nvm.sh; cd ~/consize-backend && git add . && git stash && git pull && /root/.nvm/versions/node/v18.19.1/bin/npm i && /root/.nvm/versions/node/v18.19.1/bin/npm run compile && /root/.nvm/versions/node/v18.19.1/bin/pm2 restart 0"
+          command: ssh -o StrictHostKeyChecking=no -T ${SSH_USERNAME}@${SERVER_ADDRESS_PROD} "cd ~/consize-backend && git add . && git stash && git pull && /root/.nvm/versions/node/v19.9.0/bin/npm i && /root/.nvm/versions/node/v19.9.0/bin/npm run compile && /root/.nvm/versions/node/v19.9.0/bin/pm2 restart 0"
 workflows:
   build_and_deploy_work:
     jobs:
