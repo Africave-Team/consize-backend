@@ -358,7 +358,7 @@ async function createThumbnail () {
         console.log(data, "finished")
         resolve(data)
       })
-      .on('error', (error) => {
+      .on('error', (error: any) => {
         console.log(error, "error")
         reject(error)
       })
