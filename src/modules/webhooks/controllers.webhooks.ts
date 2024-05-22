@@ -14,7 +14,6 @@ import moment from 'moment-timezone'
 import { resolveCourseWithShortcode, resolveTeamCourseWithShortcode } from '../courses/service.courses'
 import { studentService } from '../students'
 import { courseService } from '../courses'
-import Settings from '../courses/model.settings'
 import Students from '../students/model.students'
 // import { logger } from '../logger'
 
