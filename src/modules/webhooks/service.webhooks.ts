@@ -315,7 +315,6 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
       if (redisData.totalBlocks === redisData.currentBlock) {
         return
       }
-      redisData.lastMessageId = msgId
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
         to: payload.phoneNumber,
         type: "interactive",
@@ -339,7 +338,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
           }
         }
       })
-      await redisClient.set(key, JSON.stringify(redisData))
+      await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
     }
   } else if (payload.slackChannel && payload.slackToken && !payload.phoneNumber) {
     const key = `${config.redisBaseKey}enrollments:slack:${payload.slackChannel}:${payload.courseId}`
@@ -349,7 +348,6 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
       if (redisData.totalBlocks === redisData.currentBlock) {
         return
       }
-      redisData.lastMessageId = msgId
       agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
         channel: payload.slackChannel,
         accessToken: payload.slackToken || "",
@@ -380,7 +378,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
           ]
         }
       })
-      await redisClient.set(key, JSON.stringify(redisData))
+      await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
     }
   }
 
