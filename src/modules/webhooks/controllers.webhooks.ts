@@ -490,8 +490,10 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                       await Students.create({
                         phoneNumber: destination,
                       })
+                      const keySelected = `${config.redisBaseKey}selected:${destination}`
                       await redisClient.set(fieldKey, fields[0].field)
                       await redisClient.set(fieldsKey, JSON.stringify(fields))
+                      await redisClient.set(keySelected, course.id)
                       // send the question for fields[0]
                       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                         to: destination,
