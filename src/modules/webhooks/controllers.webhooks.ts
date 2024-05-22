@@ -513,7 +513,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             fieldsRaw = await redisClient.get(fieldsKey)
             let payload: any = {}
             if (field === "name") {
-              const names = response.split(' ')
+              const names = messageBody[0].text.body.split(' ')
               payload["firstName"] = names[0]
               payload['otherNames'] = names.slice(1).join(' ')
             }
