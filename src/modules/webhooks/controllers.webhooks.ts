@@ -270,6 +270,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
     } else if (type === "text") {
       const fieldKey = `${config.redisBaseKey}field:${destination}`
       const fieldsKey = `${config.redisBaseKey}fields:${destination}`
+      const keySelected = `${config.redisBaseKey}selected:${destination}`
       const response = messageBody[0].text.body.toLowerCase()
       let field: string | null
       let fieldsRaw: string | null
@@ -330,7 +331,6 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               await Students.updateOne({ phoneNumber: destination }, { $set: { tz: selected.timezone, verified: true } })
               const student = await Students.findOne({ phoneNumber: destination })
               // 
-              const keySelected = `${config.redisBaseKey}selected:${destination}`
               let courseId = await redisClient.get(keySelected)
               if (courseId && student) {
                 await studentService.enrollStudentToCourse(student.id, courseId)
@@ -428,6 +428,9 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           let singleCourse = response.includes("want to start the course")
           field = await redisClient.get(fieldKey)
           if (teamCourses || singleCourse) {
+            redisClient.del(fieldKey)
+            redisClient.del(fieldsKey)
+            redisClient.del(keySelected)
             if (teamCourses) {
               // get the course short code
               let contents = response.split('(id: _')
