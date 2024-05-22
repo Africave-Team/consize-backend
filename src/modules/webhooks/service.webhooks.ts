@@ -311,6 +311,9 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
     const dtf = await redisClient.get(key)
     if (dtf) {
       let redisData: CourseEnrollment = JSON.parse(dtf)
+      if (redisData.totalBlocks === redisData.currentBlock) {
+        return
+      }
       redisData.lastMessageId = msgId
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
         to: payload.phoneNumber,
@@ -342,6 +345,9 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
     const dtf = await redisClient.get(key)
     if (dtf) {
       let redisData: CourseEnrollment = JSON.parse(dtf)
+      if (redisData.totalBlocks === redisData.currentBlock) {
+        return
+      }
       redisData.lastMessageId = msgId
       agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
         channel: payload.slackChannel,

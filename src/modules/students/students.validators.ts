@@ -28,6 +28,7 @@ export const registerStudent = {
     email: Joi.string().required(),
     firstName: Joi.string().required(),
     otherNames: Joi.string().required(),
+    tz: Joi.string().required(),
     custom: Joi.object().optional().unknown(true)
   }),
 }
