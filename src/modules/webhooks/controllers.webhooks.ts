@@ -103,9 +103,11 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
     if (type === "interactive") {
       const response = messageBody[0].interactive.button_reply.id
       const [btnId, messageId] = response.split('|')
+      console.log("message id", messageId, btnId)
       if (messageId) {
         if (enrollment) {
           if (enrollment.lastMessageId && enrollment.lastMessageId !== messageId) {
+            console.log("invalid message id")
             return res.send()
           }
         }
