@@ -198,6 +198,23 @@ export const fetchTeamCourses = async ({ teamId, page, pageSize, filter }: { tea
 
 }
 
+export const maxEnrollmentReached = async (settingsId: string, courseId: string, teamId: string) => {
+  const dbRef = db.ref(COURSE_STATS).child(teamId).child(courseId).child("students")
+  // get settings 
+  const settings = await Settings.findById(settingsId)
+  const snapshot = await dbRef.once('value')
+  let data: { [id: string]: StudentCourseStats } | null = snapshot.val()
+  let totalStudents = 0
+  if (data) {
+    totalStudents = Object.values(data).length
+  }
+  if (settings) {
+    return totalStudents === settings.metadata.maxEnrollments
+  }
+  return false
+
+}
+
 
 export const fetchPublishedCourses = async ({ page, pageSize }: { page: number, pageSize: number }): Promise<QueryResult<CourseInterface>> => {
   return Course.paginate({ status: CourseStatus.PUBLISHED }, { page, limit: pageSize, populate: 'lessons,courses' })
@@ -912,6 +929,9 @@ export const handleStudentSlack = async ({ studentId, courseId, settingsId, last
       if (dt) {
         const enrollment: CourseEnrollment | null = JSON.parse(dt)
         if (enrollment && enrollment.slackToken) {
+          if (enrollment.totalBlocks === enrollment.currentBlock) {
+            return
+          }
           let lastActivity: Moment
           if (!enrollment.lastActivity) {
             lastActivity = moment().subtract(1, "day").startOf('day')
@@ -1055,6 +1075,9 @@ export const handleStudentWhatsapp = async ({ courseId, studentId, settingsId, l
       if (dt) {
         const enrollment: CourseEnrollment | null = JSON.parse(dt)
         if (enrollment) {
+          if (enrollment.totalBlocks === enrollment.currentBlock) {
+            return
+          }
           let lastActivity: Moment
           if (!enrollment.lastActivity) {
             lastActivity = moment().subtract(1, "day").startOf('day')

@@ -11,10 +11,10 @@ import { redisClient } from '../redis'
 import { v4 } from 'uuid'
 import Blocks from '../courses/model.blocks'
 import moment from 'moment-timezone'
-import { resolveCourseWithShortcode, resolveTeamCourseWithShortcode } from '../courses/service.courses'
+import { maxEnrollmentReached, resolveCourseWithShortcode, resolveTeamCourseWithShortcode } from '../courses/service.courses'
 import { studentService } from '../students'
-import { courseService } from '../courses'
 import Students from '../students/model.students'
+import Courses from '../courses/model.courses'
 // import { logger } from '../logger'
 
 const timezones = [
@@ -349,60 +349,73 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             const selected = courses[Number(response) - 1]
 
             if (selected) {
-              // check if the student exists
-              const student = await Students.findOne({ phoneNumber: destination })
-              if (student) {
-                await studentService.enrollStudentToCourse(student.id, selected)
-                redisClient.del(key)
-              } else {
-                const keySelected = `${config.redisBaseKey}selected:${destination}`
-                await redisClient.set(keySelected, selected)
-                // get the course
-                const course = await courseService.fetchSingleCourse({ courseId: selected })
-                if (course) {
-                  // get course settings
-                  const fields = [{
-                    question: `What is your full name?`,
-                    field: "name",
-                    done: false
-                  }]
-                  if (fields[0]) {
-                    fields.push({
-                      question: `Please select your time zone.\nIt shall help us send you course reminders at the right time\n\n`,
-                      field: "tz",
-                      done: false
-                    })
-                    // create the student
-                    await Students.create({
-                      phoneNumber: destination,
-                    })
-                    const keySelected = `${config.redisBaseKey}selected:${destination}`
-                    await redisClient.set(fieldKey, fields[0].field)
-                    await redisClient.set(fieldsKey, JSON.stringify(fields))
-                    await redisClient.set(keySelected, course.id)
-                    // send the question for fields[0]
-                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                      to: destination,
-                      type: "text",
-                      messaging_product: "whatsapp",
-                      recipient_type: "individual",
-                      text: {
-                        body: `Please answer the next 2 questions to help us enroll you.\n\nQ (1/2)\n\n${fields[0].question}\n\n\Please type your response.`
-                      }
-                    })
-                  }
-                } else {
+              const course = await Courses.findById(selected)
+              if (course) {
+                let maxReached = await maxEnrollmentReached(course.settings, course.id, course.owner)
+                if (maxReached) {
                   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                     to: destination,
                     type: "text",
                     messaging_product: "whatsapp",
                     recipient_type: "individual",
                     text: {
-                      body: "You have provided an invalid entry, please try again"
+                      body: "Sorry, the maximum learner limit has been reached for this course"
                     }
                   })
-                }
+                } else {
+                  // check if the student exists
+                  const student = await Students.findOne({ phoneNumber: destination })
+                  if (student) {
+                    await studentService.enrollStudentToCourse(student.id, selected)
+                    redisClient.del(key)
+                  } else {
+                    const keySelected = `${config.redisBaseKey}selected:${destination}`
+                    await redisClient.set(keySelected, selected)
+                    // get the course
 
+                    // get course settings
+                    const fields = [{
+                      question: `What is your full name?`,
+                      field: "name",
+                      done: false
+                    }]
+                    if (fields[0]) {
+                      fields.push({
+                        question: `Please select your time zone.\nIt shall help us send you course reminders at the right time\n\n`,
+                        field: "tz",
+                        done: false
+                      })
+                      // create the student
+                      await Students.create({
+                        phoneNumber: destination,
+                      })
+                      const keySelected = `${config.redisBaseKey}selected:${destination}`
+                      await redisClient.set(fieldKey, fields[0].field)
+                      await redisClient.set(fieldsKey, JSON.stringify(fields))
+                      await redisClient.set(keySelected, course.id)
+                      // send the question for fields[0]
+                      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                        to: destination,
+                        type: "text",
+                        messaging_product: "whatsapp",
+                        recipient_type: "individual",
+                        text: {
+                          body: `Please answer the next 2 questions to help us enroll you.\n\nQ (1/2)\n\n${fields[0].question}\n\n\Please type your response.`
+                        }
+                      })
+                    }
+                  }
+                }
+              } else {
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: destination,
+                  type: "text",
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  text: {
+                    body: "You have provided an invalid entry, please try again"
+                  }
+                })
               }
             } else {
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -466,39 +479,53 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   }
                 })
               } else {
-                const student = await Students.findOne({ phoneNumber: destination })
-                if (student) {
-                  await studentService.enrollStudentToCourse(student.id, course.id)
+                // check max enrollment
+                let maxReached = await maxEnrollmentReached(course.settings, course.id, course.owner)
+                if (maxReached) {
+                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                    to: destination,
+                    type: "text",
+                    messaging_product: "whatsapp",
+                    recipient_type: "individual",
+                    text: {
+                      body: "Sorry, the maximum learner limit has been reached for this course"
+                    }
+                  })
                 } else {
-                  const fields = [{
-                    question: `What is your full name?`,
-                    field: "name",
-                    done: false
-                  }]
-                  if (fields[0]) {
-                    fields.push({
-                      question: `Please select your time zone.\nIt shall help us send you course reminders at the right time\n\n`,
-                      field: "tz",
+                  const student = await Students.findOne({ phoneNumber: destination })
+                  if (student) {
+                    await studentService.enrollStudentToCourse(student.id, course.id)
+                  } else {
+                    const fields = [{
+                      question: `What is your full name?`,
+                      field: "name",
                       done: false
-                    })
-                    // create the student
-                    await Students.create({
-                      phoneNumber: destination,
-                    })
-                    const keySelected = `${config.redisBaseKey}selected:${destination}`
-                    await redisClient.set(fieldKey, fields[0].field)
-                    await redisClient.set(fieldsKey, JSON.stringify(fields))
-                    await redisClient.set(keySelected, course.id)
-                    // send the question for fields[0]
-                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                      to: destination,
-                      type: "text",
-                      messaging_product: "whatsapp",
-                      recipient_type: "individual",
-                      text: {
-                        body: `Please answer the next 2 questions to help us enroll you.\n\nQ (1/2)\n\n${fields[0].question}\n\n\Please type your response.`
-                      }
-                    })
+                    }]
+                    if (fields[0]) {
+                      fields.push({
+                        question: `Please select your time zone.\nIt shall help us send you course reminders at the right time\n\n`,
+                        field: "tz",
+                        done: false
+                      })
+                      // create the student
+                      await Students.create({
+                        phoneNumber: destination,
+                      })
+                      const keySelected = `${config.redisBaseKey}selected:${destination}`
+                      await redisClient.set(fieldKey, fields[0].field)
+                      await redisClient.set(fieldsKey, JSON.stringify(fields))
+                      await redisClient.set(keySelected, course.id)
+                      // send the question for fields[0]
+                      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                        to: destination,
+                        type: "text",
+                        messaging_product: "whatsapp",
+                        recipient_type: "individual",
+                        text: {
+                          body: `Please answer the next 2 questions to help us enroll you.\n\nQ (1/2)\n\n${fields[0].question}\n\n\Please type your response.`
+                        }
+                      })
+                    }
                   }
                 }
               }

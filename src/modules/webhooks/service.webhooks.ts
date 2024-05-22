@@ -721,7 +721,13 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
         if (currentItem && (currentItem.type === CourseFlowMessageType.BLOCK || currentItem.type === CourseFlowMessageType.BLOCKWITHQUIZ)) {
           // calculate the elapsed time and update stats service
           if (data.blockStartTime) {
-            const diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+            let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+            if (data.lastActivity) {
+              let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
+              if (timeBetweenActivities > 10) {
+                diffInSeconds = 10 * 60 * 1000
+              }
+            }
             saveBlockDuration(data.team, data.student, diffInSeconds, currentItem.lesson, currentItem.block)
             updatedData = { ...updatedData, blockStartTime: null, lastActivity: new Date().toISOString() }
           }
@@ -982,7 +988,13 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ph
       }
       // calculate the elapsed time and update stats service
       if (data.blockStartTime) {
-        const diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+        let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+        if (data.lastActivity) {
+          let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
+          if (timeBetweenActivities > 10) {
+            diffInSeconds = 10 * 60 * 1000
+          }
+        }
         saveBlockDuration(data.team, data.student, diffInSeconds, item.lesson, item.block)
         updatedData = { ...updatedData, blockStartTime: null }
       }
@@ -1035,7 +1047,13 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
           retakes = data.quizAttempts
           saveStats = true
           if (data.blockStartTime) {
-            const diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+            let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+            if (data.lastActivity) {
+              let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
+              if (timeBetweenActivities > 10) {
+                diffInSeconds = 10 * 60 * 1000
+              }
+            }
             duration = diffInSeconds
             updatedData = { ...updatedData, blockStartTime: null }
           }
@@ -1077,7 +1095,13 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
             retakes = updatedData.quizAttempts
             saveStats = true
             if (data.blockStartTime) {
-              const diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+              let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+              if (data.lastActivity) {
+                let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
+                if (timeBetweenActivities > 10) {
+                  diffInSeconds = 10 * 60 * 1000
+                }
+              }
               duration = diffInSeconds
               updatedData = { ...updatedData, blockStartTime: null }
             }
