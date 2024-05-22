@@ -209,7 +209,7 @@ export const maxEnrollmentReached = async (settingsId: string, courseId: string,
     totalStudents = Object.values(data).length
   }
   if (settings) {
-    return totalStudents === settings.metadata.maxEnrollments
+    return totalStudents >= settings.metadata.maxEnrollments
   }
   return false
 
