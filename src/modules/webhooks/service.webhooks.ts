@@ -29,6 +29,7 @@ import { COURSE_STATS } from '../rtdb/nodes'
 import { StudentCourseStats, StudentInterface } from '../students/interface.students'
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
 import Students from '../students/model.students'
+const INACTIVITY_TIME = 5
 // import randomstring from "randomstring"
 
 export enum CourseFlowMessageType {
@@ -724,8 +725,8 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
             if (data.lastActivity) {
               let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
-              if (timeBetweenActivities > 10) {
-                diffInSeconds = 10 * 60 * 1000
+              if (timeBetweenActivities > INACTIVITY_TIME) {
+                diffInSeconds = INACTIVITY_TIME * 60 * 1000
               }
             }
             saveBlockDuration(data.team, data.student, diffInSeconds, currentItem.lesson, currentItem.block)
@@ -991,8 +992,8 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ph
         let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
         if (data.lastActivity) {
           let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
-          if (timeBetweenActivities > 10) {
-            diffInSeconds = 10 * 60 * 1000
+          if (timeBetweenActivities > INACTIVITY_TIME) {
+            diffInSeconds = INACTIVITY_TIME * 60 * 1000
           }
         }
         saveBlockDuration(data.team, data.student, diffInSeconds, item.lesson, item.block)
@@ -1050,8 +1051,8 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
             let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
             if (data.lastActivity) {
               let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
-              if (timeBetweenActivities > 10) {
-                diffInSeconds = 10 * 60 * 1000
+              if (timeBetweenActivities > INACTIVITY_TIME) {
+                diffInSeconds = INACTIVITY_TIME * 60 * 1000
               }
             }
             duration = diffInSeconds
@@ -1098,8 +1099,8 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
               let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
               if (data.lastActivity) {
                 let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
-                if (timeBetweenActivities > 10) {
-                  diffInSeconds = 10 * 60 * 1000
+                if (timeBetweenActivities > INACTIVITY_TIME) {
+                  diffInSeconds = INACTIVITY_TIME * 60 * 1000
                 }
               }
               duration = diffInSeconds
