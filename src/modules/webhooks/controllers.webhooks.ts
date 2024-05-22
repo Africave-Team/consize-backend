@@ -328,50 +328,16 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           if (field && field === "tz") {
             let selected = timezones[Number(response) - 1]
             if (selected) {
-              await Students.updateOne({ phoneNumber: destination }, { $set: { tz: selected.timezone } })
-              fieldsRaw = await redisClient.get(fieldsKey)
-              if (fieldsRaw) {
-                let fields: {
-                  field: string,
-                  question: string,
-                  done: boolean
-                }[] = JSON.parse(fieldsRaw)
-                let index = fields.findIndex(e => e.field === field)
-                if (index >= 0) {
-                  // @ts-ignore
-                  fields[index].done = true
-                }
-                let left = fields.filter(e => !e.done)
-                if (left.length > 0 && left[0]) {
-                  let next = left[0]
-                  await redisClient.set(fieldKey, next.field)
-                  await redisClient.set(fieldsKey, JSON.stringify(fields))
-                  // send the question for the next 
-                  let message = `${next.question}\n\n\Type and send your responses as a text message.`
-                  if (next.field === 'tz') {
-                    message = `Select an appropriate timezone. \n\nThis will help us send you reminders at appropriate times\n\nSend the corresponding number as a text message\n${timezones.map((zone, index) => `\n${index + 1}. *${zone.name.trim()}*`).join('.')}`
-                  }
-                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                    to: destination,
-                    type: "text",
-                    messaging_product: "whatsapp",
-                    recipient_type: "individual",
-                    text: {
-                      body: message
-                    }
-                  })
-                } else {
-                  const student = await Students.findOneAndUpdate({ phoneNumber: destination }, { $set: { verified: true } })
-                  // 
-                  const keySelected = `${config.redisBaseKey}selected:${destination}`
-                  let courseId = await redisClient.get(keySelected)
-                  if (courseId && student) {
-                    await studentService.enrollStudentToCourse(student.id, courseId)
-                    redisClient.del(fieldKey)
-                    redisClient.del(fieldsKey)
-                    redisClient.del(keySelected)
-                  }
-                }
+              await Students.updateOne({ phoneNumber: destination }, { $set: { tz: selected.timezone, verified: true } })
+              const student = await Students.findOne({ phoneNumber: destination })
+              // 
+              const keySelected = `${config.redisBaseKey}selected:${destination}`
+              let courseId = await redisClient.get(keySelected)
+              if (courseId && student) {
+                await studentService.enrollStudentToCourse(student.id, courseId)
+                redisClient.del(fieldKey)
+                redisClient.del(fieldsKey)
+                redisClient.del(keySelected)
               }
             }
           } else {
@@ -533,7 +499,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                         messaging_product: "whatsapp",
                         recipient_type: "individual",
                         text: {
-                          body: `Please answer the next 2 questions to help us enroll you.\nQ (1/2)\n\n${fields[0].question}\n\n\Please type your response.`
+                          body: `Please answer the next 2 questions to help us enroll you.\n\nQ (1/2)\n\n${fields[0].question}\n\n\Please type your response.`
                         }
                       })
                     }
