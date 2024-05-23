@@ -3,7 +3,7 @@ import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
 import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
-import axios from 'axios'
+import axios, { AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import Courses from '../courses/model.courses'
@@ -281,8 +281,8 @@ export const sendMessage = async function (message: Message) {
     }
   }).catch((error) => {
     console.error(error)
-  }).then(() => {
-    console.info("done sending whatsapp message")
+  }).then((data: any) => {
+    console.info("done sending whatsapp message", (data as AxiosResponse).data)
     // schedule inactivity message
   })
 }

@@ -98,7 +98,6 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
     const destination = messageBody[0].from
     const type = messageBody[0].type
     let enrollments: CourseEnrollment[] = await fetchEnrollments(destination)
-    console.log(enrollments)
     let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
     console.log(type)
     if (type === "interactive") {
@@ -608,7 +607,6 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       }
     } else if (type === "button") {
       const response = messageBody[0].button.payload
-      console.log(response)
       if (response === "Start") {
         if (enrollment) {
           let msgId = v4()
@@ -619,7 +617,6 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       }
 
       if (response === "Begin now") {
-        console.log(enrollment)
         if (enrollment) {
           let msgId = v4()
           await handleContinue(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, enrollment)
