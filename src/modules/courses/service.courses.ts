@@ -1046,7 +1046,7 @@ export const handleStudentSlack = async ({ studentId, courseId, settingsId, last
             // update redis record
             enrollment.lastActivity = lastActivity.toISOString()
             enrollment.lastLessonCompleted = lastLessonCompleted.toISOString()
-            await redisClient.set(key, JSON.stringify(enrollment))
+            await redisClient.set(key, JSON.stringify({ ...enrollment, lastMessageId: msgId }))
           }
         }
       }
@@ -1174,7 +1174,7 @@ export const handleStudentWhatsapp = async ({ courseId, studentId, settingsId, l
             // update redis record
             enrollment.lastActivity = lastActivity.toISOString()
             enrollment.lastLessonCompleted = lastLessonCompleted.toISOString()
-            await redisClient.set(key, JSON.stringify(enrollment))
+            await redisClient.set(key, JSON.stringify({ ...enrollment, lastMessageId: msgId }))
           }
         }
       }
