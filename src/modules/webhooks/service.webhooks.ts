@@ -522,6 +522,7 @@ export async function fetchEnrollments (phoneNumber: string): Promise<CourseEnro
       MATCH: pattern
     })
     for (let key of keys) {
+      console.log(key)
       const dt = await redisClient.get(key)
       if (dt) {
         enrollments.push(JSON.parse(dt))
