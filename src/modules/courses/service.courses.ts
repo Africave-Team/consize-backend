@@ -1193,9 +1193,18 @@ const handleCourseReminders = async (courseId: string, ownerId: string, settings
     if (data) {
       const students = Object.entries(data).map(([_, value]) => ({ ...value }))
       await Promise.allSettled(students.filter(e => !e.completed).map(async (student) => {
-        settings.reminderSchedule.map((schedule, index) => agenda.schedule<DailyReminderNotificationPayload>(`today at ${schedule}`, DAILY_REMINDER, {
-          courseId, studentId: student.studentId, settingsId, distribution: distribution || Distribution.WHATSAPP, ownerId, last: index === settings.reminderSchedule.length
-        }))
+        // get the student's timezone
+        const studentInfo = await Students.findById(student.studentId)
+        if (studentInfo) {
+          let today = moment().format('YYYY-MM-DD')
+          settings.reminderSchedule.map((schedule, index) => {
+            const dateTimeString = `${today} ${schedule}`
+            const combinedDateTime = moment(dateTimeString, 'YYYY-MM-DD HH:mm').tz(studentInfo.tz).toDate()
+            agenda.schedule<DailyReminderNotificationPayload>(combinedDateTime, DAILY_REMINDER, {
+              courseId, studentId: student.studentId, settingsId, distribution: distribution || Distribution.WHATSAPP, ownerId, last: index === settings.reminderSchedule.length
+            })
+          })
+        }
         return student
       }))
     }
