@@ -512,17 +512,28 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
   return initialMessageId
 }
 
+
+
 export async function fetchEnrollments (phoneNumber: string): Promise<CourseEnrollment[]> {
   const enrollments: CourseEnrollment[] = []
   if (redisClient.isReady) {
     const pattern = `${config.redisBaseKey}enrollments:${phoneNumber}:*`
-    console.log(pattern)
-    const { keys } = await redisClient.scan(0, {
-      COUNT: 100,
-      MATCH: pattern
-    })
-    for (let key of keys) {
-      console.log(key)
+    let cursor = 0
+    const allKeys = []
+
+    do {
+      const result = await redisClient.scan(cursor, {
+        COUNT: 100,
+        MATCH: pattern
+      })
+
+      cursor = result.cursor
+      const keys = result.keys
+
+      allKeys.push(...keys)
+    } while (cursor !== 0)
+
+    for (let key of allKeys) {
       const dt = await redisClient.get(key)
       if (dt) {
         enrollments.push(JSON.parse(dt))
