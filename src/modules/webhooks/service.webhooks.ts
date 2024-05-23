@@ -131,16 +131,6 @@ export const generateCourseFlow = async function (courseId: string) {
 
     // blocks
     let lessonIndex = 0
-    // const nextLesson = course.lessons[lessonIndex]
-    // if (nextLesson) {
-    //   let lessonData = await Lessons.findById(nextLesson)
-    //   if (lessonData) {
-    //     flow.push({
-    //       type: CourseFlowMessageType.ENDLESSON,
-    //       content: `*First lesson*: ${lessonData.title}\n\n➡️ Tap 'Continue Now' when you're ready to start.\n\nTap 'Continue Tomorrow' to continue tomorrow at \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.`
-    //     })
-    //   }
-    // }
     for (let lesson of course.lessons) {
       let lessonData = await Lessons.findById(lesson)
       if (lessonData) {
@@ -815,13 +805,13 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 body: item.content.replace('{survey}', '')
               }
             })
+            await delay(5000)
             let next = flowData[nextIndex + 1]
             if (next?.surveyId && next.surveyQuestion) {
               updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
               handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
             } else {
               // if no survey for this course, then send the certificate
-              await delay(5000)
               agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
                 ...updatedData
               })

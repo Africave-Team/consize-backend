@@ -334,7 +334,17 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const student = await Students.findOne({ phoneNumber: destination })
               // 
               let courseId = await redisClient.get(keySelected)
-              if (courseId && student) {
+              const course = await Courses.findById(courseId)
+              if (courseId && course && student) {
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: destination,
+                  type: "text",
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  text: {
+                    body: `Thank you for your message! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
+                  }
+                })
                 await studentService.enrollStudentToCourse(student.id, courseId)
                 redisClient.del(fieldKey)
                 redisClient.del(fieldsKey)
@@ -496,6 +506,15 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 } else {
                   const student = await Students.findOne({ phoneNumber: destination })
                   if (student) {
+                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                      to: destination,
+                      type: "text",
+                      messaging_product: "whatsapp",
+                      recipient_type: "individual",
+                      text: {
+                        body: `Thank you for your message! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
+                      }
+                    })
                     await studentService.enrollStudentToCourse(student.id, course.id)
                   } else {
                     const fields = [{
