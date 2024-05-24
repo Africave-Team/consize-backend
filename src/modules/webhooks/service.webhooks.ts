@@ -426,7 +426,7 @@ export const handleRemindMeTrigger = async function () {
           recipient_type: "individual",
           interactive: {
             body: {
-              text: `Hey ${student.firstName.charAt(0).toUpperCase() + student.firstName.slice(1)}! You have made ${((active.nextBlock / active.totalBlocks) * 100).toFixed(0)}% progress in the course ${active.title}.🎉\nContinue now to learn more from the course 🎯.`
+              text: `Hey ${student.firstName.charAt(0).toUpperCase() + student.firstName.slice(1)}! You have made ${((active.nextBlock / active.totalBlocks) * 100).toFixed(0)}% progress in the course ${active.title}.🎉\n\nContinue now to learn more from the course 🎯.`
             },
             type: "button",
             action: {
