@@ -88,8 +88,8 @@ export function convertToWhatsAppString (html: string, indent: number = 0): stri
 
   // Handle lists
   // Replace <ul> and <ol> tags with new lines
-  formattedText = formattedText.replace(/<\/?ul.*?>/gi, '\n')
-  formattedText = formattedText.replace(/<\/?ol.*?>/gi, '\n')
+  formattedText = formattedText.replace(/<\/?ul.*?>/gi, '')
+  formattedText = formattedText.replace(/<\/?ol.*?>/gi, '')
 
   // Replace <li> tags with "-" for unordered lists and numbers for ordered lists
   formattedText = formattedText.replace(/<li(?:\s+[^>]*?)?>(.*?)<\/li>/gi, (_, content) => {
@@ -297,7 +297,8 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
     return
   }
   const course = await Courses.findById(payload.courseId)
-  if (course) {
+  const student = await Students.findById(payload.studentId)
+  if (course && student) {
     const msgId = v4()
     if (payload.phoneNumber && !payload.slackChannel) {
       const key = `${config.redisBaseKey}enrollments:${payload.phoneNumber}:${payload.courseId}`
@@ -314,7 +315,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
           recipient_type: "individual",
           interactive: {
             body: {
-              text: `You have been idle on the course ${course.title} for sometime. Click 'Continue' to resume`
+              text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`
             },
             type: "button",
             action: {
@@ -349,7 +350,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
                 type: MessageBlockType.SECTION,
                 text: {
                   type: SlackTextMessageTypes.MARKDOWN,
-                  text: `You have been idle on the course ${course.title} for sometime. Click 'Continue' to resume`
+                  text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`
                 },
               },
               {
