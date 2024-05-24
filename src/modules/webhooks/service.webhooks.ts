@@ -351,7 +351,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
                 type: MessageBlockType.SECTION,
                 text: {
                   type: SlackTextMessageTypes.MARKDOWN,
-                  text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`
+                  text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`
                 },
               },
               {
@@ -426,7 +426,7 @@ export const handleRemindMeTrigger = async function () {
           recipient_type: "individual",
           interactive: {
             body: {
-              text: `Hey ${student.firstName}! You have made ${((active.nextBlock / active.totalBlocks) * 100).toFixed(0)}% progress in the course ${active.title}.🎉\nContinue now to learn more from the course 🎯.`
+              text: `Hey ${student.firstName.charAt(0).toUpperCase() + student.firstName.slice(1)}! You have made ${((active.nextBlock / active.totalBlocks) * 100).toFixed(0)}% progress in the course ${active.title}.🎉\nContinue now to learn more from the course 🎯.`
             },
             type: "button",
             action: {

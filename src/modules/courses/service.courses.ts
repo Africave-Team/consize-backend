@@ -961,7 +961,7 @@ export const handleStudentSlack = async ({ studentId, courseId, settingsId, last
                       type: MessageBlockType.SECTION,
                       text: {
                         type: SlackTextMessageTypes.MARKDOWN,
-                        text: `Hey ${student.firstName}! You have made ${((enrollment.nextBlock / enrollment.totalBlocks) * 100).toFixed(0)}% progress in the course ${enrollment.title}.🎉\nContinue now to learn more from the course 🎯.`
+                        text: `Hey ${student.firstName}! You have made ${((enrollment.nextBlock / enrollment.totalBlocks) * 100).toFixed(0)}% progress in the course ${enrollment.title}.🎉\n\nContinue now to learn more from the course 🎯.`
                       },
                     },
                     {
@@ -1104,7 +1104,7 @@ export const handleStudentWhatsapp = async ({ courseId, studentId, settingsId, l
                 recipient_type: "individual",
                 interactive: {
                   body: {
-                    text: `Hey ${student.firstName}! You have made ${((enrollment.nextBlock / enrollment.totalBlocks) * 100).toFixed(0)}% progress in the course ${enrollment.title}.🎉\nContinue now to learn more from the course 🎯.`
+                    text: `Hey ${student.firstName}! You have made ${((enrollment.nextBlock / enrollment.totalBlocks) * 100).toFixed(0)}% progress in the course ${enrollment.title}.🎉\n\nContinue now to learn more from the course 🎯.`
                   },
                   type: "button",
                   action: {
