@@ -974,7 +974,7 @@ export const handleStudentSlack = async ({ studentId, courseId, settingsId, last
                             "text": "Continue",
                             "emoji": true
                           },
-                          "value": `continue_${enrollment.id}|${msgId}`,
+                          "value": `continue_${enrollment.id}`,
                           style: MessageActionButtonStyle.PRIMARY
                         }
                       ]
@@ -1112,7 +1112,7 @@ export const handleStudentWhatsapp = async ({ courseId, studentId, settingsId, l
                       {
                         type: "reply",
                         reply: {
-                          id: `continue_${enrollment.id}|${msgId}`,
+                          id: `continue_${enrollment.id}`,
                           title: "Continue"
                         }
                       }
@@ -1154,14 +1154,14 @@ export const handleStudentWhatsapp = async ({ courseId, studentId, settingsId, l
                         {
                           type: "reply",
                           reply: {
-                            id: `continue_${enrollment.id}|${msgId}`,
+                            id: `continue_${enrollment.id}`,
                             title: "Continue"
                           }
                         },
                         {
                           type: "reply",
                           reply: {
-                            id: `dropout_${enrollment.id}|${msgId}`,
+                            id: `dropout_${enrollment.id}`,
                             title: "Dropout"
                           }
                         }

@@ -16,7 +16,7 @@ import Lessons from '../courses/model.lessons'
 import Blocks from '../courses/model.blocks'
 import Quizzes from '../courses/model.quizzes'
 import { agenda } from '../scheduler'
-import { DAILY_ROUTINE, INACTIVITY_REMINDER, REMIND_ME, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { DAILY_ROUTINE, INACTIVITY_REMINDER, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import { logger } from '../logger'
 import moment from 'moment-timezone'
@@ -29,7 +29,7 @@ import { COURSE_STATS } from '../rtdb/nodes'
 import { StudentCourseStats, StudentInterface } from '../students/interface.students'
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
 import Students from '../students/model.students'
-import { convertTo24Hour } from '../utils'
+// import { convertTo24Hour } from '../utils'
 const INACTIVITY_TIME = 5
 // import randomstring from "randomstring"
 
@@ -324,7 +324,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
                 {
                   type: "reply",
                   reply: {
-                    id: `continue_${payload.courseId}|${msgId}`,
+                    id: `continue_${payload.courseId}`,
                     title: "Continue"
                   }
                 }
@@ -364,7 +364,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
                       "text": "Continue",
                       "emoji": true
                     },
-                    "value": `continue_${payload.courseId}|${msgId}`,
+                    "value": `continue_${payload.courseId}`,
                     style: MessageActionButtonStyle.PRIMARY
                   }
                 ]
