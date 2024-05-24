@@ -94,7 +94,7 @@ export function convertToWhatsAppString (html: string, indent: number = 0): stri
   // Replace <li> tags with "-" for unordered lists and numbers for ordered lists
   formattedText = formattedText.replace(/<li(?:\s+[^>]*?)?>(.*?)<\/li>/gi, (_, content) => {
     const indentation = ' '.repeat(indent * 4)
-    return `\n${indentation}- ${convertToWhatsAppString(content, indent + 1)}`
+    return `${indentation}- ${convertToWhatsAppString(content, indent + 1)}`
   })
 
   // Remove any remaining HTML tags
