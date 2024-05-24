@@ -11,7 +11,7 @@ import config from './config/config'
 import { morgan } from './modules/logger'
 import { jwtStrategy } from './modules/auth'
 import { jwtStrategy as adminJwtStrategy } from './modules/admin'
-import { authLimiter } from './modules/utils'
+// import { authLimiter } from './modules/utils'
 import { ApiError, errorConverter, errorHandler } from './modules/errors'
 import './modules/redis'
 import routes from './routes/v1'
@@ -54,8 +54,8 @@ passport.use('jwt-admin', adminJwtStrategy)
 
 // limit repeated failed requests to auth endpoints
 if (config.env === 'production') {
-  app.use('/v1/auth', authLimiter)
-  app.use('/v1/students', authLimiter)
+  // app.use('/v1/auth', authLimiter)
+  // app.use('/v1/students', authLimiter)
 }
 
 app.use("/agendash", Agendash(agenda))
