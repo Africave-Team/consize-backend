@@ -275,7 +275,7 @@ export const generateCourseFlow = async function (courseId: string) {
 }
 
 export const sendMessage = async function (message: Message) {
-  axios.post(`https://graph.facebook.com/v18.0/${config.whatsapp.phoneNumberId}/messages`, message, {
+  axios.post(`https://graph.facebook.com/v19.0/${config.whatsapp.phoneNumberId}/messages`, message, {
     headers: {
       "Authorization": `Bearer ${config.whatsapp.token}`,
       "Content-Type": "application/json"
