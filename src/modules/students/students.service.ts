@@ -8,7 +8,7 @@ import { GENERATE_COURSE_TRENDS, SEND_WHATSAPP_MESSAGE } from '../scheduler/Mess
 import { Message } from '../webhooks/interfaces.webhooks'
 import OTP from './model.otp'
 import db from "../rtdb"
-import moment from 'moment'
+import moment from 'moment-timezone'
 import config from '../../config/config'
 import { generateCourseFlow, sendWelcome, startCourse } from '../webhooks/service.webhooks'
 import { LessonInterface } from '../courses/interfaces.lessons'

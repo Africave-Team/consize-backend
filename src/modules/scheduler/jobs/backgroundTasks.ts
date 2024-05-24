@@ -1,10 +1,10 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
-import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE, GENERATE_COURSE_TRENDS, INACTIVITY_REMINDER, RESUME_TOMORROW } from '../MessageTypes'
+import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE, GENERATE_COURSE_TRENDS, INACTIVITY_REMINDER, REMIND_ME, RESUME_TOMORROW } from '../MessageTypes'
 import { generateCurrentCourseTrends, handleStudentSlack, handleStudentWhatsapp, initiateDailyRoutine } from '../../courses/service.courses'
 import { CourseEnrollment, DailyReminderNotificationPayload } from '../../webhooks/interfaces.webhooks'
 import config from '../../../config/config'
-import { sendInactivityMessage, sendResumptionMessage } from '../../webhooks/service.webhooks'
+import { handleRemindMeTrigger, sendInactivityMessage, sendResumptionMessage } from '../../webhooks/service.webhooks'
 import { initiateCourseForCohort, initiateCourseForCohortForSingleStudent } from '../../cohorts/service.cohorts'
 import { sendResumptionMessageSlack } from '../../slack/slack.services'
 import { Distribution } from '../../courses/interfaces.courses'
@@ -96,11 +96,22 @@ const handleCohortScheduleStudent: Processor<{ cohortId: string, studentId: stri
   }
 }
 
+const handleRemindMe: Processor<{}> = async () => {
+  try {
+    if (AppConfig.server !== "test") {
+      handleRemindMeTrigger()
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
 module.exports = (agenda: Agenda) => {
   agenda.define<{ courseId: string, teamId: string }>(GENERATE_COURSE_TRENDS, handleCourseTrends)
   agenda.define<any>(DAILY_ROUTINE, handleStartDailyRoutine)
   agenda.define<DailyReminderNotificationPayload>(DAILY_REMINDER, handleDailyReminders)
   agenda.define<{ cohortId: string }>(COHORT_SCHEDULE, handleCohortSchedule)
+  agenda.define(REMIND_ME, handleRemindMe)
   agenda.define<{ cohortId: string, studentId: string }>(COHORT_SCHEDULE_STUDENT, handleCohortScheduleStudent)
   agenda.define<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>(INACTIVITY_REMINDER, handleInactivityReminders)
   agenda.define<{ enrollment: CourseEnrollment, phoneNumber?: string, messageId: string, channelId?: string }>(RESUME_TOMORROW, handleContinueTomorrow)

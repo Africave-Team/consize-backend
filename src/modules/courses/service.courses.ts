@@ -16,7 +16,7 @@ import Settings from './model.settings'
 import { CourseSettings, DropoutEvents, LearnerGroup, LearnerGroupLaunchTime, PeriodTypes } from './interfaces.settings'
 import Students from '../students/model.students'
 import { StudentCourseStats } from '../students/interface.students'
-import moment, { Moment } from 'moment'
+import moment, { Moment } from 'moment-timezone'
 import { CourseStatistics } from '../rtdb/interfaces.rtdb'
 import { agenda } from '../scheduler'
 import { DAILY_REMINDER, GENERATE_COURSE_OUTLINE_AI, RESUME_TOMORROW, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
@@ -1196,14 +1196,33 @@ const handleCourseReminders = async (courseId: string, ownerId: string, settings
         // get the student's timezone
         const studentInfo = await Students.findById(student.studentId)
         if (studentInfo) {
-          let today = moment().format('YYYY-MM-DD')
-          settings.reminderSchedule.map((schedule, index) => {
-            const dateTimeString = `${today} ${schedule}`
-            const combinedDateTime = moment(dateTimeString, 'YYYY-MM-DD HH:mm').tz(studentInfo.tz).toDate()
-            agenda.schedule<DailyReminderNotificationPayload>(combinedDateTime, DAILY_REMINDER, {
-              courseId, studentId: student.studentId, settingsId, distribution: distribution || Distribution.WHATSAPP, ownerId, last: index === settings.reminderSchedule.length
-            })
-          })
+          let identifier: string | null = null
+          if (studentInfo.channelId) {
+            identifier = studentInfo.channelId
+          } else {
+            identifier = studentInfo.phoneNumber
+          }
+          if (identifier) {
+            const key = `${config.redisBaseKey}enrollments:${identifier}:${courseId}`
+            const enrollmentRaw = await redisClient.get(key)
+            let enrollment: CourseEnrollment | null = null
+            if (enrollmentRaw) {
+              enrollment = JSON.parse(enrollmentRaw)
+            }
+
+            if (enrollment && enrollment.active) {
+              let today = moment().format('YYYY-MM-DD')
+              settings.reminderSchedule.map((schedule, index) => {
+                const dateTimeString = `${today} ${schedule}`
+                const combinedDateTime = moment(dateTimeString, 'YYYY-MM-DD HH:mm').tz(studentInfo.tz).toDate()
+                agenda.schedule<DailyReminderNotificationPayload>(combinedDateTime, DAILY_REMINDER, {
+                  courseId, studentId: student.studentId, settingsId, distribution: distribution || Distribution.WHATSAPP, ownerId, last: index === settings.reminderSchedule.length
+                })
+              })
+            }
+
+
+          }
         }
         return student
       }))

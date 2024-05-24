@@ -35,6 +35,8 @@ export const DAILY_REMINDER = "DAILY_REMINDER"
 
 export const INACTIVITY_REMINDER = "INACTIVITY_REMINDER"
 
+export const REMIND_ME = "REMIND_ME"
+
 
 
 // schedule cohorts

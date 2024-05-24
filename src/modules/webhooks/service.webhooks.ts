@@ -16,10 +16,10 @@ import Lessons from '../courses/model.lessons'
 import Blocks from '../courses/model.blocks'
 import Quizzes from '../courses/model.quizzes'
 import { agenda } from '../scheduler'
-import { DAILY_ROUTINE, INACTIVITY_REMINDER, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { DAILY_ROUTINE, INACTIVITY_REMINDER, REMIND_ME, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import { logger } from '../logger'
-import moment from 'moment'
+import moment from 'moment-timezone'
 import { LessonInterface } from '../courses/interfaces.lessons'
 import { saveBlockDuration, saveCourseProgress, saveQuizDuration } from '../students/students.service'
 import { delay, generateVideoThumbnail } from '../generators/generator.service'
@@ -29,6 +29,7 @@ import { COURSE_STATS } from '../rtdb/nodes'
 import { StudentCourseStats, StudentInterface } from '../students/interface.students'
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
 import Students from '../students/model.students'
+import { convertTo24Hour } from '../utils'
 const INACTIVITY_TIME = 5
 // import randomstring from "randomstring"
 
@@ -390,9 +391,59 @@ export const scheduleInactivityMessage = async (enrollment: CourseEnrollment, ph
 }
 
 export const scheduleDailyRoutine = async () => {
-  const jobs = await agenda.jobs({ name: DAILY_ROUTINE })
+  const jobs = await agenda.jobs({ name: DAILY_ROUTINE, nextRunAt: { $ne: null } })
+  const other = await agenda.jobs({ name: REMIND_ME, nextRunAt: { $ne: null } })
+  let time = "02:00 PM"
+  let mainTime = convertTo24Hour(time)
+  console.log(mainTime)
+  if (other.length === 0 && mainTime) {
+    let today = moment().tz("Africa/Lagos").format('YYYY-MM-DD')
+    const dateTimeString = `${today} ${mainTime}` // Note: removed 'PM'
+    const combinedDateTime = moment(dateTimeString).tz("Africa/Lagos").toDate()
+    agenda.schedule<{}>(combinedDateTime, REMIND_ME, {})
+  }
   if (jobs.length === 0) {
     agenda.every('0 1 * * *', DAILY_ROUTINE)
+  }
+}
+
+
+
+export const handleRemindMeTrigger = async function () {
+  let phone = "2348138641965"
+  console.log("got here.")
+  let student = await Students.findOne({ phoneNumber: phone })
+  if (student) {
+    let enrollments = await fetchEnrollments(phone)
+    let active = enrollments.find(e => e.active)
+    if (active) {
+      let course = await Courses.findById(active.id)
+      if (course) {
+        agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+          to: student.phoneNumber,
+          type: "interactive",
+          messaging_product: "whatsapp",
+          recipient_type: "individual",
+          interactive: {
+            body: {
+              text: `Hey ${student.firstName}! You have made ${((active.nextBlock / active.totalBlocks) * 100).toFixed(0)}% progress in the course ${active.title}.🎉\nContinue now to learn more from the course 🎯.`
+            },
+            type: "button",
+            action: {
+              buttons: [
+                {
+                  type: "reply",
+                  reply: {
+                    id: `continue_${active.id}`,
+                    title: "Continue"
+                  }
+                }
+              ]
+            }
+          }
+        })
+      }
+    }
   }
 }
 
