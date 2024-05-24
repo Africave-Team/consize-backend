@@ -393,10 +393,10 @@ export const scheduleInactivityMessage = async (enrollment: CourseEnrollment, ph
 export const scheduleDailyRoutine = async () => {
   const jobs = await agenda.jobs({ name: DAILY_ROUTINE, nextRunAt: { $ne: null } })
   const other = await agenda.jobs({ name: REMIND_ME, nextRunAt: { $ne: null } })
-  let time = "02:00 PM"
+  let time = "02:10 PM"
   let mainTime = convertTo24Hour(time)
-  console.log(mainTime)
   if (other.length === 0 && mainTime) {
+    console.log(mainTime)
     let today = moment().tz("Africa/Lagos").format('YYYY-MM-DD')
     const dateTimeString = `${today} ${mainTime}` // Note: removed 'PM'
     const combinedDateTime = moment(dateTimeString).tz("Africa/Lagos").toDate()
