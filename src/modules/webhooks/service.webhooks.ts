@@ -16,7 +16,7 @@ import Lessons from '../courses/model.lessons'
 import Blocks from '../courses/model.blocks'
 import Quizzes from '../courses/model.quizzes'
 import { agenda } from '../scheduler'
-import { DAILY_ROUTINE, INACTIVITY_REMINDER, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { DAILY_ROUTINE, INACTIVITY_REMINDER, REMIND_ME, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import { logger } from '../logger'
 import moment from 'moment-timezone'
@@ -29,6 +29,7 @@ import { COURSE_STATS } from '../rtdb/nodes'
 import { StudentCourseStats, StudentInterface } from '../students/interface.students'
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
 import Students from '../students/model.students'
+import { convertTo24Hour } from '../utils'
 // import { convertTo24Hour } from '../utils'
 const INACTIVITY_TIME = 5
 // import randomstring from "randomstring"
@@ -316,7 +317,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
           recipient_type: "individual",
           interactive: {
             body: {
-              text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`
+              text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`
             },
             type: "button",
             action: {
@@ -392,19 +393,20 @@ export const scheduleInactivityMessage = async (enrollment: CourseEnrollment, ph
 
 export const scheduleDailyRoutine = async () => {
   const jobs = await agenda.jobs({ name: DAILY_ROUTINE, nextRunAt: { $ne: null } })
-  // const other = await agenda.jobs({ name: REMIND_ME, nextRunAt: { $ne: null } })
-  // let time = "02:10 PM"
-  // let mainTime = convertTo24Hour(time)
-  // if (other.length === 0 && mainTime) {
-  //   console.log(mainTime)
-  //   let today = moment().tz("Africa/Lagos").format('YYYY-MM-DD')
-  //   const dateTimeString = `${today} ${mainTime}` // Note: removed 'PM'
-  //   const combinedDateTime = moment(dateTimeString).tz("Africa/Lagos").toDate()
-  //   console.log(combinedDateTime)
-  //   const now = moment.tz("Africa/Lagos")
-  //   console.log(now.utcOffset(), now, now.toDate())
-  //   agenda.schedule<{}>(combinedDateTime, REMIND_ME, {})
-  // }
+  let time = "09:45 AM"
+  let mainTime = convertTo24Hour(time)
+  if (mainTime) {
+    let today = moment().tz("Africa/Lagos").format('YYYY-MM-DD')
+    const dateTimeString = `${today} ${mainTime}` // Note: removed 'PM'
+    // const now = moment.tz("Africa/Lagos")
+    const time = moment(dateTimeString)
+    console.log(dateTimeString, time, time.toDate())
+    let jbs = await agenda.jobs({ name: REMIND_ME, nextRunAt: { $ne: null } })
+    for (let jb of jbs) {
+      await jb.remove()
+    }
+    agenda.schedule<{}>(time.toDate(), REMIND_ME, {})
+  }
   if (jobs.length === 0) {
     agenda.every('0 1 * * *', DAILY_ROUTINE)
   }
