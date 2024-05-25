@@ -1251,7 +1251,7 @@ export const sendResumptionMessageSlack = async (channelId: string, key: string,
                   "text": "Resume now",
                   "emoji": true
                 },
-                "value": RESUME_COURSE + `|${msgId}`,
+                "value": RESUME_COURSE,
                 style: MessageActionButtonStyle.PRIMARY
               }
             ]

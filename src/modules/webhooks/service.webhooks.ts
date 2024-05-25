@@ -1392,7 +1392,7 @@ export const sendResumptionMessage = async (phoneNumber: string, key: string, da
             {
               type: "reply",
               reply: {
-                id: RESUME_COURSE + `|${msgId}`,
+                id: RESUME_COURSE,
                 title: "Resume Now"
               }
             }
