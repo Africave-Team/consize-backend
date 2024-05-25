@@ -82,8 +82,8 @@ export function convertToWhatsAppString (html: string, indent: number = 0): stri
   // formattedText = formattedText.replace(/<p(?:\s+[^>]*?)?>(.*?)<\/p>/gi, '')
   formattedText = formattedText.replace(/<p(?:\s+[^>]*?)?>(.*?)<\/p>/gi, '$1')
   // Replace <b> tags with *
-  formattedText = formattedText.replace(/<b>(.*?)<\/b>/gi, '*$1*')
-  formattedText = formattedText.replace(/<strong>(.*?)<\/strong>/gi, '*$1*')
+  formattedText = formattedText.replace(/<b>(.*?)<\/b>/gi, (_, p1) => `*${p1.trim()}*`)
+  formattedText = formattedText.replace(/<strong>(.*?)<\/strong>/gi, (_, p1) => `*${p1.trim()}*`)
 
   // Replace <i> tags with _
   formattedText = formattedText.replace(/<i>(.*?)<\/i>/gi, '_$1_')

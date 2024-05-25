@@ -1234,7 +1234,19 @@ const handleCourseReminders = async (courseId: string, ownerId: string, settings
 
 export const initiateDailyRoutine = async () => {
   const courses = await Course.find({ status: CourseStatus.PUBLISHED })
-  await Promise.allSettled(courses.map((course) => handleCourseReminders(course.id, course.owner, course.settings)))
+  Promise.allSettled(courses.map((course) => handleCourseReminders(course.id, course.owner, course.settings)))
+  const now = new Date()
+  const cutoff = new Date(now.getTime() - 48 * 60 * 60 * 1000) // 48 hours ago
+
+  try {
+    const result = await agenda.cancel({
+      lastFinishedAt: { $lt: cutoff }
+    })
+
+    console.log(`Purged ${result} completed tasks older than 48 hours.`)
+  } catch (error) {
+    console.error('Error purging completed tasks:', error)
+  }
 }
 
 export const handleSendReminders = async (courseId: string, studentId: string) => {

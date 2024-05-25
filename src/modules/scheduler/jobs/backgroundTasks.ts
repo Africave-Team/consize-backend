@@ -99,7 +99,7 @@ const handleCohortScheduleStudent: Processor<{ cohortId: string, studentId: stri
 const handleRemindMe: Processor<{}> = async () => {
   try {
     if (AppConfig.server !== "test") {
-      handleRemindMeTrigger()
+      await handleRemindMeTrigger()
     }
   } catch (error) {
     console.log(error, "error send message")
