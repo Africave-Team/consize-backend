@@ -113,6 +113,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           }
         }
       }
+      let today = moment().format('YYYY-MM-DD')
       switch (btnId) {
         case START:
         case RESUME_COURSE:
@@ -213,33 +214,30 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         case MORNING:
           if (enrollment) {
             let msgId = v4()
-            const currentDate = moment().tz(enrollment.tz)
-
-            // Set the time to 9am tomorrow
-            const tomorrow9AM = currentDate.clone().add(1, 'day').startOf('day').hour(9)
-            agenda.schedule(tomorrow9AM.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            const dateTimeString = `${today} 09:00` // Note: removed 'PM'
+            const now = moment.tz(enrollment.tz)
+            const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
+            agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "9:00am")
           }
           break
         case AFTERNOON:
           if (enrollment) {
             let msgId = v4()
-            const currentDate = moment().tz(enrollment.tz)
-
-            // Set the time to 9am tomorrow
-            const tomorrow3PM = currentDate.clone().add(1, 'day').startOf('day').hour(15)
-            agenda.schedule(tomorrow3PM.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            const dateTimeString = `${today} 15:00` // Note: removed 'PM'
+            const now = moment.tz(enrollment.tz)
+            const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
+            agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "3:00pm")
           }
           break
         case EVENING:
           if (enrollment) {
             let msgId = v4()
-            const currentDate = moment().tz(enrollment.tz)
-
-            // Set the time to 9am tomorrow
-            const tomorrow8PM = currentDate.clone().add(1, 'day').startOf('day').hour(20)
-            agenda.schedule(tomorrow8PM.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+            const dateTimeString = `${today} 20:00` // Note: removed 'PM'
+            const now = moment.tz(enrollment.tz)
+            const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
+            agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
             sendScheduleAcknowledgement(destination, "8:00pm")
           }
           break

@@ -146,12 +146,10 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
     await cohort.save()
     if (schedule) {
         // use agenda to schedule the event
-        // calculate the time in minutes from now till the schedule date/time
-        const combinedDateTime = moment(`${date} ${time}`, 'YYYY-MM-DD HH:mm')
-
-        // Calculate the difference in minutes between now and the combined date
         for (let student of cohortMembersInfo) {
-            agenda.schedule<{ cohortId: string, studentId: string }>(combinedDateTime.tz(student.tz).toDate(), COHORT_SCHEDULE_STUDENT, { cohortId: cohort.id, studentId: student.id })
+            const now = moment.tz(student.tz)
+            const tmi = moment(`${date} ${time}`).subtract(now.utcOffset(), 'minutes')
+            agenda.schedule<{ cohortId: string, studentId: string }>(tmi.toDate(), COHORT_SCHEDULE_STUDENT, { cohortId: cohort.id, studentId: student.id })
         }
     } else {
         if (courseInformation.status === CourseStatus.PUBLISHED) {

@@ -16,7 +16,7 @@ import Lessons from '../courses/model.lessons'
 import Blocks from '../courses/model.blocks'
 import Quizzes from '../courses/model.quizzes'
 import { agenda } from '../scheduler'
-import { DAILY_ROUTINE, INACTIVITY_REMINDER, REMIND_ME, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { DAILY_ROUTINE, INACTIVITY_REMINDER, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import { logger } from '../logger'
 import moment from 'moment-timezone'
@@ -29,7 +29,7 @@ import { COURSE_STATS } from '../rtdb/nodes'
 import { StudentCourseStats, StudentInterface } from '../students/interface.students'
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
 import Students from '../students/model.students'
-import { convertTo24Hour } from '../utils'
+// import { convertTo24Hour } from '../utils'
 // import { convertTo24Hour } from '../utils'
 const INACTIVITY_TIME = 5
 // import randomstring from "randomstring"
@@ -393,20 +393,20 @@ export const scheduleInactivityMessage = async (enrollment: CourseEnrollment, ph
 
 export const scheduleDailyRoutine = async () => {
   const jobs = await agenda.jobs({ name: DAILY_ROUTINE, nextRunAt: { $ne: null } })
-  let time = "10:30 AM"
-  let mainTime = convertTo24Hour(time)
-  if (mainTime) {
-    let today = moment().tz("America/Toronto").format('YYYY-MM-DD')
-    const dateTimeString = `${today} ${mainTime}` // Note: removed 'PM'
-    const now = moment.tz("America/Toronto")
-    const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
-    console.log(dateTimeString, time, time.toDate())
-    let jbs = await agenda.jobs({ name: REMIND_ME, nextRunAt: { $ne: null } })
-    for (let jb of jbs) {
-      await jb.remove()
-    }
-    agenda.schedule<{}>(time.toDate(), REMIND_ME, {})
-  }
+  // let time = "10:30 AM"
+  // let mainTime = convertTo24Hour(time)
+  // if (mainTime) {
+  //   let today = moment().tz("America/Toronto").format('YYYY-MM-DD')
+  //   const dateTimeString = `${today} ${mainTime}` // Note: removed 'PM'
+  //   const now = moment.tz("America/Toronto")
+  //   const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
+  //   console.log(dateTimeString, time, time.toDate())
+  //   let jbs = await agenda.jobs({ name: REMIND_ME, nextRunAt: { $ne: null } })
+  //   for (let jb of jbs) {
+  //     await jb.remove()
+  //   }
+  //   agenda.schedule<{}>(time.toDate(), REMIND_ME, {})
+  // }
   if (jobs.length === 0) {
     agenda.every('0 1 * * *', DAILY_ROUTINE)
   }

@@ -1213,9 +1213,10 @@ const handleCourseReminders = async (courseId: string, ownerId: string, settings
             if (enrollment && enrollment.active) {
               let today = moment().format('YYYY-MM-DD')
               settings.reminderSchedule.map((schedule, index) => {
-                const dateTimeString = `${today} ${schedule}`
-                const combinedDateTime = moment(dateTimeString, 'YYYY-MM-DD HH:mm').tz(studentInfo.tz).toDate()
-                agenda.schedule<DailyReminderNotificationPayload>(combinedDateTime, DAILY_REMINDER, {
+                const dateTimeString = `${today} ${schedule}` // Note: removed 'PM'
+                const now = moment.tz(enrollment.tz)
+                const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
+                agenda.schedule<DailyReminderNotificationPayload>(time.toDate(), DAILY_REMINDER, {
                   courseId, studentId: student.studentId, settingsId, distribution: distribution || Distribution.WHATSAPP, ownerId, last: index === settings.reminderSchedule.length
                 })
               })
