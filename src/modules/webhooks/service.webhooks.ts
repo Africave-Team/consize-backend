@@ -393,12 +393,12 @@ export const scheduleInactivityMessage = async (enrollment: CourseEnrollment, ph
 
 export const scheduleDailyRoutine = async () => {
   const jobs = await agenda.jobs({ name: DAILY_ROUTINE, nextRunAt: { $ne: null } })
-  let time = "10:05 AM"
+  let time = "10:30 AM"
   let mainTime = convertTo24Hour(time)
   if (mainTime) {
-    let today = moment().tz("Africa/Lagos").format('YYYY-MM-DD')
+    let today = moment().tz("America/Toronto").format('YYYY-MM-DD')
     const dateTimeString = `${today} ${mainTime}` // Note: removed 'PM'
-    const now = moment.tz("Africa/Lagos")
+    const now = moment.tz("America/Toronto")
     const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
     console.log(dateTimeString, time, time.toDate())
     let jbs = await agenda.jobs({ name: REMIND_ME, nextRunAt: { $ne: null } })
