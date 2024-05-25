@@ -393,7 +393,7 @@ export const scheduleInactivityMessage = async (enrollment: CourseEnrollment, ph
 
 export const scheduleDailyRoutine = async () => {
   const jobs = await agenda.jobs({ name: DAILY_ROUTINE, nextRunAt: { $ne: null } })
-  let time = "09:45 AM"
+  let time = "09:55 AM"
   let mainTime = convertTo24Hour(time)
   if (mainTime) {
     let today = moment().tz("Africa/Lagos").format('YYYY-MM-DD')
