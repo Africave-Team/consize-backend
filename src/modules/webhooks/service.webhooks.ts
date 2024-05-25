@@ -307,73 +307,77 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
       const dtf = await redisClient.get(key)
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
-        if (redisData.totalBlocks === redisData.currentBlock) {
-          return
-        }
-        agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-          to: payload.phoneNumber,
-          type: "interactive",
-          messaging_product: "whatsapp",
-          recipient_type: "individual",
-          interactive: {
-            body: {
-              text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`
-            },
-            type: "button",
-            action: {
-              buttons: [
-                {
-                  type: "reply",
-                  reply: {
-                    id: `continue_${payload.courseId}`,
-                    title: "Continue"
-                  }
-                }
-              ]
-            }
+        if (redisData.active) {
+          if (redisData.totalBlocks === redisData.currentBlock) {
+            return
           }
-        })
-        await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
+          agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+            to: payload.phoneNumber,
+            type: "interactive",
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            interactive: {
+              body: {
+                text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`
+              },
+              type: "button",
+              action: {
+                buttons: [
+                  {
+                    type: "reply",
+                    reply: {
+                      id: `continue_${payload.courseId}`,
+                      title: "Continue"
+                    }
+                  }
+                ]
+              }
+            }
+          })
+          await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
+        }
       }
     } else if (payload.slackChannel && payload.slackToken && !payload.phoneNumber) {
       const key = `${config.redisBaseKey}enrollments:slack:${payload.slackChannel}:${payload.courseId}`
       const dtf = await redisClient.get(key)
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
-        if (redisData.totalBlocks === redisData.currentBlock) {
-          return
-        }
-        agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
-          channel: payload.slackChannel,
-          accessToken: payload.slackToken || "",
-          message: {
-            blocks: [
-              {
-                type: MessageBlockType.SECTION,
-                text: {
-                  type: SlackTextMessageTypes.MARKDOWN,
-                  text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`
-                },
-              },
-              {
-                type: MessageBlockType.ACTIONS,
-                elements: [
-                  {
-                    "type": SlackActionType.BUTTON,
-                    "text": {
-                      "type": SlackTextMessageTypes.PLAINTEXT,
-                      "text": "Continue",
-                      "emoji": true
-                    },
-                    "value": `continue_${payload.courseId}`,
-                    style: MessageActionButtonStyle.PRIMARY
-                  }
-                ]
-              }
-            ]
+        if (redisData.active) {
+          if (redisData.totalBlocks === redisData.currentBlock) {
+            return
           }
-        })
-        await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
+          agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+            channel: payload.slackChannel,
+            accessToken: payload.slackToken || "",
+            message: {
+              blocks: [
+                {
+                  type: MessageBlockType.SECTION,
+                  text: {
+                    type: SlackTextMessageTypes.MARKDOWN,
+                    text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`
+                  },
+                },
+                {
+                  type: MessageBlockType.ACTIONS,
+                  elements: [
+                    {
+                      "type": SlackActionType.BUTTON,
+                      "text": {
+                        "type": SlackTextMessageTypes.PLAINTEXT,
+                        "text": "Continue",
+                        "emoji": true
+                      },
+                      "value": `continue_${payload.courseId}`,
+                      style: MessageActionButtonStyle.PRIMARY
+                    }
+                  ]
+                }
+              ]
+            }
+          })
+          await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
+        }
       }
     }
   }
