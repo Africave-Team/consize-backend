@@ -318,7 +318,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
             recipient_type: "individual",
             interactive: {
               body: {
-                text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`
+                text: `Hey ${student.firstName}! It looks like you have been idle for quite some time in ${course.title} 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`
               },
               type: "button",
               action: {
