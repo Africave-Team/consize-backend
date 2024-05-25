@@ -113,7 +113,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           }
         }
       }
-      let today = moment().format('YYYY-MM-DD')
+      let today = moment().add(24, 'hours').format('YYYY-MM-DD')
       switch (btnId) {
         case START:
         case RESUME_COURSE:
