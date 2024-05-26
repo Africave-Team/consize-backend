@@ -1349,7 +1349,7 @@ export const sendResumptionOptions = async (phoneNumber: string, key: string, da
               type: "reply",
               reply: {
                 id: AFTERNOON + `|${msgId}`,
-                title: "Afternnon"
+                title: "Afternoon"
               }
             },
             {
