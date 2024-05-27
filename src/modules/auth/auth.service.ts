@@ -49,7 +49,8 @@ export const refreshAuth = async (refreshToken: string): Promise<IUserWithTokens
     const tokens = await generateAuthTokens(user)
     return { user, tokens }
   } catch (error) {
-    throw new ApiError(httpStatus.UNAUTHORIZED, 'Please authenticate')
+    console.log(error)
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Please authenticate')
   }
 }
 
