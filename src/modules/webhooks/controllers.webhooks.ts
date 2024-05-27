@@ -259,11 +259,10 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             for (let enrollment of enrollments) {
               const key = `${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`
               let msgId = v4()
+              await redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId }))
               if (enrollment.id === courseId) {
-                console.log(enrollment)
                 await handleContinue(enrollment.currentBlock, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, enrollment)
               }
-              redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId, lastMessageId: msgId, currentBlock: enrollment.currentBlock + 1, nextBlock: enrollment.nextBlock + 1 }))
             }
           }
           break
