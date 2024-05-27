@@ -882,7 +882,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
     if (item) {
       const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data?.id}`
       if (data) {
-        let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: data.currentBlock + 1, nextBlock: data.nextBlock + 1 }
+        let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: nextIndex, nextBlock: nextIndex + 1 }
         let currentItem = flowData[data.currentBlock]
         if (currentItem && (currentItem.type === CourseFlowMessageType.BLOCK || currentItem.type === CourseFlowMessageType.BLOCKWITHQUIZ)) {
           // calculate the elapsed time and update stats service
