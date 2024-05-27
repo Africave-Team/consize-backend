@@ -413,7 +413,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
             recipient_type: "individual",
             interactive: {
               body: {
-                text: `Hey ${student.firstName}! It looks like you have been inactive in the course 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to move continue the course.`
+                text: `Hey ${student.firstName}! It looks like you have been inactive in the course 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to continue the course.`
               },
               type: "button",
               action: {
@@ -450,7 +450,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
                   type: MessageBlockType.SECTION,
                   text: {
                     type: SlackTextMessageTypes.MARKDOWN,
-                    text: `Hey ${student.firstName}! It looks like you have been inactive in the course 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to move continue the course.`
+                    text: `Hey ${student.firstName}! It looks like you have been inactive in the course 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to continue the course.`
                   },
                 },
                 {
