@@ -1,6 +1,6 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
-import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE, GENERATE_COURSE_TRENDS, INACTIVITY_REMINDER, REMIND_ME, RESUME_TOMORROW } from '../MessageTypes'
+import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE, GENERATE_COURSE_TRENDS, HANDLE_SUBSCRIPTION_GRACE_PERIOD_TERMINATION, HANDLE_SUBSCRIPTION_TERMINATION, INACTIVITY_REMINDER, REMIND_ME, RESUME_TOMORROW } from '../MessageTypes'
 import { generateCurrentCourseTrends, handleStudentSlack, handleStudentWhatsapp, initiateDailyRoutine } from '../../courses/service.courses'
 import { CourseEnrollment, DailyReminderNotificationPayload } from '../../webhooks/interfaces.webhooks'
 import config from '../../../config/config'
@@ -8,6 +8,7 @@ import { handleRemindMeTrigger, sendInactivityMessage, sendResumptionMessage } f
 import { initiateCourseForCohort, initiateCourseForCohortForSingleStudent } from '../../cohorts/service.cohorts'
 import { sendResumptionMessageSlack } from '../../slack/slack.services'
 import { Distribution } from '../../courses/interfaces.courses'
+import { handleTerminateSubscription, handleTerminateSubscriptionGracePeriod } from '../../subscriptions/subscriptions.services'
 
 export const handleCourseTrends: Processor<{ courseId: string, teamId: string }> = async (job: Job<{ courseId: string, teamId: string }>) => {
   try {
@@ -106,6 +107,26 @@ const handleRemindMe: Processor<{}> = async () => {
   }
 }
 
+const handleSubTermination: Processor<{ subscriptionId: string }> = async (job: Job<{ subscriptionId: string }>) => {
+  try {
+    if (AppConfig.server !== "test") {
+      handleTerminateSubscription(job.attrs.data.subscriptionId)
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
+const handleSubGracePeriodTermination: Processor<{ subscriptionId: string }> = async (job: Job<{ subscriptionId: string }>) => {
+  try {
+    if (AppConfig.server !== "test") {
+      handleTerminateSubscriptionGracePeriod(job.attrs.data.subscriptionId)
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
 module.exports = (agenda: Agenda) => {
   agenda.define<{ courseId: string, teamId: string }>(GENERATE_COURSE_TRENDS, handleCourseTrends)
   agenda.define<any>(DAILY_ROUTINE, handleStartDailyRoutine)
@@ -115,4 +136,8 @@ module.exports = (agenda: Agenda) => {
   agenda.define<{ cohortId: string, studentId: string }>(COHORT_SCHEDULE_STUDENT, handleCohortScheduleStudent)
   agenda.define<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>(INACTIVITY_REMINDER, handleInactivityReminders)
   agenda.define<{ enrollment: CourseEnrollment, phoneNumber?: string, messageId: string, channelId?: string }>(RESUME_TOMORROW, handleContinueTomorrow)
+
+  // subscriptions
+  agenda.define<{ subscriptionId: string }>(HANDLE_SUBSCRIPTION_TERMINATION, handleSubTermination)
+  agenda.define<{ subscriptionId: string }>(HANDLE_SUBSCRIPTION_GRACE_PERIOD_TERMINATION, handleSubGracePeriodTermination)
 }
