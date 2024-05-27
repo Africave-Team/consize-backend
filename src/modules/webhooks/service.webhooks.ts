@@ -790,7 +790,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             if (data.lastActivity) {
               let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
               if (timeBetweenActivities > INACTIVITY_TIME) {
-                diffInSeconds = INACTIVITY_TIME * 60 * 1000
+                diffInSeconds = INACTIVITY_TIME * 60
               }
             }
             saveBlockDuration(data.team, data.student, diffInSeconds, currentItem.lesson, currentItem.block)
@@ -1057,7 +1057,7 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ph
         if (data.lastActivity) {
           let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
           if (timeBetweenActivities > INACTIVITY_TIME) {
-            diffInSeconds = INACTIVITY_TIME * 60 * 1000
+            diffInSeconds = INACTIVITY_TIME * 60
           }
         }
         saveBlockDuration(data.team, data.student, diffInSeconds, item.lesson, item.block)
@@ -1116,7 +1116,7 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
             if (data.lastActivity) {
               let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
               if (timeBetweenActivities > INACTIVITY_TIME) {
-                diffInSeconds = INACTIVITY_TIME * 60 * 1000
+                diffInSeconds = INACTIVITY_TIME * 60
               }
             }
             duration = diffInSeconds
@@ -1164,7 +1164,7 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
               if (data.lastActivity) {
                 let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
                 if (timeBetweenActivities > INACTIVITY_TIME) {
-                  diffInSeconds = INACTIVITY_TIME * 60 * 1000
+                  diffInSeconds = INACTIVITY_TIME * 60
                 }
               }
               duration = diffInSeconds
