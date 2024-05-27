@@ -93,38 +93,7 @@ export const sendCourseLeaderboardSlack = async (courseId: string, studentId: st
 }
 
 export const generateCourseLeaderboard = async (course: CourseInterface, student: StudentInterface, owner: TeamsInterface): Promise<string> => {
-  const dbRef = db.ref(COURSE_STATS).child(owner.id).child(course.id).child("students")
-  // get existing data
-  const flow = await redisClient.get(`${config.redisBaseKey}courses:${course.id}`)
-  let totalQuiz = 1
-  if (flow) {
-    const flowData: CourseFlowItem[] = JSON.parse(flow)
-    totalQuiz = flowData.filter(e => e.type === CourseFlowMessageType.QUIZ).length
-  }
-  const snapshot = await dbRef.once('value')
-  let data: { [id: string]: StudentCourseStats } | null = snapshot.val()
-  let rankings: BoardMember[] = []
-  if (data) {
-    rankings = Object.values(data).sort((a: StudentCourseStats, b: StudentCourseStats) => {
-      const first = a.scores ? a.scores.reduce((a, b) => a + b, 0) : 0
-      const second = b.scores ? b.scores.reduce((a, b) => a + b, 0) : 0
-      return ((second * 100) / totalQuiz) - ((first * 100) / totalQuiz)
-    }).map((std: StudentCourseStats, index: number) => {
-      let score = 0
-      if (std.scores) {
-        score = std.scores.reduce((a, b) => a + b, 0)
-        if (score > 0) {
-          score = (score * 100) / totalQuiz
-        }
-      }
-      return {
-        name: std.name,
-        isCurrentUser: student.id === std.studentId,
-        rank: index + 1,
-        score
-      }
-    })
-  }
+
   let launchConfig: { args: any[], executablePath?: string } = {
     args: ['--no-sandbox']
   }
@@ -134,14 +103,8 @@ export const generateCourseLeaderboard = async (course: CourseInterface, student
   const browser = await puppeteer.launch(launchConfig)
   const timestamp = new Date().getTime()
   const page = await browser.newPage()
-  let payload: GenerateLeaderboardPayload = {
-    studentName: `${student.firstName} ${student.otherNames}`,
-    courseName: course.title,
-    organizationName: owner.name,
-    leaderboard: rankings
-  }
-  const query = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
-  await page.goto(`${config.clientUrl}/templates/leaderboard?data=${query}`, { waitUntil: "networkidle0" })
+  const url = await generateCourseLeaderboardURL(course, student, owner)
+  await page.goto(url, { waitUntil: "networkidle0" })
   await page.setViewport({
     width: 1920, height: 1080, deviceScaleFactor: 2
   })
@@ -185,6 +148,58 @@ export const generateCourseLeaderboard = async (course: CourseInterface, student
     return await uploadFileToCloudStorage(imageBuffer, destination)
   }
   return ''
+}
+
+
+export const generateCourseLeaderboardURL = async (course: CourseInterface, student: StudentInterface, owner: TeamsInterface): Promise<string> => {
+  const dbRef = db.ref(COURSE_STATS).child(owner.id).child(course.id).child("students")
+  // get existing data
+  const flow = await redisClient.get(`${config.redisBaseKey}courses:${course.id}`)
+  let totalQuiz = 1
+  if (flow) {
+    const flowData: CourseFlowItem[] = JSON.parse(flow)
+    totalQuiz = flowData.filter(e => e.type === CourseFlowMessageType.QUIZ).length
+  }
+  const snapshot = await dbRef.once('value')
+  let data: { [id: string]: StudentCourseStats } | null = snapshot.val()
+  let rankings: BoardMember[] = [], finalRankings: BoardMember[] = []
+  if (data) {
+    rankings = Object.values(data).sort((a: StudentCourseStats, b: StudentCourseStats) => {
+      const first = a.scores ? a.scores.reduce((a, b) => a + b, 0) : 0
+      const second = b.scores ? b.scores.reduce((a, b) => a + b, 0) : 0
+      return ((second * 100) / totalQuiz) - ((first * 100) / totalQuiz)
+    }).map((std: StudentCourseStats, index: number) => {
+      let score = 0
+      if (std.scores) {
+        score = std.scores.reduce((a, b) => a + b, 0)
+        if (score > 0) {
+          score = (score * 100) / totalQuiz
+        }
+      }
+      return {
+        name: std.name,
+        isCurrentUser: student.id === std.studentId,
+        rank: index + 1,
+        score
+      }
+    })
+    let current = rankings.find(e => e.isCurrentUser)
+    finalRankings = rankings.slice(0, 10)
+    if (current) {
+      if (current.rank > 10) {
+        finalRankings.push(current)
+      }
+    }
+  }
+  let payload: GenerateLeaderboardPayload = {
+    studentName: `${student.firstName} ${student.otherNames}`,
+    courseName: course.title,
+    organizationName: owner.name,
+    leaderboard: finalRankings
+  }
+  const query = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
+
+  return `${config.clientUrl}/templates/leaderboard?data=${query}`
 }
 
 
