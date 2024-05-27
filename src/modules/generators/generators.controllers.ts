@@ -36,9 +36,27 @@ export const getLeaderboardURL = catchAsync(async (req: Request, res: Response) 
     const student = await studentService.findStudentById(studentId)
     let url = ''
     if (owner && student) {
-      url = await generatorService.generateCourseLeaderboard(course, student, owner)
+      url = await generatorService.generateCourseLeaderboardURL(course, student, owner)
     }
     return res.status(httpStatus.OK).send({ data: url, message: "Your leader has been created successfully" })
+  }
+  return res.status(404).send({ message: "Provide course id" })
+})
+
+export const getCertificateURL = catchAsync(async (req: Request, res: Response) => {
+  const { courseId, studentId } = req.params
+  if (courseId && studentId) {
+    const course = await courseService.fetchSingleCourse({ courseId })
+    if (!course) {
+      return res.status(404).send({ message: "Course not found" })
+    }
+    const owner = await teamService.fetchTeamById(course.owner)
+    const student = await studentService.findStudentById(studentId)
+    let url = ''
+    if (owner && student) {
+      url = await generatorService.generateCourseCertificateURL(course, student, owner)
+    }
+    return res.status(httpStatus.OK).send({ data: url, message: "Your certificate url has been created successfully" })
   }
   return res.status(404).send({ message: "Provide course id" })
 })
