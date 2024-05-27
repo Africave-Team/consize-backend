@@ -256,14 +256,15 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             const courseId = btnId.replace("continue_", "")
             // continue a course from the positions message
             const enrollments: CourseEnrollment[] = await fetchEnrollments(destination)
-            for (let enrollment of enrollments) {
+            await Promise.all(enrollments.map(async (enrollment) => {
               const key = `${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`
               let msgId = v4()
               await redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId }))
               if (enrollment.id === courseId) {
-                await handleContinue(enrollment.currentBlock - 1, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, enrollment)
+                await handleContinue(enrollment.currentBlock, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, enrollment)
               }
-            }
+
+            }))
           }
           break
       }
