@@ -1105,7 +1105,8 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           default:
             break
         }
-        redisClient.set(key, JSON.stringify({ ...updatedData }))
+        console.log(updatedData)
+        await redisClient.set(key, JSON.stringify({ ...updatedData }))
       }
     }
   }
