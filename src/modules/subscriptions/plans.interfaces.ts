@@ -7,6 +7,7 @@ export enum PlanPeriods {
 }
 
 export interface SubscriptionPlan {
+  disabled: boolean
   name: string
   description: string
   price: number

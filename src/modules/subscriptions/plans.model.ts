@@ -21,6 +21,7 @@ const GraceSchema = new Schema({
 
 const planSchema = new Schema<SubscriptionPlanInterface, SubscriptionPlanInterfaceModel>({
   _id: { type: String, default: () => v4() },
+  disabled: { type: Boolean, default: false },
   name: { type: String, required: true },
   description: { type: String, required: true },
   price: { type: Number, required: true },
