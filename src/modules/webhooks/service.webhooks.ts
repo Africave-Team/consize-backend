@@ -463,7 +463,7 @@ export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string
       buttons.push({
         type: "reply",
         reply: {
-          id: CONTINUE + `|${messageId}`,
+          id: CONTINUE,
           title: "Continue"
         }
       })
@@ -816,7 +816,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                     {
                       type: "reply",
                       reply: {
-                        id: CONTINUE + `|${messageId}`,
+                        id: CONTINUE,
                         title: "Continue"
                       }
                     }
@@ -961,7 +961,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                     {
                       type: "reply",
                       reply: {
-                        id: CONTINUE + `|${messageId}`,
+                        id: CONTINUE,
                         title: "Continue"
                       }
                     }
@@ -1032,7 +1032,7 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ph
             {
               type: "reply",
               reply: {
-                id: CONTINUE + `|${messageId}`,
+                id: CONTINUE,
                 title: "Continue"
               }
             }
@@ -1092,7 +1092,7 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
             {
               type: "reply",
               reply: {
-                id: CONTINUE + `|${messageId}`,
+                id: CONTINUE,
                 title: "Continue"
               }
             }

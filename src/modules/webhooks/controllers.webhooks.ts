@@ -171,29 +171,32 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             // })
           }
           for (let enrollment of enrollments) {
-            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              to: destination,
-              type: "interactive",
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              interactive: {
-                body: {
-                  text: `*${enrollment.title}*\n\n${enrollment.description}\n\n*Progress*: ${((enrollment.nextBlock / enrollment.totalBlocks) * 100).toFixed(0)}%`
-                },
-                type: "button",
-                action: {
-                  buttons: [
-                    {
-                      type: "reply",
-                      reply: {
-                        id: `continue_${enrollment.id}`,
-                        title: "Continue"
+            let progress = (enrollment.nextBlock / enrollment.totalBlocks) * 100
+            if (progress < 100) {
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: destination,
+                type: "interactive",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                interactive: {
+                  body: {
+                    text: `*${enrollment.title}*\n\n${enrollment.description}\n\n*Progress*: ${progress.toFixed(0)}%`
+                  },
+                  type: "button",
+                  action: {
+                    buttons: [
+                      {
+                        type: "reply",
+                        reply: {
+                          id: `continue_${enrollment.id}`,
+                          title: "Continue"
+                        }
                       }
-                    }
-                  ]
+                    ]
+                  }
                 }
-              }
-            })
+              })
+            }
           }
           break
         case CERTIFICATES:
