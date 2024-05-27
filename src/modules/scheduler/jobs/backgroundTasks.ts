@@ -1,10 +1,10 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
-import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE, GENERATE_COURSE_TRENDS, INACTIVITY_REMINDER, REMIND_ME, RESUME_TOMORROW } from '../MessageTypes'
+import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE, GENERATE_COURSE_TRENDS, INACTIVITY_REMINDER, INACTIVITY_REMINDER_SHORT, REMIND_ME, RESUME_TOMORROW } from '../MessageTypes'
 import { generateCurrentCourseTrends, handleStudentSlack, handleStudentWhatsapp, initiateDailyRoutine } from '../../courses/service.courses'
 import { CourseEnrollment, DailyReminderNotificationPayload } from '../../webhooks/interfaces.webhooks'
 import config from '../../../config/config'
-import { handleRemindMeTrigger, sendInactivityMessage, sendResumptionMessage } from '../../webhooks/service.webhooks'
+import { handleRemindMeTrigger, sendInactivityMessage, sendResumptionMessage, sendShortInactivityMessage } from '../../webhooks/service.webhooks'
 import { initiateCourseForCohort, initiateCourseForCohortForSingleStudent } from '../../cohorts/service.cohorts'
 import { sendResumptionMessageSlack } from '../../slack/slack.services'
 import { Distribution } from '../../courses/interfaces.courses'
@@ -85,6 +85,17 @@ const handleInactivityReminders: Processor<{ studentId: string, courseId: string
   }
 }
 
+const handleShortInactivityReminders: Processor<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }> = async (job: Job<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>) => {
+  try {
+    if (AppConfig.server !== "test") {
+      const data = job.attrs.data
+      await sendShortInactivityMessage(data)
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
 const handleCohortScheduleStudent: Processor<{ cohortId: string, studentId: string }> = async (job: Job<{ cohortId: string, studentId: string }>) => {
   try {
     if (AppConfig.server !== "test") {
@@ -114,5 +125,6 @@ module.exports = (agenda: Agenda) => {
   agenda.define(REMIND_ME, handleRemindMe)
   agenda.define<{ cohortId: string, studentId: string }>(COHORT_SCHEDULE_STUDENT, handleCohortScheduleStudent)
   agenda.define<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>(INACTIVITY_REMINDER, handleInactivityReminders)
+  agenda.define<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>(INACTIVITY_REMINDER_SHORT, handleShortInactivityReminders)
   agenda.define<{ enrollment: CourseEnrollment, phoneNumber?: string, messageId: string, channelId?: string }>(RESUME_TOMORROW, handleContinueTomorrow)
 }

@@ -16,7 +16,7 @@ import Lessons from '../courses/model.lessons'
 import Blocks from '../courses/model.blocks'
 import Quizzes from '../courses/model.quizzes'
 import { agenda } from '../scheduler'
-import { DAILY_ROUTINE, INACTIVITY_REMINDER, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { DAILY_ROUTINE, INACTIVITY_REMINDER, INACTIVITY_REMINDER_SHORT, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import { logger } from '../logger'
 import moment from 'moment-timezone'
@@ -384,6 +384,101 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
 
 }
 
+export const sendShortInactivityMessage = async (payload: { studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }) => {
+  const jobs = await agenda.jobs({
+    name: RESUME_TOMORROW,
+    'data.enrollment.student': payload.studentId,
+    nextRunAt: { $ne: null }
+  })
+  if (jobs.length > 0) {
+    return
+  }
+  const course = await Courses.findById(payload.courseId)
+  const student = await Students.findById(payload.studentId)
+  if (course && student) {
+    const msgId = v4()
+    if (payload.phoneNumber && !payload.slackChannel) {
+      const key = `${config.redisBaseKey}enrollments:${payload.phoneNumber}:${payload.courseId}`
+      const dtf = await redisClient.get(key)
+      if (dtf) {
+        let redisData: CourseEnrollment = JSON.parse(dtf)
+        if (redisData.active) {
+          if (redisData.totalBlocks === redisData.currentBlock) {
+            return
+          }
+          agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+            to: payload.phoneNumber,
+            type: "interactive",
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            interactive: {
+              body: {
+                text: `Hey ${student.firstName}! It looks like you have been inactive in the course 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to move continue the course.`
+              },
+              type: "button",
+              action: {
+                buttons: [
+                  {
+                    type: "reply",
+                    reply: {
+                      id: `continue_${payload.courseId}`,
+                      title: "Continue"
+                    }
+                  }
+                ]
+              }
+            }
+          })
+          await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
+        }
+      }
+    } else if (payload.slackChannel && payload.slackToken && !payload.phoneNumber) {
+      const key = `${config.redisBaseKey}enrollments:slack:${payload.slackChannel}:${payload.courseId}`
+      const dtf = await redisClient.get(key)
+      if (dtf) {
+        let redisData: CourseEnrollment = JSON.parse(dtf)
+        if (redisData.active) {
+          if (redisData.totalBlocks === redisData.currentBlock) {
+            return
+          }
+          agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+            channel: payload.slackChannel,
+            accessToken: payload.slackToken || "",
+            message: {
+              blocks: [
+                {
+                  type: MessageBlockType.SECTION,
+                  text: {
+                    type: SlackTextMessageTypes.MARKDOWN,
+                    text: `Hey ${student.firstName}! It looks like you have been inactive in the course 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to move continue the course.`
+                  },
+                },
+                {
+                  type: MessageBlockType.ACTIONS,
+                  elements: [
+                    {
+                      "type": SlackActionType.BUTTON,
+                      "text": {
+                        "type": SlackTextMessageTypes.PLAINTEXT,
+                        "text": "Continue",
+                        "emoji": true
+                      },
+                      "value": `continue_${payload.courseId}`,
+                      style: MessageActionButtonStyle.PRIMARY
+                    }
+                  ]
+                }
+              ]
+            }
+          })
+          await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
+        }
+      }
+    }
+  }
+
+}
+
 export const scheduleInactivityMessage = async (enrollment: CourseEnrollment, phoneNumber?: string, slackChannel?: string) => {
   if (enrollment.inactivityPeriod) {
     const jobs = await agenda.jobs({ name: INACTIVITY_REMINDER, 'data.courseId': enrollment.id, 'data.studentId': enrollment.student })
@@ -393,6 +488,12 @@ export const scheduleInactivityMessage = async (enrollment: CourseEnrollment, ph
     }
     agenda.schedule(`in ${enrollment.inactivityPeriod.value} ${enrollment.inactivityPeriod.type}`, INACTIVITY_REMINDER, { studentId: enrollment.student, courseId: enrollment.id, slackToken: enrollment.slackToken, slackChannel, phoneNumber })
   }
+  const jobs = await agenda.jobs({ name: INACTIVITY_REMINDER_SHORT, 'data.courseId': enrollment.id, 'data.studentId': enrollment.student })
+  // Check if the job exists
+  for (let job of jobs) {
+    await job.remove()
+  }
+  agenda.schedule(`in 3 minutes`, INACTIVITY_REMINDER_SHORT, { studentId: enrollment.student, courseId: enrollment.id, slackToken: enrollment.slackToken, slackChannel, phoneNumber })
 }
 
 export const scheduleDailyRoutine = async () => {
