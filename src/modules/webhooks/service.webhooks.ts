@@ -1325,8 +1325,10 @@ export const handleSurveyMulti = async (answer: number, data: CourseEnrollment, 
             responseType: ResponseType.MULTI_CHOICE
           })
         }
+        console.log(courseFlowData.length, data.currentBlock, data.nextBlock, data.totalBlocks)
         // check if the next block is a survey
         let nextBlock = courseFlowData[data.currentBlock]
+        console.log(nextBlock)
         if (nextBlock) {
           if (nextBlock.surveyId) {
             // if next block is survey, check if it is multi-choice survey or freeform
