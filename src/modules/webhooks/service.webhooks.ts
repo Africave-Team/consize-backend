@@ -285,7 +285,7 @@ export const sendMessage = async function (message: Message) {
     console.info("done sending whatsapp message", (data as AxiosResponse).data)
     // schedule inactivity message
   }).catch((error) => {
-    console.error((error as AxiosError).response)
+    console.error((error as AxiosError).response?.data)
   })
 }
 
