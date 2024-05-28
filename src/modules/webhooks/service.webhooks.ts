@@ -308,7 +308,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
         if (redisData.active) {
-          if (redisData.totalBlocks === redisData.currentBlock) {
+          if (redisData.totalBlocks >= redisData.currentBlock) {
             return
           }
           agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -343,7 +343,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
         if (redisData.active) {
-          if (redisData.totalBlocks === redisData.currentBlock) {
+          if (redisData.totalBlocks >= redisData.currentBlock) {
             return
           }
           agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
@@ -403,7 +403,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
         if (redisData.active) {
-          if (redisData.totalBlocks === redisData.currentBlock) {
+          if (redisData.totalBlocks >= redisData.currentBlock) {
             return
           }
           agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -438,7 +438,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
         if (redisData.active) {
-          if (redisData.totalBlocks === redisData.currentBlock) {
+          if (redisData.totalBlocks >= redisData.currentBlock) {
             return
           }
           agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
