@@ -56,7 +56,15 @@ export const sendCourseLeaderboard = async (courseId: string, studentId: string,
           }
         })
 
-        let buttons: ReplyButton[] = []
+        let buttons: ReplyButton[] = [
+          {
+            type: "reply",
+            reply: {
+              id: "MAKE_IT_WORK",
+              title: "Let's continue"
+            }
+          }
+        ]
         let payload: Message = {
           to: student.phoneNumber,
           type: "interactive",
