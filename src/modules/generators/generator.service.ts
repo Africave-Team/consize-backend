@@ -2,7 +2,7 @@ import puppeteer from 'puppeteer'
 import { uploadFileToCloudStorage } from '../upload/service.upload'
 import { BoardMember, GenerateCertificatePayload, GenerateLeaderboardPayload } from './generator.interfaces'
 import { StudentCourseStats, StudentInterface } from '../students/interface.students'
-import { CourseInterface } from '../courses/interfaces.courses'
+import { CourseInterface, MediaType } from '../courses/interfaces.courses'
 import { TeamsInterface } from '../teams/interfaces.teams'
 import db from "../rtdb"
 import { existsSync, mkdirSync, unlinkSync } from "fs"
@@ -48,11 +48,23 @@ export const sendCourseLeaderboard = async (courseId: string, studentId: string,
         // send media message with continue button
         agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
           to: student.phoneNumber,
-          type: "image",
+          type: "interactive",
           messaging_product: "whatsapp",
           recipient_type: "individual",
-          image: {
-            link: leaderboardUrl
+          interactive: {
+            header: {
+              type: MediaType.IMAGE,
+              image: {
+                link: leaderboardUrl
+              }
+            },
+            body: {
+              text: "Here is your leaderboard."
+            },
+            type: "button",
+            action: {
+              buttons: []
+            }
           }
         })
       }
@@ -246,11 +258,23 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
         completeCourse(course.owner, studentId, courseId, url)
         agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
           to: student.phoneNumber,
-          type: "image",
+          type: "interactive",
           messaging_product: "whatsapp",
           recipient_type: "individual",
-          image: {
-            link: url
+          interactive: {
+            header: {
+              type: MediaType.IMAGE,
+              image: {
+                link: url
+              }
+            },
+            body: {
+              text: "Here is your certificate."
+            },
+            type: "button",
+            action: {
+              buttons: []
+            }
           }
         })
       }

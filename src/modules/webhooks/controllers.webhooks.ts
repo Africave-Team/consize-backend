@@ -90,7 +90,9 @@ export const whatsappWebhookSubscriber = catchAsync(async (req: Request, res: Re
 
 export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res: Response) => {
   const reqBody = req.body.entry[0].changes[0]
-  console.log(JSON.stringify(reqBody.value.statuses))
+  if (reqBody.value.statuses[0].status) {
+    console.log(JSON.stringify(reqBody.value.statuses[0].errors), reqBody.value.statuses[0].recipient_id)
+  }
   if (reqBody.field !== "messages") {
     return res.status(400)
   }
