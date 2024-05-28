@@ -1316,7 +1316,7 @@ export const handleSurveyMulti = async (answer: number, data: CourseEnrollment, 
       const item = courseFlowData[data.currentBlock]
       if (item && item.surveyId) {
         // save the survey response
-        if (item.surveyQuestion) {
+        if (item.surveyQuestion && answer && item.surveyQuestion?.choices[answer]) {
           await SurveyResponse.create({
             survey: item.surveyId,
             team: data.team,
@@ -1327,10 +1327,8 @@ export const handleSurveyMulti = async (answer: number, data: CourseEnrollment, 
             responseType: ResponseType.MULTI_CHOICE
           })
         }
-        console.log(courseFlowData.length, data.currentBlock, data.nextBlock, data.totalBlocks)
         // check if the next block is a survey
-        let nextBlock = courseFlowData[data.currentBlock]
-        console.log(nextBlock)
+        let nextBlock = courseFlowData[data.nextBlock]
         if (nextBlock) {
           if (nextBlock.surveyId) {
             // if next block is survey, check if it is multi-choice survey or freeform
@@ -1345,8 +1343,8 @@ export const handleSurveyMulti = async (answer: number, data: CourseEnrollment, 
             }
             // update redis and rtdb
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
-            let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: data.currentBlock + 1, nextBlock: data.nextBlock + 1 }
-            redisClient.set(key, JSON.stringify({ ...updatedData }))
+            let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: data.nextBlock, nextBlock: data.nextBlock + 1 }
+            await redisClient.set(key, JSON.stringify({ ...updatedData }))
           } else if (nextBlock.type === CourseFlowMessageType.END_SURVEY) {
             handleContinue(data.currentBlock, courseKey, phoneNumber, v4(), data)
           }
@@ -1381,7 +1379,7 @@ export const handleSurveyFreeform = async (answer: string, data: CourseEnrollmen
         })
       }
       // check if the next block is a survey
-      let nextBlock = courseFlowData[data.currentBlock]
+      let nextBlock = courseFlowData[data.nextBlock]
       if (nextBlock) {
         if (nextBlock.surveyId) {
           // if next block is survey, check if it is multi-choice survey or freeform
@@ -1394,8 +1392,8 @@ export const handleSurveyFreeform = async (answer: string, data: CourseEnrollmen
           }
           // update redis and rtdb
           saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
-          let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: data.currentBlock + 1, nextBlock: data.nextBlock + 1 }
-          redisClient.set(key, JSON.stringify({ ...updatedData }))
+          let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: data.nextBlock, nextBlock: data.nextBlock + 1 }
+          await redisClient.set(key, JSON.stringify({ ...updatedData }))
         } else if (nextBlock.type === CourseFlowMessageType.END_SURVEY) {
           handleContinue(data.currentBlock, courseKey, phoneNumber, v4(), data)
         }
