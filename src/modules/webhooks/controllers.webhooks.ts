@@ -208,10 +208,12 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         case SURVEY_A:
         case SURVEY_B:
         case SURVEY_C:
+          console.log("Here survey")
           let rsp = 0
           if (btnId === SURVEY_B) rsp = 1
           if (btnId === SURVEY_C) rsp = 2
           if (enrollment) {
+            console.log("Here survey", enrollment)
             const msgId = v4()
             await handleSurveyMulti(rsp, enrollment, destination, msgId)
           }
