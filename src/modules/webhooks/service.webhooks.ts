@@ -309,7 +309,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
         if (redisData.active) {
-          if (redisData.totalBlocks <= redisData.currentBlock) {
+          if (redisData.totalBlocks <= redisData.nextBlock) {
             return
           }
           agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -344,7 +344,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
         if (redisData.active) {
-          if (redisData.totalBlocks <= redisData.currentBlock) {
+          if (redisData.totalBlocks <= redisData.nextBlock) {
             return
           }
           agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
@@ -404,7 +404,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
         if (redisData.active) {
-          if (redisData.totalBlocks <= redisData.currentBlock) {
+          if (redisData.totalBlocks <= redisData.nextBlock) {
             return
           }
           console.log("sending a message")
@@ -440,7 +440,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
         if (redisData.active) {
-          if (redisData.totalBlocks <= redisData.currentBlock) {
+          if (redisData.totalBlocks <= redisData.nextBlock) {
             return
           }
           agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
@@ -876,10 +876,6 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
   const flow = await redisClient.get(courseKey)
   if (flow) {
     const flowData: CourseFlowItem[] = JSON.parse(flow)
-    const currentItem = flowData[nextIndex - 1]
-    if (currentItem && currentItem.type === CourseFlowMessageType.BLOCK) {
-      // calculate the elapsed time and update stats service
-    }
     let item = flowData[nextIndex]
     const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data?.id}`
     if (item) {
