@@ -411,6 +411,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
             console.log(redisData.totalBlocks, redisData.currentBlock)
           }
           if (redisData.totalBlocks >= redisData.currentBlock) {
+            console.log("wont be sending a message", redisData.totalBlocks, redisData.currentBlock, redisData.totalBlocks >= redisData.currentBlock, redisData.totalBlocks > redisData.currentBlock)
             return
           }
           console.log("sending a message")
