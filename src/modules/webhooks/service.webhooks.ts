@@ -391,9 +391,6 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
     'data.enrollment.student': payload.studentId,
     nextRunAt: { $ne: null }
   })
-  if (payload.studentId === "66e82162-b39f-4b3d-b71f-4ebac76ba81f") {
-    console.log(jobs)
-  }
   if (jobs.length > 0) {
     return
   }
@@ -407,11 +404,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
         if (redisData.active) {
-          if (payload.studentId === "66e82162-b39f-4b3d-b71f-4ebac76ba81f") {
-            console.log(redisData.totalBlocks, redisData.currentBlock)
-          }
-          if (redisData.totalBlocks >= redisData.currentBlock) {
-            console.log("wont be sending a message", redisData.totalBlocks, redisData.currentBlock, redisData.totalBlocks >= redisData.currentBlock, redisData.totalBlocks > redisData.currentBlock)
+          if (redisData.totalBlocks <= redisData.currentBlock) {
             return
           }
           console.log("sending a message")
@@ -447,7 +440,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
         if (redisData.active) {
-          if (redisData.totalBlocks >= redisData.currentBlock) {
+          if (redisData.totalBlocks <= redisData.currentBlock) {
             return
           }
           agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
