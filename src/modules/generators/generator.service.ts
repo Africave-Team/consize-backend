@@ -2,7 +2,7 @@ import puppeteer from 'puppeteer'
 import { uploadFileToCloudStorage } from '../upload/service.upload'
 import { BoardMember, GenerateCertificatePayload, GenerateLeaderboardPayload } from './generator.interfaces'
 import { StudentCourseStats, StudentInterface } from '../students/interface.students'
-import { CourseInterface, MediaType } from '../courses/interfaces.courses'
+import { CourseInterface } from '../courses/interfaces.courses'
 import { TeamsInterface } from '../teams/interfaces.teams'
 import db from "../rtdb"
 import { existsSync, mkdirSync, unlinkSync } from "fs"
@@ -16,7 +16,7 @@ import serviceAccount from '../../gcp-details.json'
 import { agenda } from '../scheduler'
 import config from '../../config/config'
 import { CourseFlowItem, CourseFlowMessageType, handleContinue } from '../webhooks/service.webhooks'
-import { CourseEnrollment, Message, ReplyButton } from '../webhooks/interfaces.webhooks'
+import { CourseEnrollment, Message } from '../webhooks/interfaces.webhooks'
 import { SEND_SLACK_MESSAGE, SEND_SLACK_RESPONSE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { fetchSignatures } from '../signatures/service.signatures'
 import { completeCourse } from '../students/students.service'
@@ -56,45 +56,45 @@ export const sendCourseLeaderboard = async (courseId: string, studentId: string,
           }
         })
 
-        let buttons: ReplyButton[] = [
-          {
-            type: "reply",
-            reply: {
-              id: "MAKE_IT_WORK",
-              title: "Let's continue"
-            }
-          }
-        ]
-        let payload: Message = {
-          to: student.phoneNumber,
-          type: "interactive",
-          messaging_product: "whatsapp",
-          recipient_type: "individual",
-          interactive: {
-            body: {
-              text: "Here is the current leaderboard. It shows your current ranking along with the top 10 students of this course"
-            },
-            type: "button",
-            action: {
-              buttons
-            }
-          }
-        }
+        // let buttons: ReplyButton[] = [
+        //   {
+        //     type: "reply",
+        //     reply: {
+        //       id: "MAKE_IT_WORK",
+        //       title: "Let's continue"
+        //     }
+        //   }
+        // ]
+        // let payload: Message = {
+        //   to: student.phoneNumber,
+        //   type: "interactive",
+        //   messaging_product: "whatsapp",
+        //   recipient_type: "individual",
+        //   interactive: {
+        //     body: {
+        //       text: "Here is the current leaderboard. It shows your current ranking along with the top 10 students of this course"
+        //     },
+        //     type: "button",
+        //     action: {
+        //       buttons
+        //     }
+        //   }
+        // }
 
-        if (payload.interactive) {
-          payload.interactive['header'] = {
-            type: MediaType.IMAGE
-          }
-          if (payload.interactive.header) {
-            payload.interactive.header.image = {
-              link: leaderboardUrl
-            }
-          }
-        }
+        // if (payload.interactive) {
+        //   payload.interactive['header'] = {
+        //     type: MediaType.IMAGE
+        //   }
+        //   if (payload.interactive.header) {
+        //     payload.interactive.header.image = {
+        //       link: leaderboardUrl
+        //     }
+        //   }
+        // }
 
-        // update the blockStartTime
+        // // update the blockStartTime
 
-        agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
+        // agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
       }
     }
     let msgId = v4()
