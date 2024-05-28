@@ -390,6 +390,9 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
     'data.enrollment.student': payload.studentId,
     nextRunAt: { $ne: null }
   })
+  if (payload.studentId === "53dbb639-d71f-464c-8496-e6f804b483c9") {
+    console.log(jobs)
+  }
   if (jobs.length > 0) {
     return
   }
@@ -403,6 +406,9 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
         if (redisData.active) {
+          if (payload.studentId === "53dbb639-d71f-464c-8496-e6f804b483c9") {
+            console.log(redisData.totalBlocks, redisData.currentBlock)
+          }
           if (redisData.totalBlocks >= redisData.currentBlock) {
             return
           }
