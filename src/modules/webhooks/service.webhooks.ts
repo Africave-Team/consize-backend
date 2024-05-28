@@ -1366,7 +1366,7 @@ export const handleSurveyFreeform = async (answer: string, data: CourseEnrollmen
   const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data?.id}`
   if (courseFlow) {
     const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
-    const item = courseFlowData[data.currentBlock - 1]
+    const item = courseFlowData[data.currentBlock]
     if (item && item.surveyId) {
       // save the survey response
       if (item.surveyQuestion) {
