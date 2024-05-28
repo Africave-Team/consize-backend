@@ -276,17 +276,18 @@ export const generateCourseFlow = async function (courseId: string) {
 }
 
 export const sendMessage = async function (message: Message) {
-  axios.post(`https://graph.facebook.com/v19.0/${config.whatsapp.phoneNumberId}/messages`, message, {
-    headers: {
-      "Authorization": `Bearer ${config.whatsapp.token}`,
-      "Content-Type": "application/json"
-    }
-  }).then((data: any) => {
-    console.info("done sending whatsapp message", (data as AxiosResponse).data)
-    // schedule inactivity message
-  }).catch((error) => {
+  try {
+    console.log("starting to send a message")
+    const result = await axios.post(`https://graph.facebook.com/v19.0/${config.whatsapp.phoneNumberId}/messages`, message, {
+      headers: {
+        "Authorization": `Bearer ${config.whatsapp.token}`,
+        "Content-Type": "application/json"
+      }
+    })
+    console.info("done sending whatsapp message", (result as AxiosResponse).data)
+  } catch (error) {
     console.error((error as AxiosError).response?.data)
-  })
+  }
 }
 
 export const sendInactivityMessage = async (payload: { studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }) => {
@@ -412,6 +413,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
           if (redisData.totalBlocks >= redisData.currentBlock) {
             return
           }
+          console.log("sending a message")
           agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
             to: payload.phoneNumber,
             type: "interactive",
