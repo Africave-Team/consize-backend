@@ -309,7 +309,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
         if (redisData.active) {
-          if (redisData.totalBlocks >= redisData.currentBlock) {
+          if (redisData.totalBlocks <= redisData.currentBlock) {
             return
           }
           agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -344,7 +344,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
         if (redisData.active) {
-          if (redisData.totalBlocks >= redisData.currentBlock) {
+          if (redisData.totalBlocks <= redisData.currentBlock) {
             return
           }
           agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
@@ -1313,7 +1313,7 @@ export const handleSurveyMulti = async (answer: number, data: CourseEnrollment, 
     const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data?.id}`
     if (courseFlow) {
       const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
-      const item = courseFlowData[data.currentBlock - 1]
+      const item = courseFlowData[data.currentBlock]
       if (item && item.surveyId) {
         // save the survey response
         if (item.surveyQuestion) {
