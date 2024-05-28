@@ -406,7 +406,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
       if (dtf) {
         let redisData: CourseEnrollment = JSON.parse(dtf)
         if (redisData.active) {
-          if (payload.studentId === "53dbb639-d71f-464c-8496-e6f804b483c9") {
+          if (payload.studentId === "66e82162-b39f-4b3d-b71f-4ebac76ba81f") {
             console.log(redisData.totalBlocks, redisData.currentBlock)
           }
           if (redisData.totalBlocks >= redisData.currentBlock) {
