@@ -881,8 +881,8 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
       // calculate the elapsed time and update stats service
     }
     let item = flowData[nextIndex]
+    const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data?.id}`
     if (item) {
-      const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data?.id}`
       if (data) {
         let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: nextIndex, nextBlock: nextIndex + 1 }
         let currentItem = flowData[data.currentBlock]
@@ -1110,6 +1110,11 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
         console.log(updatedData)
         await redisClient.set(key, JSON.stringify({ ...updatedData }))
       }
+    } else {
+      agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
+        ...data
+      })
+      await redisClient.set(key, JSON.stringify({ ...data, currentBlock: data.totalBlocks, nextBlock: data.totalBlocks }))
     }
   }
 }
@@ -1346,8 +1351,10 @@ export const handleSurveyMulti = async (answer: number, data: CourseEnrollment, 
             let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: data.nextBlock, nextBlock: data.nextBlock + 1 }
             await redisClient.set(key, JSON.stringify({ ...updatedData }))
           } else if (nextBlock.type === CourseFlowMessageType.END_SURVEY) {
-            handleContinue(data.currentBlock, courseKey, phoneNumber, v4(), data)
+            handleContinue(data.currentBlock + 1, courseKey, phoneNumber, v4(), data)
           }
+        } else {
+          handleContinue(data.currentBlock + 1, courseKey, phoneNumber, v4(), data)
         }
       }
     }
@@ -1395,8 +1402,10 @@ export const handleSurveyFreeform = async (answer: string, data: CourseEnrollmen
           let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: data.nextBlock, nextBlock: data.nextBlock + 1 }
           await redisClient.set(key, JSON.stringify({ ...updatedData }))
         } else if (nextBlock.type === CourseFlowMessageType.END_SURVEY) {
-          handleContinue(data.currentBlock, courseKey, phoneNumber, v4(), data)
+          handleContinue(data.currentBlock + 1, courseKey, phoneNumber, v4(), data)
         }
+      } else {
+        handleContinue(data.currentBlock + 1, courseKey, phoneNumber, v4(), data)
       }
     }
   }
