@@ -1305,46 +1305,52 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
 }
 
 export const handleSurveyMulti = async (answer: number, data: CourseEnrollment, phoneNumber: string, messageId: string): Promise<void> => {
-  const courseKey = `${config.redisBaseKey}courses:${data.id}`
-  const courseFlow = await redisClient.get(courseKey)
-  const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data?.id}`
-  if (courseFlow) {
-    const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
-    const item = courseFlowData[data.currentBlock - 1]
-    if (item && item.surveyId) {
-      // save the survey response
-      if (item.surveyQuestion) {
-        await SurveyResponse.create({
-          survey: item.surveyId,
-          team: data.team,
-          surveyQuestion: item.surveyQuestion.id,
-          course: data.id,
-          student: data.student,
-          response: item.surveyQuestion.choices[answer],
-          responseType: ResponseType.MULTI_CHOICE
-        })
-      }
-      // check if the next block is a survey
-      let nextBlock = courseFlowData[data.currentBlock]
-      if (nextBlock) {
-        if (nextBlock.surveyId) {
-          // if next block is survey, check if it is multi-choice survey or freeform
-          if (nextBlock.type === CourseFlowMessageType.SURVEY_MULTI_CHOICE) {
-            // if it is multi, send multi survey
-            sendMultiSurvey(nextBlock, phoneNumber, messageId)
-          } else {
-            // else send freeform
-            sendFreeformSurvey(nextBlock, phoneNumber, messageId)
+  try {
+    const courseKey = `${config.redisBaseKey}courses:${data.id}`
+    const courseFlow = await redisClient.get(courseKey)
+    const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data?.id}`
+    if (courseFlow) {
+      const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
+      const item = courseFlowData[data.currentBlock - 1]
+      if (item && item.surveyId) {
+        // save the survey response
+        if (item.surveyQuestion) {
+          await SurveyResponse.create({
+            survey: item.surveyId,
+            team: data.team,
+            surveyQuestion: item.surveyQuestion.id,
+            course: data.id,
+            student: data.student,
+            response: item.surveyQuestion.choices[answer],
+            responseType: ResponseType.MULTI_CHOICE
+          })
+        }
+        // check if the next block is a survey
+        let nextBlock = courseFlowData[data.currentBlock]
+        if (nextBlock) {
+          if (nextBlock.surveyId) {
+            // if next block is survey, check if it is multi-choice survey or freeform
+            if (nextBlock.type === CourseFlowMessageType.SURVEY_MULTI_CHOICE) {
+              // if it is multi, send multi survey
+              console.log("sending multi choice")
+              sendMultiSurvey(nextBlock, phoneNumber, messageId)
+            } else {
+              console.log("sending freeform")
+              // else send freeform
+              sendFreeformSurvey(nextBlock, phoneNumber, messageId)
+            }
+            // update redis and rtdb
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: data.currentBlock + 1, nextBlock: data.nextBlock + 1 }
+            redisClient.set(key, JSON.stringify({ ...updatedData }))
+          } else if (nextBlock.type === CourseFlowMessageType.END_SURVEY) {
+            handleContinue(data.currentBlock, courseKey, phoneNumber, v4(), data)
           }
-          // update redis and rtdb
-          saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
-          let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: data.currentBlock + 1, nextBlock: data.nextBlock + 1 }
-          redisClient.set(key, JSON.stringify({ ...updatedData }))
-        } else if (nextBlock.type === CourseFlowMessageType.END_SURVEY) {
-          handleContinue(data.currentBlock, courseKey, phoneNumber, v4(), data)
         }
       }
     }
+  } catch (error) {
+    console.log(error)
   }
 }
 
