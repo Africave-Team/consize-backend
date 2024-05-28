@@ -107,14 +107,14 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       const response = messageBody[0].interactive.button_reply.id
       const [btnId, messageId] = response.split('|')
       console.log("message id", messageId, btnId)
-      if (messageId && btnId !== CONTINUE && btnId !== RESUME_COURSE && btnId !== START) {
-        if (enrollment) {
-          if (enrollment.lastMessageId && enrollment.lastMessageId !== messageId) {
-            console.log("invalid message id")
-            return res.send()
-          }
-        }
-      }
+      // if (messageId && btnId !== CONTINUE && btnId !== RESUME_COURSE && btnId !== START) {
+      //   if (enrollment) {
+      //     if (enrollment.lastMessageId && enrollment.lastMessageId !== messageId) {
+      //       console.log("invalid message id")
+      //       return res.send()
+      //     }
+      //   }
+      // }
       let today = moment().add(24, 'hours').format('YYYY-MM-DD')
       switch (btnId) {
         case START:
