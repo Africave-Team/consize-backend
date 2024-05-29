@@ -7,6 +7,7 @@ export interface Message {
     firstName?: string,
     url?: string,
     teamName?: string,
-    id?:string
+    id?: string
+    period?: string
   }
 }

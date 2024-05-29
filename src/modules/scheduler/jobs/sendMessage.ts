@@ -1,6 +1,6 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
-import { SEND_VERIFICATION_EMAIL, SEND_FORGOT_PASSWORD_EMAIL, SEND_TEAM_INVITATION, SEND_WHATSAPP_MESSAGE, SEND_LEADERBOARD, SEND_CERTIFICATE, SEND_SLACK_MESSAGE, SEND_SLACK_RESPONSE, SEND_LEADERBOARD_SLACK, SEND_CERTIFICATE_SLACK, SEND_SLACK_MODAL } from '../MessageTypes'
+import { SEND_VERIFICATION_EMAIL, SEND_FORGOT_PASSWORD_EMAIL, SEND_TEAM_INVITATION, SEND_WHATSAPP_MESSAGE, SEND_LEADERBOARD, SEND_CERTIFICATE, SEND_SLACK_MESSAGE, SEND_SLACK_RESPONSE, SEND_LEADERBOARD_SLACK, SEND_CERTIFICATE_SLACK, SEND_SLACK_MODAL, SEND_SUBSCRIPTION_TERMINATION_EMAIL, SEND_SUBSCRIPTION_GRACE_PERIOD_EMAIL } from '../MessageTypes'
 import { emailService } from '../../../modules/email'
 import { sendMessage } from '../../../modules/webhooks/service.webhooks'
 import { CourseEnrollment, Message } from '../../../modules/webhooks/interfaces.webhooks'
@@ -15,6 +15,7 @@ export interface SEND_VERIFICATION_MESSAGE {
   code: string
   teamName?: string
   admin?: boolean
+  duration?: string
 }
 
 const forgotPasswordprocessor: Processor<SEND_VERIFICATION_MESSAGE> = async (job: Job<SEND_VERIFICATION_MESSAGE>) => {
@@ -37,6 +38,28 @@ const verifyEmailProcessor: Processor<SEND_VERIFICATION_MESSAGE> = async (job: J
   try {
     if (AppConfig.server !== "test") {
       await emailService.sendVerificationEmail(email, name.split(' ')[0] || 'User', code)
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
+const subscriptionEndedEmailProcessor: Processor<Partial<SEND_VERIFICATION_MESSAGE>> = async (job: Job<Partial<SEND_VERIFICATION_MESSAGE>>) => {
+  const { email, name, } = job.attrs.data
+  try {
+    if (AppConfig.server !== "test" && email && name) {
+      await emailService.sendSubscriptionEndedEmail(email, name.split(' ')[0] || 'User')
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
+const subscriptionGracePeriodEmailProcessor: Processor<Partial<SEND_VERIFICATION_MESSAGE>> = async (job: Job<Partial<SEND_VERIFICATION_MESSAGE>>) => {
+  const { email, name, duration } = job.attrs.data
+  try {
+    if (AppConfig.server !== "test" && email && name && duration) {
+      await emailService.sendSubscriptionGracePeriodEmail(email, name.split(' ')[0] || 'User', duration)
     }
   } catch (error) {
     console.log(error, "error send message")
@@ -153,6 +176,9 @@ const handleSendCertificateSlack: Processor<CourseEnrollment> = async (job: Job<
 module.exports = (agenda: Agenda) => {
   agenda.define<SEND_VERIFICATION_MESSAGE>(SEND_VERIFICATION_EMAIL, verifyEmailProcessor)
   agenda.define<SEND_VERIFICATION_MESSAGE>(SEND_TEAM_INVITATION, handleTeamInviteEmail)
+
+  agenda.define<Partial<SEND_VERIFICATION_MESSAGE>>(SEND_SUBSCRIPTION_TERMINATION_EMAIL, subscriptionEndedEmailProcessor)
+  agenda.define<Partial<SEND_VERIFICATION_MESSAGE>>(SEND_SUBSCRIPTION_GRACE_PERIOD_EMAIL, subscriptionGracePeriodEmailProcessor)
 
 
   agenda.define<SEND_VERIFICATION_MESSAGE>(SEND_FORGOT_PASSWORD_EMAIL, forgotPasswordprocessor)
