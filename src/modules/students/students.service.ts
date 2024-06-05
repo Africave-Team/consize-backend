@@ -188,7 +188,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
             title: `${options[index]}. Start now`
           }
         })
-        message = `${message}If you choose option ${options[index]}, you start the course immediately\n`
+        message = `${message}If you choose option *${options[index]}*, you start the course immediately\n\n`
       }
 
       if (settings.resumption.days !== null && settings.resumption.time !== null) {
@@ -202,7 +202,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
             title: `${options[index]}. Use default time`
           }
         })
-        message = `${message}If you choose option ${options[index]}, your course starts at a time set by the course creator, i.e. ${settings.resumption.time} on ${day}\n`
+        message = `${message}If you choose option *${options[index]}*, your course starts at a time set by the course creator, i.e. ${settings.resumption.time} on ${day}\n\n`
       }
 
       if (settings.resumption.enabledDateTimeSetup) {
@@ -214,10 +214,10 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
             title: `${options[index]}. Choose your time`
           }
         })
-        message = `${message}If you choose option ${options[index]}, you may choose your own time\n`
+        message = `${message}If you choose option *${options[index]}*, you may choose your own time\n`
       }
     } else {
-      message = `${message}If you choose option A, your course starts immediately.\nIf you choose option B, you may choose when you want to start the course.`
+      message = `${message}If you choose option A, your course starts immediately.\n\nIf you choose option B, you may choose when you want to start the course.`
       buttons.push({
         type: "reply",
         reply: {
