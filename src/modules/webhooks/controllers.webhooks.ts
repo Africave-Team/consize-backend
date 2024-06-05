@@ -344,13 +344,13 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   }
                   let date = moment().add(index, 'days').format('dddd, DD MM, YYYY')
                   if (index === 0) {
-                    item.title = "Today"
+                    item.title = "Start today"
                   } else if (index === 1) {
-                    item.title = 'Tomorrow'
+                    item.title = 'Start tomorrow'
                   } else {
-                    item.title = `On ${date}`
+                    item.title = `Start on ${date}`
                   }
-                  item.id = `resumption_date-${courseId}|${date}`
+                  item.id = `resumption_date-${courseId}|${moment().add(index, 'days').format('YYYY-MM-DD')}`
                   dates.push(item)
                 }
                 console.log(dates)
@@ -361,7 +361,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   recipient_type: "individual",
                   interactive: {
                     body: {
-                      text: "Please select one option"
+                      text: "Please select your convenient date"
                     },
                     type: "list",
                     action: {
@@ -414,9 +414,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           case "resumption_date":
             try {
               if (value1) {
-                console.log(value1)
                 let dateValue = moment(value1)
-                console.log(dateValue)
                 let times: InteractiveMessageSectionRow[] = []
                 let start = 8
                 if (dateValue.isSame(moment(), 'day')) {
