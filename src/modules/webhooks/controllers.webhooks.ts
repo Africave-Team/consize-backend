@@ -348,7 +348,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   } else if (index === 1) {
                     item.title = 'Start tomorrow'
                   } else {
-                    item.title = `Start on ${date}`
+                    item.title = `${date}`
                   }
                   item.id = `resumption_date-${courseId}|${moment().add(index, 'days').format('YYYY-MM-DD')}`
                   dates.push(item)
