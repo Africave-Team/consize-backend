@@ -94,7 +94,7 @@ export const fetchMyActiveSubscription = async function (owner: string): Promise
   const subscription = await Subscriptions.findOne({
     owner,
     $or: [{ status: SubscriptionStatus.ACTIVE }, { status: SubscriptionStatus.GRACE }]
-  })
+  }).populate('plan')
   return subscription
 }
 
