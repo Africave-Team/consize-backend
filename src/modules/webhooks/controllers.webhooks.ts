@@ -384,6 +384,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       if (interactive.type === "list_reply") {
         try {
           const [action, values] = interactive.list_reply.id.split('~')
+          console.log(action)
           switch (action) {
             case "resumption_time":
               const [courseId, value1, value2] = values.split('|')
@@ -434,7 +435,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   let isTomorrow = dateValue.isSame(moment().add(1), 'day')
                   for (let index = start; index < 20; index += 2) {
                     times.push({
-                      id: `resumption_time-${courseId}|${value1}|${moment().hour(index).minute(0).second(0).format('HH:mm')}`,
+                      id: `resumption_time~${courseId}|${value1}|${moment().hour(index).minute(0).second(0).format('HH:mm')}`,
                       title: `${moment().hour(index).minute(0).second(0).format('hA')} ${isToday ? 'today' : isTomorrow ? 'tomorrow' : `on ${dateValue.format('Do MMM, YYYY')}`}`,
                       description: ""
                     })
