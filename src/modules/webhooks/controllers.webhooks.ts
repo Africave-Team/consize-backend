@@ -342,7 +342,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   let item: InteractiveMessageSectionRow = {
                     id: "", title: "", description: ""
                   }
-                  let date = moment().add(index, 'days').format('dddd, DD MMM, YYYY')
+                  let date = moment().add(index, 'days').format('ddd, DD MMM, YYYY')
                   if (index === 0) {
                     item.title = "Start today"
                   } else if (index === 1) {
