@@ -325,7 +325,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                       messaging_product: "whatsapp",
                       recipient_type: "individual",
                       text: {
-                        body: `Thank you. You have scheduled to start this course ${date.hour(Number(settings.resumption.time.replace(':00', ''))).format('hA')} on ${day}.\n\n We will begin sebding you this course content on the above date and time.`
+                        body: `Thank you. You have scheduled to start this course ${date.hour(Number(settings.resumption.time.replace(':00', ''))).format('hA')} on ${day}.\n\n We will begin sending you this course content on the above date and time.`
                       }
                     })
                   }
@@ -343,7 +343,8 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   let item: InteractiveMessageSectionRow = {
                     id: "", title: "", description: ""
                   }
-                  let date = moment().add(index, 'days').format('dddd, Do of MMM, YYYY')
+                  let day = moment().add(index, 'days')
+                  let date = day.format('ddd, Do of MMM, YYYY')
                   if (index === 0) {
                     item.title = "Start today"
                   } else if (index === 1) {
@@ -351,7 +352,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   } else {
                     item.title = `${date}`
                   }
-                  item.id = `resumption_date~${courseId}|${moment().add(index, 'days').format('YYYY-MM-DD')}`
+                  item.id = `resumption_date~${courseId}|${day.format('YYYY-MM-DD')}`
                   dates.push(item)
                 }
                 console.log(dates)
