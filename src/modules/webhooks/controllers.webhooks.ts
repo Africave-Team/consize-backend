@@ -382,12 +382,11 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       }
 
       if (interactive.type === "list_reply") {
-        console.log(interactive)
         try {
-          const [btnId, value1, value2] = interactive.list_reply.id.split('|')
-          const [action, courseId] = btnId.split('-')
+          const [action, values] = interactive.list_reply.id.split('-')
           switch (action) {
             case "resumption_time":
+              const [courseId, value1, value2] = values.split('|')
               // continue a course from the positions message
               const student = await studentService.findStudentByPhoneNumber(destination)
               if (student) {
@@ -415,6 +414,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               break
             case "resumption_date":
               try {
+                const [courseId, value1] = values.split('|')
                 if (value1) {
                   let dateValue = moment(value1)
                   let times: InteractiveMessageSectionRow[] = []
