@@ -420,49 +420,52 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               try {
                 const [courseId, value1] = values.split('|')
                 if (value1) {
-                  let dateValue = moment(value1)
-                  let times: InteractiveMessageSectionRow[] = []
-                  let start = 8
-                  if (dateValue.isSame(moment(), 'day')) {
-                    let currentTime = moment()
+                  const student = await studentService.findStudentByPhoneNumber(destination)
+                  if (student) {
+                    let dateValue = moment(value1)
+                    let times: InteractiveMessageSectionRow[] = []
+                    let start = 8
+                    if (dateValue.isSame(moment(), 'day')) {
+                      const currentTime = moment.tz(student.tz)
 
-                    // Get the current hour
-                    const currentHour = currentTime.hour()
+                      // Get the current hour
+                      const currentHour = currentTime.hour()
 
-                    // Calculate the next even hour
-                    const nextEvenHour = currentHour % 2 === 0 ? currentHour + 2 : currentHour + 1
-                    start = nextEvenHour
-                  }
-                  let isToday = dateValue.isSame(moment(), 'day')
-                  let isTomorrow = dateValue.isSame(moment().add(1), 'day')
-                  for (let index = start; index < 20; index += 2) {
-                    times.push({
-                      id: `resumption_time~${courseId}|${value1}|${moment().hour(index).minute(0).second(0).format('HH:mm')}`,
-                      title: `${moment().hour(index).minute(0).second(0).format('hA')} ${isToday ? 'today' : isTomorrow ? 'tomorrow' : `on ${dateValue.format('Do MMM, YYYY')}`}`,
-                      description: ""
+                      // Calculate the next even hour
+                      const nextEvenHour = currentHour % 2 === 0 ? currentHour + 2 : currentHour + 1
+                      start = nextEvenHour
+                    }
+                    let isToday = dateValue.isSame(moment(), 'day')
+                    let isTomorrow = dateValue.isSame(moment().add(1), 'day')
+                    for (let index = start; index <= 20; index += 2) {
+                      times.push({
+                        id: `resumption_time~${courseId}|${value1}|${moment().hour(index).minute(0).second(0).format('HH:mm')}`,
+                        title: `${moment().hour(index).minute(0).second(0).format('hA')} ${isToday ? 'today' : isTomorrow ? 'tomorrow' : `on ${dateValue.format('Do MMM, YYYY')}`}`,
+                        description: ""
+                      })
+                    }
+                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                      to: destination,
+                      type: "interactive",
+                      messaging_product: "whatsapp",
+                      recipient_type: "individual",
+                      interactive: {
+                        body: {
+                          text: "Select a convenient time to start your course"
+                        },
+                        type: "list",
+                        action: {
+                          button: "Select a time",
+                          sections: [
+                            {
+                              title: "Select time to start.",
+                              rows: times
+                            }
+                          ]
+                        }
+                      }
                     })
                   }
-                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                    to: destination,
-                    type: "interactive",
-                    messaging_product: "whatsapp",
-                    recipient_type: "individual",
-                    interactive: {
-                      body: {
-                        text: "Select a convenient time to start your course"
-                      },
-                      type: "list",
-                      action: {
-                        button: "Select a time",
-                        sections: [
-                          {
-                            title: "Select time to start.",
-                            rows: times
-                          }
-                        ]
-                      }
-                    }
-                  })
 
                 }
               } catch (error) {
