@@ -384,6 +384,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       if (interactive.type === "list_reply") {
         try {
           const [action, values] = interactive.list_reply.id.split('-')
+          console.log(action, values)
           switch (action) {
             case "resumption_time":
               const [courseId, value1, value2] = values.split('|')
