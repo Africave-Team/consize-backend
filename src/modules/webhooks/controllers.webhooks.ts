@@ -382,89 +382,95 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       }
 
       if (interactive.type === "list_reply") {
-        const [btnId, value1, value2] = interactive.list_reply.id.split('|')
-        const [action, courseId] = btnId.split('-')
-        switch (action) {
-          case "resumption_time":
-            // continue a course from the positions message
-            const student = await studentService.findStudentByPhoneNumber(destination)
-            if (student) {
-              const course = await courseService.fetchSingleCourse({ courseId })
-              if (course) {
-                let settings = await courseService.fetchSingleSettings(course.settings)
-                if (settings && settings.resumption) {
-                  let day = moment(value1).format('dddd, DD of MM, YYYY')
-                  const now = moment.tz(student.tz)
-                  let dayFormatted = moment(value1).format('YYYY-MM-DD')
-                  const time = moment(`${dayFormatted} ${value2}`).subtract(now.utcOffset(), 'minutes')
-                  agenda.schedule<{ studentId: string, courseId: string }>(time.toDate(), ENROLL_STUDENT_DEFAULT_DATE, { courseId, studentId: student.id })
+        console.log(interactive)
+        try {
+          const [btnId, value1, value2] = interactive.list_reply.id.split('|')
+          const [action, courseId] = btnId.split('-')
+          switch (action) {
+            case "resumption_time":
+              // continue a course from the positions message
+              const student = await studentService.findStudentByPhoneNumber(destination)
+              if (student) {
+                const course = await courseService.fetchSingleCourse({ courseId })
+                if (course) {
+                  let settings = await courseService.fetchSingleSettings(course.settings)
+                  if (settings && settings.resumption) {
+                    let day = moment(value1).format('dddd, DD of MM, YYYY')
+                    const now = moment.tz(student.tz)
+                    let dayFormatted = moment(value1).format('YYYY-MM-DD')
+                    const time = moment(`${dayFormatted} ${value2}`).subtract(now.utcOffset(), 'minutes')
+                    agenda.schedule<{ studentId: string, courseId: string }>(time.toDate(), ENROLL_STUDENT_DEFAULT_DATE, { courseId, studentId: student.id })
+                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                      to: student.phoneNumber,
+                      type: "text",
+                      messaging_product: "whatsapp",
+                      recipient_type: "individual",
+                      text: {
+                        body: `Thank you. You have scheduled to start this course ${convertTo12HourFormat(value2)} on ${day}.\n\n We will begin seding you this course content on the said date and time.`
+                      }
+                    })
+                  }
+                }
+              }
+              break
+            case "resumption_date":
+              try {
+                if (value1) {
+                  let dateValue = moment(value1)
+                  let times: InteractiveMessageSectionRow[] = []
+                  let start = 8
+                  if (dateValue.isSame(moment(), 'day')) {
+                    let currentTime = moment()
+
+                    // Get the current hour
+                    const currentHour = currentTime.hour()
+
+                    // Calculate the next even hour
+                    const nextEvenHour = currentHour % 2 === 0 ? currentHour + 2 : currentHour + 1
+                    start = nextEvenHour
+                  }
+
+                  for (let index = start; index < 20; index + 2) {
+                    times.push({
+                      id: `resumption_time-${courseId}|${value1}|${moment().hour(index).minute(0).second(0).format('HH:mm')}`,
+                      title: `${moment().hour(index).minute(0).second(0).format('HH:mm')} on ${dateValue.format('ddd, DD MMM, YYYY')}`,
+                      description: ""
+                    })
+                  }
+                  console.log(times)
                   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                    to: student.phoneNumber,
-                    type: "text",
+                    to: destination,
+                    type: "interactive",
                     messaging_product: "whatsapp",
                     recipient_type: "individual",
-                    text: {
-                      body: `Thank you. You have scheduled to start this course ${convertTo12HourFormat(value2)} on ${day}.\n\n We will begin seding you this course content on the said date and time.`
+                    interactive: {
+                      body: {
+                        text: "Select a convenient time to start your course"
+                      },
+                      type: "list",
+                      action: {
+                        button: "Select a time",
+                        sections: [
+                          {
+                            title: "Select a convenient time to start your course",
+                            rows: times
+                          }
+                        ]
+                      }
                     }
                   })
+
                 }
+              } catch (error) {
+                console.log(error)
               }
-            }
-            break
-          case "resumption_date":
-            try {
-              if (value1) {
-                let dateValue = moment(value1)
-                let times: InteractiveMessageSectionRow[] = []
-                let start = 8
-                if (dateValue.isSame(moment(), 'day')) {
-                  let currentTime = moment()
+              break
 
-                  // Get the current hour
-                  const currentHour = currentTime.hour()
-
-                  // Calculate the next even hour
-                  const nextEvenHour = currentHour % 2 === 0 ? currentHour + 2 : currentHour + 1
-                  start = nextEvenHour
-                }
-
-                for (let index = start; index < 20; index + 2) {
-                  times.push({
-                    id: `resumption_time-${courseId}|${value1}|${moment().hour(index).minute(0).second(0).format('HH:mm')}`,
-                    title: `${moment().hour(index).minute(0).second(0).format('HH:mm')} on ${dateValue.format('ddd, DD MMM, YYYY')}`,
-                    description: ""
-                  })
-                }
-                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                  to: destination,
-                  type: "interactive",
-                  messaging_product: "whatsapp",
-                  recipient_type: "individual",
-                  interactive: {
-                    body: {
-                      text: "Select a convenient time to start your course"
-                    },
-                    type: "list",
-                    action: {
-                      button: "Select a time",
-                      sections: [
-                        {
-                          title: "Select a convenient time to start your course",
-                          rows: times
-                        }
-                      ]
-                    }
-                  }
-                })
-
-              }
-            } catch (error) {
-              console.log(error)
-            }
-            break
-
-          default:
-            break
+            default:
+              break
+          }
+        } catch (error) {
+          console.log(error)
         }
       }
 
