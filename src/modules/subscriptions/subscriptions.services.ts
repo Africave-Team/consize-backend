@@ -1,7 +1,7 @@
 import httpStatus from 'http-status'
 import { PeriodTypes } from '../courses/interfaces.settings'
 import { ApiError } from '../errors'
-import { PlanPeriods, SubscriptionPlan } from './plans.interfaces'
+import { PlanPeriods, SubscriptionPlan, SubscriptionPlanInterface } from './plans.interfaces'
 import SubscriptionPlans from './plans.model'
 import { SubscribePayload, SubscriptionInterface, SubscriptionStatus } from './subscriptions.interfaces'
 import moment from 'moment'
@@ -85,7 +85,7 @@ export const seedSubscriptionPlans = async function () {
   }
 }
 
-export const fetchSubscriptionPlans = async (): Promise<SubscriptionPlan[]> => {
+export const fetchSubscriptionPlans = async (): Promise<SubscriptionPlanInterface[]> => {
   const plans = await SubscriptionPlans.find({})
   return plans
 }
