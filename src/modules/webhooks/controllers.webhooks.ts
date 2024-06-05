@@ -429,8 +429,8 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                     const nextEvenHour = currentHour % 2 === 0 ? currentHour + 2 : currentHour + 1
                     start = nextEvenHour
                   }
-                  let isToday = dateValue.isSame(moment())
-                  let isTomorrow = dateValue.isSame(moment().add(1))
+                  let isToday = dateValue.isSame(moment(), 'day')
+                  let isTomorrow = dateValue.isSame(moment().add(1), 'day')
                   for (let index = start; index < 20; index += 2) {
                     times.push({
                       id: `resumption_time-${courseId}|${value1}|${moment().hour(index).minute(0).second(0).format('HH:mm')}`,
