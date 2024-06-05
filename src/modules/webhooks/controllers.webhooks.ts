@@ -348,6 +348,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   item.id = `resumption_date-${courseId}|${date}`
                   return item
                 })
+                console.log(dates)
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                   to: student.phoneNumber,
                   type: "interactive",
