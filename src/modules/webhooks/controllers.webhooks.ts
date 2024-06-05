@@ -115,248 +115,262 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
     let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
     console.log(type)
     if (type === "interactive") {
-      const response = messageBody[0].interactive.button_reply.id
-      const [btnId, messageId] = response.split('|')
-      console.log("message id", messageId, btnId)
-      // if (messageId && btnId !== CONTINUE && btnId !== RESUME_COURSE && btnId !== START) {
-      //   if (enrollment) {
-      //     if (enrollment.lastMessageId && enrollment.lastMessageId !== messageId) {
-      //       console.log("invalid message id")
-      //       return res.send()
-      //     }
-      //   }
-      // }
-      let today = moment().add(24, 'hours').format('YYYY-MM-DD')
-      switch (btnId) {
-        case START:
-        case RESUME_COURSE:
-        case CONTINUE:
-          if (enrollment) {
-            let msgId = v4()
-            await handleContinue(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, enrollment)
-          }
-          break
-        case QUIZ_NO:
-        case QUIZ_YES:
-          let answer = "yes"
-          if (btnId === QUIZ_NO) {
-            answer = "no"
-          }
-          if (enrollment) {
-            const msgId = v4()
-            handleBlockQuiz(answer, enrollment, destination, msgId)
-          }
-          break
-        case QUIZ_A:
-        case QUIZ_B:
-        case QUIZ_C:
-          let answerResponse = 0
-          if (btnId === QUIZ_B) answerResponse = 1
-          if (btnId === QUIZ_C) answerResponse = 2
-          if (enrollment) {
-            const msgId = v4()
-            console.log(enrollment)
-            await handleLessonQuiz(answerResponse, enrollment, destination, msgId)
-          }
-          break
-        case STATS:
 
-          break
-        case COURSES:
-          if (enrollments.length === 0) {
-            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              to: destination,
-              type: "text",
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              text: {
-                body: "You do not have any ongoing courses."
-              }
-            })
-          } else {
-            // agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-            //   to: destination,
-            //   type: "text",
-            //   messaging_product: "whatsapp",
-            //   recipient_type: "individual",
-            //   text: {
-            //     body: "The following message would include your ongoing course enrollments. Click the continue of any one of them to resume that course"
-            //   }
-            // })
-          }
-          for (let enrollment of enrollments) {
-            let progress = (enrollment.nextBlock / enrollment.totalBlocks) * 100
-            if (progress < 100) {
+      const interactive = messageBody[0].interactive
+      if (interactive.type === "button_reply") {
+        const response = interactive.button_reply.id
+        const [btnId, messageId] = response.split('|')
+        console.log("message id", messageId, btnId)
+        // if (messageId && btnId !== CONTINUE && btnId !== RESUME_COURSE && btnId !== START) {
+        //   if (enrollment) {
+        //     if (enrollment.lastMessageId && enrollment.lastMessageId !== messageId) {
+        //       console.log("invalid message id")
+        //       return res.send()
+        //     }
+        //   }
+        // }
+        let today = moment().add(24, 'hours').format('YYYY-MM-DD')
+        switch (btnId) {
+          case START:
+          case RESUME_COURSE:
+          case CONTINUE:
+            if (enrollment) {
+              let msgId = v4()
+              await handleContinue(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, enrollment)
+              // schedule inactivity message
+              scheduleInactivityMessage(enrollment, destination)
+            }
+            break
+          case QUIZ_NO:
+          case QUIZ_YES:
+            let answer = "yes"
+            if (btnId === QUIZ_NO) {
+              answer = "no"
+            }
+            if (enrollment) {
+              const msgId = v4()
+              handleBlockQuiz(answer, enrollment, destination, msgId)
+              // schedule inactivity message
+              scheduleInactivityMessage(enrollment, destination)
+            }
+            break
+          case QUIZ_A:
+          case QUIZ_B:
+          case QUIZ_C:
+            let answerResponse = 0
+            if (btnId === QUIZ_B) answerResponse = 1
+            if (btnId === QUIZ_C) answerResponse = 2
+            if (enrollment) {
+              const msgId = v4()
+              console.log(enrollment)
+              await handleLessonQuiz(answerResponse, enrollment, destination, msgId)
+              // schedule inactivity message
+              scheduleInactivityMessage(enrollment, destination)
+            }
+            break
+          case STATS:
+
+            break
+          case COURSES:
+            if (enrollments.length === 0) {
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: destination,
-                type: "interactive",
+                type: "text",
                 messaging_product: "whatsapp",
                 recipient_type: "individual",
-                interactive: {
-                  body: {
-                    text: `*${enrollment.title}*\n\n${enrollment.description}\n\n*Progress*: ${progress.toFixed(0)}%`
-                  },
-                  type: "button",
-                  action: {
-                    buttons: [
-                      {
-                        type: "reply",
-                        reply: {
-                          id: `continue_${enrollment.id}`,
-                          title: "Continue"
-                        }
-                      }
-                    ]
-                  }
+                text: {
+                  body: "You do not have any ongoing courses."
                 }
               })
+            } else {
+              // agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              //   to: destination,
+              //   type: "text",
+              //   messaging_product: "whatsapp",
+              //   recipient_type: "individual",
+              //   text: {
+              //     body: "The following message would include your ongoing course enrollments. Click the continue of any one of them to resume that course"
+              //   }
+              // })
             }
-          }
-          break
-        case CERTIFICATES:
-
-          break
-        case SURVEY_A:
-        case SURVEY_B:
-        case SURVEY_C:
-          console.log("Here survey")
-          let rsp = 0
-          if (btnId === SURVEY_B) rsp = 1
-          if (btnId === SURVEY_C) rsp = 2
-          if (enrollment) {
-            console.log("Here survey", enrollment)
-            const msgId = v4()
-            await handleSurveyMulti(rsp, enrollment, destination, msgId)
-          }
-          break
-        case TOMORROW:
-        case MORNING:
-          if (enrollment) {
-            let msgId = v4()
-            const dateTimeString = `${today} 09:00` // Note: removed 'PM'
-            const now = moment.tz(enrollment.tz)
-            const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
-            agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
-            sendScheduleAcknowledgement(destination, "9:00am")
-          }
-          break
-        case AFTERNOON:
-          if (enrollment) {
-            let msgId = v4()
-            const dateTimeString = `${today} 15:00` // Note: removed 'PM'
-            const now = moment.tz(enrollment.tz)
-            const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
-            agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
-            sendScheduleAcknowledgement(destination, "3:00pm")
-          }
-          break
-        case EVENING:
-          if (enrollment) {
-            let msgId = v4()
-            const dateTimeString = `${today} 20:00` // Note: removed 'PM'
-            const now = moment.tz(enrollment.tz)
-            const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
-            agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
-            sendScheduleAcknowledgement(destination, "8:00pm")
-          }
-          break
-        case SCHEDULE_RESUMPTION:
-          if (enrollment) {
-            const key = `${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`
-            sendResumptionOptions(destination, key, enrollment)
-          }
-          break
-        default:
-          if (btnId.startsWith('continue_')) {
-            const courseId = btnId.replace("continue_", "")
-            // continue a course from the positions message
-            const enrollments: CourseEnrollment[] = await fetchEnrollments(destination)
-            await Promise.all(enrollments.map(async (enrollment) => {
-              const key = `${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`
-              let msgId = v4()
-              enrollment.active = enrollment.id === courseId
-              await redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId }))
-              if (enrollment.id === courseId) {
-                await handleContinue(enrollment.currentBlock, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, enrollment)
-              }
-
-            }))
-          }
-
-          if (btnId.startsWith('enroll_now_')) {
-            const courseId = btnId.replace("enroll_now_", "")
-            // continue a course from the positions message
-            const student = await studentService.findStudentByPhoneNumber(destination)
-            if (student) {
-              studentService.startEnrollmentWhatsapp(student.id, courseId)
-            }
-          }
-          if (btnId.startsWith('enroll_default_time_')) {
-            const courseId = btnId.replace("enroll_default_time_", "")
-            // continue a course from the positions message
-            const student = await studentService.findStudentByPhoneNumber(destination)
-            if (student) {
-              const course = await courseService.fetchSingleCourse({ courseId })
-              if (course) {
-                let settings = await courseService.fetchSingleSettings(course.settings)
-                if (settings && settings.resumption) {
-                  let day = moment().add(settings.resumption.days, 'days').format('dddd, DD of MM, YYYY')
-                  const now = moment.tz(student.tz)
-                  let dayFormatted = moment().add(settings.resumption.days, 'days').format('YYYY-MM-DD')
-                  const time = moment(`${dayFormatted} ${settings.resumption.time}`).subtract(now.utcOffset(), 'minutes')
-                  agenda.schedule<{ studentId: string, courseId: string }>(time.toDate(), ENROLL_STUDENT_DEFAULT_DATE, { courseId, studentId: student.id })
-                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                    to: student.phoneNumber,
-                    type: "text",
-                    messaging_product: "whatsapp",
-                    recipient_type: "individual",
-                    text: {
-                      body: `Thank you. You have scheduled to start this course ${convertTo12HourFormat(settings.resumption.time)} on ${day}.\n\n We will begin seding you this course content on the said date and time.`
-                    }
-                  })
-                }
-              }
-            }
-          }
-          if (btnId.startsWith('choose_enroll_time_')) {
-            // const courseId = btnId.replace("choose_enroll_time_", "")
-            // continue a course from the positions message
-            const student = await studentService.findStudentByPhoneNumber(destination)
-            if (student) {
-              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                to: student.phoneNumber,
-                type: "interactive",
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                interactive: {
-                  body: {
-                    text: "Please select one option"
-                  },
-                  type: "list",
-                  action: {
-                    button: "Select a date",
-                    sections: [
-                      {
-                        title: "Select a convenient date",
-                        rows: [
-                          {
-                            id: "resume",
-                            title: "Option 1",
-                            description: "A description"
+            for (let enrollment of enrollments) {
+              let progress = (enrollment.nextBlock / enrollment.totalBlocks) * 100
+              if (progress < 100) {
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: destination,
+                  type: "interactive",
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  interactive: {
+                    body: {
+                      text: `*${enrollment.title}*\n\n${enrollment.description}\n\n*Progress*: ${progress.toFixed(0)}%`
+                    },
+                    type: "button",
+                    action: {
+                      buttons: [
+                        {
+                          type: "reply",
+                          reply: {
+                            id: `continue_${enrollment.id}`,
+                            title: "Continue"
                           }
-                        ]
+                        }
+                      ]
+                    }
+                  }
+                })
+              }
+            }
+            break
+          case CERTIFICATES:
+
+            break
+          case SURVEY_A:
+          case SURVEY_B:
+          case SURVEY_C:
+            console.log("Here survey")
+            let rsp = 0
+            if (btnId === SURVEY_B) rsp = 1
+            if (btnId === SURVEY_C) rsp = 2
+            if (enrollment) {
+              console.log("Here survey", enrollment)
+              const msgId = v4()
+              await handleSurveyMulti(rsp, enrollment, destination, msgId)
+              // schedule inactivity message
+              scheduleInactivityMessage(enrollment, destination)
+            }
+            break
+          case TOMORROW:
+          case MORNING:
+            if (enrollment) {
+              let msgId = v4()
+              const dateTimeString = `${today} 09:00` // Note: removed 'PM'
+              const now = moment.tz(enrollment.tz)
+              const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
+              agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+              sendScheduleAcknowledgement(destination, "9:00am")
+            }
+            break
+          case AFTERNOON:
+            if (enrollment) {
+              let msgId = v4()
+              const dateTimeString = `${today} 15:00` // Note: removed 'PM'
+              const now = moment.tz(enrollment.tz)
+              const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
+              agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+              sendScheduleAcknowledgement(destination, "3:00pm")
+            }
+            break
+          case EVENING:
+            if (enrollment) {
+              let msgId = v4()
+              const dateTimeString = `${today} 20:00` // Note: removed 'PM'
+              const now = moment.tz(enrollment.tz)
+              const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
+              agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+              sendScheduleAcknowledgement(destination, "8:00pm")
+            }
+            break
+          case SCHEDULE_RESUMPTION:
+            if (enrollment) {
+              const key = `${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`
+              sendResumptionOptions(destination, key, enrollment)
+              // schedule inactivity message
+              scheduleInactivityMessage(enrollment, destination)
+            }
+            break
+          default:
+            if (btnId.startsWith('continue_')) {
+              const courseId = btnId.replace("continue_", "")
+              // continue a course from the positions message
+              const enrollments: CourseEnrollment[] = await fetchEnrollments(destination)
+              await Promise.all(enrollments.map(async (enrollment) => {
+                const key = `${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`
+                let msgId = v4()
+                enrollment.active = enrollment.id === courseId
+                await redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId }))
+                if (enrollment.id === courseId) {
+                  await handleContinue(enrollment.currentBlock, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, enrollment)
+                }
+
+              }))
+            }
+
+            if (btnId.startsWith('enroll_now_')) {
+              const courseId = btnId.replace("enroll_now_", "")
+              // continue a course from the positions message
+              const student = await studentService.findStudentByPhoneNumber(destination)
+              if (student) {
+                studentService.startEnrollmentWhatsapp(student.id, courseId)
+              }
+            }
+            if (btnId.startsWith('enroll_default_time_')) {
+              const courseId = btnId.replace("enroll_default_time_", "")
+              // continue a course from the positions message
+              const student = await studentService.findStudentByPhoneNumber(destination)
+              if (student) {
+                const course = await courseService.fetchSingleCourse({ courseId })
+                if (course) {
+                  let settings = await courseService.fetchSingleSettings(course.settings)
+                  if (settings && settings.resumption) {
+                    let day = moment().add(settings.resumption.days, 'days').format('dddd, DD of MM, YYYY')
+                    const now = moment.tz(student.tz)
+                    let dayFormatted = moment().add(settings.resumption.days, 'days').format('YYYY-MM-DD')
+                    const time = moment(`${dayFormatted} ${settings.resumption.time}`).subtract(now.utcOffset(), 'minutes')
+                    agenda.schedule<{ studentId: string, courseId: string }>(time.toDate(), ENROLL_STUDENT_DEFAULT_DATE, { courseId, studentId: student.id })
+                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                      to: student.phoneNumber,
+                      type: "text",
+                      messaging_product: "whatsapp",
+                      recipient_type: "individual",
+                      text: {
+                        body: `Thank you. You have scheduled to start this course ${convertTo12HourFormat(settings.resumption.time)} on ${day}.\n\n We will begin seding you this course content on the said date and time.`
                       }
-                    ]
+                    })
                   }
                 }
-              })
+              }
             }
-          }
-          break
+            if (btnId.startsWith('choose_enroll_time_')) {
+              // const courseId = btnId.replace("choose_enroll_time_", "")
+              // continue a course from the positions message
+              const student = await studentService.findStudentByPhoneNumber(destination)
+              if (student) {
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: student.phoneNumber,
+                  type: "interactive",
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  interactive: {
+                    body: {
+                      text: "Please select one option"
+                    },
+                    type: "list",
+                    action: {
+                      button: "Select a date",
+                      sections: [
+                        {
+                          title: "Select a convenient date",
+                          rows: [
+                            {
+                              id: "resume",
+                              title: "Option 1",
+                              description: "A description"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                })
+              }
+            }
+            break
+        }
       }
-      // schedule inactivity message
-      if (enrollment) {
-        scheduleInactivityMessage(enrollment, destination)
+
+      if (interactive.type === "list_reply") {
+        console.log(interactive.list_reply)
       }
 
     } else if (type === "text") {
