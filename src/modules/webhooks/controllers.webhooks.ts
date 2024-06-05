@@ -78,7 +78,7 @@ export const getMomentTomorrow = (time: number) => {
   return formattedDuration
 }
 
-function convertTo12HourFormat (time: string) {
+export function convertTo12HourFormat (time: string) {
   const [hours, minutes] = time.split(':')
   if (hours && minutes) {
     const period = Number(hours) >= 12 ? 'PM' : 'AM'
@@ -313,7 +313,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 if (course) {
                   let settings = await courseService.fetchSingleSettings(course.settings)
                   if (settings && settings.resumption) {
-                    let day = moment().add(settings.resumption.days, 'days').format('dddd, DD of MM, YYYY')
+                    let day = moment().add(settings.resumption.days, 'days').format('dddd, Do of MMM, YYYY')
                     const now = moment.tz(student.tz)
                     let dayFormatted = moment().add(settings.resumption.days, 'days').format('YYYY-MM-DD')
                     const time = moment(`${dayFormatted} ${settings.resumption.time}`).subtract(now.utcOffset(), 'minutes')
@@ -324,7 +324,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                       messaging_product: "whatsapp",
                       recipient_type: "individual",
                       text: {
-                        body: `Thank you. You have scheduled to start this course ${convertTo12HourFormat(settings.resumption.time)} on ${day}.\n\n We will begin seding you this course content on the said date and time.`
+                        body: `Thank you. You have scheduled to start this course ${convertTo12HourFormat(settings.resumption.time)} on ${day}.\n\n We will begin sebding you this course content on the above date and time.`
                       }
                     })
                   }
@@ -342,7 +342,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   let item: InteractiveMessageSectionRow = {
                     id: "", title: "", description: ""
                   }
-                  let date = moment().add(index, 'days').format('ddd, DD MMM, YYYY')
+                  let date = moment().add(index, 'days').format('dddd, Do of MMM, YYYY')
                   if (index === 0) {
                     item.title = "Start today"
                   } else if (index === 1) {
@@ -407,7 +407,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                       messaging_product: "whatsapp",
                       recipient_type: "individual",
                       text: {
-                        body: `Thank you. You have scheduled to start this course ${convertTo12HourFormat(value2)} on ${day}.\n\n We will begin seding you this course content on the said date and time.`
+                        body: `Thank you. You have scheduled to start this course ${convertTo12HourFormat(value2)} on ${day}.\n\n We will begin sending you this course content on the above date and time.`
                       }
                     })
                   }

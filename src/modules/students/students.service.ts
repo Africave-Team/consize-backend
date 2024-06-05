@@ -19,6 +19,7 @@ import { QuizInterface } from '../courses/interfaces.quizzes'
 import { sendWelcomeSlack, startCourseSlack } from '../slack/slack.services'
 import Courses from '../courses/model.courses'
 import Settings from '../courses/model.settings'
+import { convertTo12HourFormat } from '../webhooks/controllers.webhooks'
 
 export const bulkAddStudents = async (students: Student[]): Promise<string[]> => {
   try {
@@ -194,7 +195,8 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
       if (settings.resumption.days !== null && settings.resumption.time !== null) {
         let index = buttons.length
         // calculate the 
-        let day = moment().add(settings.resumption.days, 'days').format('dddd, DD of MM, YYYY')
+        let date = moment().add(settings.resumption.days, 'days')
+        let day = date.format('dddd, Do of MMM, YYYY')
         buttons.push({
           type: "reply",
           reply: {
@@ -202,11 +204,11 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
             title: `${options[index]}. Use default time`
           }
         })
-        message = `${message}If you choose option *${options[index]}*, your course starts at a time set by the course creator, i.e. ${settings.resumption.time} on ${day}\n\n`
+        message = `${message}If you choose option *${options[index]}*, your course starts at a time set by the course creator, i.e. ${date.hour(Number(settings.resumption.time.replace(':00', ''))).format('hA')} on ${day}\n\n`
       }
 
       if (settings.resumption.enabledDateTimeSetup) {
-        let index = buttons.length - 1
+        let index = buttons.length
         buttons.push({
           type: "reply",
           reply: {
