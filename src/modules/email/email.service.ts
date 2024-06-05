@@ -92,6 +92,16 @@ export const sendVerificationEmail = async (to: string, firstName: string, token
   await sendEmail({ to, templateVariables: { firstName, url: `${config.clientUrl}/auth/verify?token=${token}` }, template: "verify", subject: "Let's verify your email" })
 }
 
+export const sendSubscriptionEndedEmail = async (to: string, firstName: string): Promise<void> => {
+  // 5812715
+  await sendEmail({ to, templateVariables: { firstName }, template: "subscription-ended", subject: "Subscription has ended." })
+}
+
+export const sendSubscriptionGracePeriodEmail = async (to: string, firstName: string, period: string): Promise<void> => {
+  // 5812715
+  await sendEmail({ to, templateVariables: { firstName, period }, template: "grace-period", subject: "Subscription about to end" })
+}
+
 export const sendOnboardingEmail = async (to: string, firstName: string, token: string): Promise<void> => {
   // 5812715
   await sendEmail({ to, templateVariables: { firstName, url: `${config.clientUrl}/auth/onboard-companies?token=${token}` }, template: "onboard", subject: "Let's onboard your team" })

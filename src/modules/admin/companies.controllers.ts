@@ -7,6 +7,7 @@ import { emailService } from '../email'
 import { teamService } from '../teams'
 import httpStatus from 'http-status'
 import { FetchApiInterface } from './admin.interfaces'
+import { subscriptionService } from '../subscriptions'
 
 export const enrollCompany = catchAsync(async (req: Request, res: Response) => {
   const { email, companyName, name } = req.body
@@ -17,6 +18,14 @@ export const enrollCompany = catchAsync(async (req: Request, res: Response) => {
   emailService.sendOnboardingEmail(user.email, user.name.split(' ')[0] || 'customer', verifyEmailToken)
   const team = await teamService.createTeam(companyName, user._id)
   await userService.updateUserById(user.id, { team: team._id })
+  const plans = await subscriptionService.fetchSubscriptionPlans()
+  let freeplan = plans.find(e => e.price === 0)
+  if (freeplan) {
+    await subscriptionService.subscribeClient({
+      planId: freeplan.id,
+      numberOfMonths: 24
+    }, team.id)
+  }
   res.status(httpStatus.CREATED).send({ message: "Company onboarded successfully" })
 })
 

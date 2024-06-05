@@ -21,7 +21,7 @@ export const inviteTeamMembers = catchAsync(async (req: Request, res: Response) 
   const { resetPasswordToken: token } = await tokenService.generateResetPasswordToken(detail.email)
   const team = await teamService.fetchTeamById(req.user.team)
   agenda.now<SEND_VERIFICATION_MESSAGE>(SEND_TEAM_INVITATION, {
-    code: token, name: req.user.name, email: req.user.email, teamName: team?.name || "Consize"
+    code: token, name: detail.name, email: detail.email, teamName: team?.name || "Consize"
   })
   res.status(httpStatus.NO_CONTENT).send()
 })

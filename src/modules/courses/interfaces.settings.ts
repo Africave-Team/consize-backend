@@ -60,6 +60,13 @@ export interface Period {
   type: PeriodTypes
 }
 
+export interface CourseResumptionSettings {
+  enableImmediate: boolean
+  enabledDateTimeSetup: boolean
+  days: number
+  time: string
+}
+
 
 export interface CourseSettings {
   enrollmentFormFields: EnrollmentField[]
@@ -75,6 +82,8 @@ export interface CourseSettings {
   // How many hours of learner inactivity before the next reminder (to continue) gets sent out?
   inactivityPeriod: Period
   dropoutEvent: DropoutEvents
+  resumption: CourseResumptionSettings
+
 }
 
 export interface CourseSettingsInterface extends CourseSettings, Document {

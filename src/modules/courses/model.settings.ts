@@ -2,7 +2,7 @@
 import mongoose, { Schema } from 'mongoose'
 import { v4 } from "uuid"
 import { toJSON } from '../toJSON'
-import { CourseMaterial, CourseMetadata, CourseSettingsInterface, CourseSettingsInterfaceModel, DropoutEvents, EnrollmentField, LearnerGroup, LearnerGroupLaunchTime, Period, PeriodTypes } from './interfaces.settings'
+import { CourseMaterial, CourseMetadata, CourseResumptionSettings, CourseSettingsInterface, CourseSettingsInterfaceModel, DropoutEvents, EnrollmentField, LearnerGroup, LearnerGroupLaunchTime, Period, PeriodTypes } from './interfaces.settings'
 
 const EnrollFieldSchema = new Schema<EnrollmentField>({
   id: { type: String, default: () => v4() },
@@ -88,6 +88,24 @@ export const LearnerGroupSchema = new Schema<LearnerGroup>({
   timestamps: false
 })
 
+export const CourseResumptionSettingsSchema = new Schema<CourseResumptionSettings>({
+  enableImmediate: {
+    type: Boolean
+  },
+  enabledDateTimeSetup: {
+    type: Boolean
+  },
+  days: {
+    type: Number
+  },
+  time: {
+    type: String
+  }
+}, {
+  _id: false,
+  timestamps: false
+})
+
 const CourseMaterialSchema = new Schema<CourseMaterial>({
   id: { type: String, default: () => v4() },
   fileName: {
@@ -140,6 +158,9 @@ const SettingSchema = new Schema<CourseSettingsInterface, CourseSettingsInterfac
       type: String,
       enum: Object.values(DropoutEvents)
     },
+    resumption: {
+      type: CourseResumptionSettingsSchema
+    }
 
   },
   {

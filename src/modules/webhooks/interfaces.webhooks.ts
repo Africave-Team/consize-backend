@@ -24,7 +24,7 @@ export interface ReplyButton {
   }
 }
 
-interface InteractiveMessageSectionRow {
+export interface InteractiveMessageSectionRow {
   id: string,
   title: string
   description: string

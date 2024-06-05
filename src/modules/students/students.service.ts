@@ -5,7 +5,7 @@ import randomstring from "randomstring"
 import { CreateStudentPayload, Student, StudentCourseStats, StudentInterface } from './interface.students'
 import { agenda } from '../scheduler'
 import { GENERATE_COURSE_TRENDS, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
-import { Message } from '../webhooks/interfaces.webhooks'
+import { Message, ReplyButton } from '../webhooks/interfaces.webhooks'
 import OTP from './model.otp'
 import db from "../rtdb"
 import moment from 'moment-timezone'
@@ -18,6 +18,7 @@ import Teams from '../teams/model.teams'
 import { QuizInterface } from '../courses/interfaces.quizzes'
 import { sendWelcomeSlack, startCourseSlack } from '../slack/slack.services'
 import Courses from '../courses/model.courses'
+import Settings from '../courses/model.settings'
 
 export const bulkAddStudents = async (students: Student[]): Promise<string[]> => {
   try {
@@ -171,6 +172,117 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
   if (!owner) {
     throw new ApiError(httpStatus.NOT_FOUND, "No team found.")
   }
+  const settings = await Settings.findById(course.settings)
+
+  if (settings) {
+    const buttons: ReplyButton[] = []
+    let message = `Hello ${student.firstName}! Thank you for enrolling on the course *${course.title}*\nPlease select when you would like to start this course.\n\n`
+    let options = ['A', 'B', 'C']
+    if (settings.resumption) {
+      if (settings.resumption.enableImmediate) {
+        let index = buttons.length
+        buttons.push({
+          type: "reply",
+          reply: {
+            id: `enroll_now_${courseId}`,
+            title: `${options[index]}. Start now`
+          }
+        })
+        message = `${message}If you choose option *${options[index]}*, you start the course immediately\n\n`
+      }
+
+      if (settings.resumption.days !== null && settings.resumption.time !== null) {
+        let index = buttons.length
+        // calculate the 
+        let date = moment().add(settings.resumption.days, 'days')
+        let day = date.format('dddd, Do of MMMM, YYYY')
+        buttons.push({
+          type: "reply",
+          reply: {
+            id: `enroll_default_time_${courseId}`,
+            title: `${options[index]}. Use default time`
+          }
+        })
+        message = `${message}If you choose option *${options[index]}*, your course starts at a time set by the course creator, i.e. ${date.hour(Number(settings.resumption.time.replace(':00', ''))).format('hA')} on ${day}\n\n`
+      }
+
+      if (settings.resumption.enabledDateTimeSetup) {
+        let index = buttons.length
+        buttons.push({
+          type: "reply",
+          reply: {
+            id: `choose_enroll_time_${courseId}`,
+            title: `${options[index]}. Choose your time`
+          }
+        })
+        message = `${message}If you choose option *${options[index]}*, you may choose your own time\n`
+      }
+    } else {
+      message = `${message}If you choose option A, your course starts immediately.\n\nIf you choose option B, you may choose when you want to start the course.`
+      buttons.push({
+        type: "reply",
+        reply: {
+          id: `enroll_now_${courseId}`,
+          title: "A. Start now"
+        }
+      }, {
+        type: "reply",
+        reply: {
+          id: `choose_enroll_time_${courseId}`,
+          title: "B. Choose your time"
+        }
+      },)
+    }
+    // send the extra message
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: student.phoneNumber,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        body: {
+          text: message
+        },
+        type: "button",
+        action: {
+          buttons
+        }
+      }
+    })
+  } else {
+    startEnrollmentWhatsapp(studentId, courseId)
+  }
+
+}
+
+export const startEnrollmentWhatsapp = async function (studentId: string, courseId: string): Promise<void> {
+  const student = await Students.findOne({ _id: studentId })
+  if (!student) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No student account found.")
+  }
+  if (!student.verified) {
+    await sendOTP(student.id, student.phoneNumber)
+    throw new ApiError(httpStatus.BAD_REQUEST, "Student phone number has not been verified.")
+  }
+
+  // enroll course
+  const course = await Courses.findById(courseId)
+  if (!course) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No course found for this id.")
+  }
+  const owner = await Teams.findById(course.owner).select('name')
+  if (!owner) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No team found.")
+  }
+  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+    to: student.phoneNumber,
+    type: "text",
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    text: {
+      body: `Thank you for your message! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
+    }
+  })
   await generateCourseFlow(courseId)
   await startCourse(student.phoneNumber, courseId, student.id)
   await sendWelcome(courseId, student.phoneNumber)
@@ -187,7 +299,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
     lessons: {}
   })
 
-  const jobs = await agenda.jobs({ 'data.courseId': courseId })
+  const jobs = await agenda.jobs({ 'data.courseId': courseId, name: GENERATE_COURSE_TRENDS })
   if (jobs.length === 0) {
     // Queue the trends generator
     agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
@@ -195,7 +307,6 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
       teamId: course.owner
     })
   }
-
 }
 
 export const findStudentById = (studentId: string) => Students.findById(studentId)

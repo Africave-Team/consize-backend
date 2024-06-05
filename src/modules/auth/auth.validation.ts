@@ -54,6 +54,6 @@ export const verifyEmail = {
   body: Joi.object().keys({
     token: Joi.string().required(),
     password: Joi.string().required(),
-    logo: Joi.string().required(),
+    logo: Joi.string().optional().allow(''),
   }),
 }

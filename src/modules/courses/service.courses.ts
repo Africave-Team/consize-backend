@@ -159,7 +159,13 @@ const setInitialCourseSettings = async function (id: string) {
       value: 59,
       type: PeriodTypes.MINUTES
     },
-    dropoutEvent: DropoutEvents.LESSON_COMPLETION
+    dropoutEvent: DropoutEvents.LESSON_COMPLETION,
+    resumption: {
+      days: 3,
+      time: "08:00",
+      enableImmediate: true,
+      enabledDateTimeSetup: true
+    }
   })
   await Course.findByIdAndUpdate(id, { $set: { settings: setting.id } })
   await setting.save()
