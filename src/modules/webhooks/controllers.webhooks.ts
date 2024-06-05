@@ -384,7 +384,6 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       if (interactive.type === "list_reply") {
         try {
           const [action, values] = interactive.list_reply.id.split('~')
-          console.log(action, values)
           switch (action) {
             case "resumption_time":
               const [courseId, value1, value2] = values.split('|')
@@ -420,7 +419,6 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   let dateValue = moment(value1)
                   let times: InteractiveMessageSectionRow[] = []
                   let start = 8
-                  console.log(dateValue)
                   if (dateValue.isSame(moment(), 'day')) {
                     let currentTime = moment()
 
@@ -431,16 +429,15 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                     const nextEvenHour = currentHour % 2 === 0 ? currentHour + 2 : currentHour + 1
                     start = nextEvenHour
                   }
-                  console.log(start)
+                  let isToday = dateValue.isSame(moment())
+                  let isTomorrow = dateValue.isSame(moment().add(1))
                   for (let index = start; index < 20; index += 2) {
-                    console.log(index)
                     times.push({
                       id: `resumption_time-${courseId}|${value1}|${moment().hour(index).minute(0).second(0).format('HH:mm')}`,
-                      title: `${moment().hour(index).minute(0).second(0).format('hA')} on ${dateValue.format('DD-MMM-YY')}`,
+                      title: `${moment().hour(index).minute(0).second(0).format('hA')} ${isToday ? 'today' : isTomorrow ? 'tomorrow' : `on ${dateValue.format('Do MMM, YYYY')}`}`,
                       description: ""
                     })
                   }
-                  console.log(times)
                   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                     to: destination,
                     type: "interactive",
@@ -455,7 +452,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                         button: "Select a time",
                         sections: [
                           {
-                            title: "Select a convenient time to start your course",
+                            title: "Select time to start.",
                             rows: times
                           }
                         ]
