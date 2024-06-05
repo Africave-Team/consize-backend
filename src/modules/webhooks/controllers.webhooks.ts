@@ -78,6 +78,16 @@ export const getMomentTomorrow = (time: number) => {
   return formattedDuration
 }
 
+function convertTo12HourFormat (time: string) {
+  const [hours, minutes] = time.split(':')
+  if (hours && minutes) {
+    const period = Number(hours) >= 12 ? 'PM' : 'AM'
+    const adjustedHours = Number(hours) % 12 || 12
+    return `${adjustedHours}:${minutes} ${period}`
+  }
+  return null
+}
+
 export const whatsappWebhookSubscriber = catchAsync(async (req: Request, res: Response) => {
   if (
     req.query['hub.mode'] == 'subscribe' &&
@@ -301,7 +311,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                     messaging_product: "whatsapp",
                     recipient_type: "individual",
                     text: {
-                      body: `Thank you. You have scheduled to start this course ${settings.resumption.time} on ${day}.\n\n We will begin seding you this course content on the said date and time.`
+                      body: `Thank you. You have scheduled to start this course ${convertTo12HourFormat(settings.resumption.time)} on ${day}.\n\n We will begin seding you this course content on the said date and time.`
                     }
                   })
                 }
@@ -309,11 +319,36 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             }
           }
           if (btnId.startsWith('choose_enroll_time_')) {
-            const courseId = btnId.replace("choose_enroll_time_", "")
+            // const courseId = btnId.replace("choose_enroll_time_", "")
             // continue a course from the positions message
             const student = await studentService.findStudentByPhoneNumber(destination)
             if (student) {
-              studentService.startEnrollmentWhatsapp(student.id, courseId)
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: student.phoneNumber,
+                type: "interactive",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                interactive: {
+                  body: {
+                    text: "Please select one option"
+                  },
+                  type: "list",
+                  action: {
+                    sections: [
+                      {
+                        title: "Select a convenient date",
+                        rows: [
+                          {
+                            id: "resume",
+                            title: "Option 1",
+                            description: "A description"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              })
             }
           }
           break
