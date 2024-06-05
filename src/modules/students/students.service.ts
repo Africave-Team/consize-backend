@@ -199,7 +199,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
           type: "reply",
           reply: {
             id: `enroll_default_time_${courseId}`,
-            title: `${options[index]}. Start at the default time`
+            title: `${options[index]}. Use default time`
           }
         })
         message = `${message}If you choose option ${options[index]}, your course starts at a time set by the course creator, i.e. ${settings.resumption.time} on ${day}\n`
@@ -211,7 +211,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
           type: "reply",
           reply: {
             id: `choose_enroll_time_${courseId}`,
-            title: `${options[index]}. Choose your own time`
+            title: `${options[index]}. Choose your time`
           }
         })
         message = `${message}If you choose option ${options[index]}, you may choose your own time\n`
@@ -228,7 +228,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
         type: "reply",
         reply: {
           id: `choose_enroll_time_${courseId}`,
-          title: "B. Choose your own time"
+          title: "B. Choose your time"
         }
       },)
     }
