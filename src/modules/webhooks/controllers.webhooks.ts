@@ -342,7 +342,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   let item: InteractiveMessageSectionRow = {
                     id: "", title: "", description: ""
                   }
-                  let date = moment().add(index, 'days').format('dddd, DD MM, YYYY')
+                  let date = moment().add(index, 'days').format('dddd, DD MMM, YYYY')
                   if (index === 0) {
                     item.title = "Start today"
                   } else if (index === 1) {
@@ -431,7 +431,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 for (let index = start; index < 20; index + 2) {
                   times.push({
                     id: `resumption_time-${courseId}|${value1}|${moment().hour(index).minute(0).second(0).format('HH:mm')}`,
-                    title: `${moment().hour(index).minute(0).second(0).format('HH:mm')} on ${dateValue.format('dddd, DD MM, YYYY')}`,
+                    title: `${moment().hour(index).minute(0).second(0).format('HH:mm')} on ${dateValue.format('ddd, DD MMM, YYYY')}`,
                     description: ""
                   })
                 }
