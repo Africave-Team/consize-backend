@@ -336,7 +336,12 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               // continue a course from the positions message
               const student = await studentService.findStudentByPhoneNumber(destination)
               if (student) {
-                const dates: InteractiveMessageSectionRow[] = new Array(7).fill({ id: "", title: "", description: "" }).map((item: InteractiveMessageSectionRow, index) => {
+                const dates: InteractiveMessageSectionRow[] = []
+
+                for (let index = 0; index < 7; index++) {
+                  let item: InteractiveMessageSectionRow = {
+                    id: "", title: "", description: ""
+                  }
                   let date = moment().add(index, 'days').format('dddd, DD MM, YYYY')
                   if (index === 0) {
                     item.title = "Today"
@@ -346,8 +351,8 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                     item.title = `On ${date}`
                   }
                   item.id = `resumption_date-${courseId}|${date}`
-                  return item
-                })
+                  dates.push(item)
+                }
                 console.log(dates)
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                   to: student.phoneNumber,
