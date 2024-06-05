@@ -334,6 +334,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   },
                   type: "list",
                   action: {
+                    button: "Select a date",
                     sections: [
                       {
                         title: "Select a convenient date",
