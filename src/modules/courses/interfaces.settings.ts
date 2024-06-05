@@ -63,7 +63,8 @@ export interface Period {
 export interface CourseResumptionSettings {
   enableImmediate: boolean
   enabledDateTimeSetup: boolean
-  defaultResumption: Date | null
+  days: number
+  time: string
 }
 
 

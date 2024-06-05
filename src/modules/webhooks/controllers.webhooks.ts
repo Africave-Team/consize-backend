@@ -271,6 +271,31 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
 
             }))
           }
+
+          if (btnId.startsWith('enroll_now_')) {
+            const courseId = btnId.replace("enroll_now_", "")
+            // continue a course from the positions message
+            const student = await studentService.findStudentByPhoneNumber(destination)
+            if (student) {
+              studentService.startEnrollmentWhatsapp(student.id, courseId)
+            }
+          }
+          if (btnId.startsWith('enroll_default_time_')) {
+            const courseId = btnId.replace("enroll_default_time_", "")
+            // continue a course from the positions message
+            const student = await studentService.findStudentByPhoneNumber(destination)
+            if (student) {
+              studentService.startEnrollmentWhatsapp(student.id, courseId)
+            }
+          }
+          if (btnId.startsWith('choose_enroll_time_')) {
+            const courseId = btnId.replace("choose_enroll_time_", "")
+            // continue a course from the positions message
+            const student = await studentService.findStudentByPhoneNumber(destination)
+            if (student) {
+              studentService.startEnrollmentWhatsapp(student.id, courseId)
+            }
+          }
           break
       }
       // schedule inactivity message

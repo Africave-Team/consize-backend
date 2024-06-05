@@ -9,7 +9,7 @@ const createCourseRequest: Record<keyof CreateCoursePayload, any> = {
   bundle: Joi.boolean(),
   private: Joi.boolean(),
   headerMedia: Joi.object<Media>().keys({
-    awsFileKey: Joi.string().optional(),
+    awsFileKey: Joi.string().optional().allow(''),
     mediaType: Joi.string().valid(...Object.values(MediaType)),
     url: Joi.string().required()
   }),
@@ -44,7 +44,7 @@ export const updateCourse = {
     bundle: Joi.boolean(),
     private: Joi.boolean(),
     headerMedia: Joi.object<Media>().keys({
-      awsFileKey: Joi.string().optional(),
+      awsFileKey: Joi.string().optional().allow(''),
       mediaType: Joi.string().valid(...Object.values(MediaType)),
       url: Joi.string().required()
     }).unknown(true),

@@ -95,9 +95,12 @@ export const CourseResumptionSettingsSchema = new Schema<CourseResumptionSetting
   enabledDateTimeSetup: {
     type: Boolean
   },
-  defaultResumption: {
-    type: Date
+  days: {
+    type: Number
   },
+  time: {
+    type: String
+  }
 }, {
   _id: false,
   timestamps: false
