@@ -2,7 +2,7 @@ import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
 import { GENERATE_COURSE_OUTLINE_AI, GENERATE_SECTION_AI } from '../MessageTypes'
 import { buildCourseOutline, buildSection } from '../../ai/services'
-import { BuildSectionPayload } from '@/modules/ai/interfaces'
+import { BuildSectionPayload } from '../../ai/interfaces'
 
 
 export const handleCourseOutlineAI: Processor<{ courseId: string, prompt: string, title: string, lessonCount: number }> = async (job: Job<{ courseId: string, prompt: string, title: string, lessonCount: number }>) => {

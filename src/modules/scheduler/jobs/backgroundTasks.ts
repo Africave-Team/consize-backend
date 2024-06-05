@@ -9,7 +9,7 @@ import { initiateCourseForCohort, initiateCourseForCohortForSingleStudent } from
 import { sendResumptionMessageSlack } from '../../slack/slack.services'
 import { Distribution } from '../../courses/interfaces.courses'
 import { handleTerminateSubscription, handleTerminateSubscriptionGracePeriod } from '../../subscriptions/subscriptions.services'
-import { studentService } from '@/modules/students'
+import { studentService } from '../../students'
 
 export const handleCourseTrends: Processor<{ courseId: string, teamId: string }> = async (job: Job<{ courseId: string, teamId: string }>) => {
   try {
