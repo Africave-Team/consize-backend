@@ -416,11 +416,11 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             case "resumption_date":
               try {
                 const [courseId, value1] = values.split('|')
-                console.log(courseId, value1, values)
                 if (value1) {
                   let dateValue = moment(value1)
                   let times: InteractiveMessageSectionRow[] = []
                   let start = 8
+                  console.log(dateValue)
                   if (dateValue.isSame(moment(), 'day')) {
                     let currentTime = moment()
 
@@ -431,7 +431,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                     const nextEvenHour = currentHour % 2 === 0 ? currentHour + 2 : currentHour + 1
                     start = nextEvenHour
                   }
-
+                  console.log(start)
                   for (let index = start; index < 20; index + 2) {
                     times.push({
                       id: `resumption_time-${courseId}|${value1}|${moment().hour(index).minute(0).second(0).format('HH:mm')}`,
