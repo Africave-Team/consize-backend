@@ -350,7 +350,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   } else {
                     item.title = `${date}`
                   }
-                  item.id = `resumption_date-${courseId}|${moment().add(index, 'days').format('YYYY-MM-DD')}`
+                  item.id = `resumption_date~${courseId}|${moment().add(index, 'days').format('YYYY-MM-DD')}`
                   dates.push(item)
                 }
                 console.log(dates)
@@ -383,7 +383,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
 
       if (interactive.type === "list_reply") {
         try {
-          const [action, values] = interactive.list_reply.id.split('-')
+          const [action, values] = interactive.list_reply.id.split('~')
           console.log(action, values)
           switch (action) {
             case "resumption_time":
@@ -416,6 +416,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             case "resumption_date":
               try {
                 const [courseId, value1] = values.split('|')
+                console.log(courseId, value1, values)
                 if (value1) {
                   let dateValue = moment(value1)
                   let times: InteractiveMessageSectionRow[] = []
