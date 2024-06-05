@@ -325,7 +325,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                       messaging_product: "whatsapp",
                       recipient_type: "individual",
                       text: {
-                        body: `Thank you. You have scheduled to start this course ${date.hour(Number(settings.resumption.time.replace(':00', ''))).format('hA')} on ${day}.\n\n We will begin sending you this course content on the above date and time.`
+                        body: `Thank you. You have scheduled to start the course *${course.title}* by ${date.hour(Number(settings.resumption.time.replace(':00', ''))).format('hA')} on ${day}.\n\n We will begin sending you this course content on the above date and time.`
                       }
                     })
                   }
@@ -396,25 +396,22 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               if (student) {
                 const course = await courseService.fetchSingleCourse({ courseId })
                 if (course) {
-                  let settings = await courseService.fetchSingleSettings(course.settings)
-                  if (settings && settings.resumption) {
-                    let date = moment(value1)
-                    let day = date.format('dddd, Do of MMMM, YYYY')
-                    const now = moment.tz(student.tz)
-                    let dayFormatted = moment(value1).format('YYYY-MM-DD')
-                    const time = moment(`${dayFormatted} ${value2}`).subtract(now.utcOffset(), 'minutes')
-                    agenda.schedule<{ studentId: string, courseId: string }>(time.toDate(), ENROLL_STUDENT_DEFAULT_DATE, { courseId, studentId: student.id })
+                  let date = moment(value1)
+                  let day = date.format('dddd, Do of MMMM, YYYY')
+                  const now = moment.tz(student.tz)
+                  let dayFormatted = moment(value1).format('YYYY-MM-DD')
+                  const time = moment(`${dayFormatted} ${value2}`).subtract(now.utcOffset(), 'minutes')
+                  agenda.schedule<{ studentId: string, courseId: string }>(time.toDate(), ENROLL_STUDENT_DEFAULT_DATE, { courseId, studentId: student.id })
 
-                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                      to: student.phoneNumber,
-                      type: "text",
-                      messaging_product: "whatsapp",
-                      recipient_type: "individual",
-                      text: {
-                        body: `Thank you. You have scheduled to start this course ${now.hour(Number(settings.resumption.time.replace(':00', ''))).format('hA')} on ${day}.\n\n We will begin sending you this course content on the above date and time.`
-                      }
-                    })
-                  }
+                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                    to: student.phoneNumber,
+                    type: "text",
+                    messaging_product: "whatsapp",
+                    recipient_type: "individual",
+                    text: {
+                      body: `Thank you. You have scheduled to start the course *${course.title}* by ${date.hour(Number(value2.replace(':00', ''))).format('hA')} on ${day}.\n\n We will begin sending you this course content on the above date and time.`
+                    }
+                  })
                 }
               }
               break
