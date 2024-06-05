@@ -15,7 +15,6 @@ import { maxEnrollmentReached, resolveCourseWithShortcode, resolveTeamCourseWith
 import { studentService } from '../students'
 import Students from '../students/model.students'
 import Courses from '../courses/model.courses'
-import { delay } from '../generators/generator.service'
 // import { logger } from '../logger'
 
 const timezones = [
@@ -541,16 +540,6 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 } else {
                   const student = await Students.findOne({ phoneNumber: destination })
                   if (student) {
-                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                      to: destination,
-                      type: "text",
-                      messaging_product: "whatsapp",
-                      recipient_type: "individual",
-                      text: {
-                        body: `Thank you for your message! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
-                      }
-                    })
-                    delay(8000)
                     await studentService.enrollStudentToCourse(student.id, course.id)
                   } else {
                     const fields = [{

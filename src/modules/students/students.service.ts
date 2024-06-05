@@ -273,6 +273,15 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
   if (!owner) {
     throw new ApiError(httpStatus.NOT_FOUND, "No team found.")
   }
+  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+    to: student.phoneNumber,
+    type: "text",
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    text: {
+      body: `Thank you for your message! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
+    }
+  })
   await generateCourseFlow(courseId)
   await startCourse(student.phoneNumber, courseId, student.id)
   await sendWelcome(courseId, student.phoneNumber)
