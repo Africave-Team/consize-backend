@@ -161,7 +161,8 @@ const setInitialCourseSettings = async function (id: string) {
     },
     dropoutEvent: DropoutEvents.LESSON_COMPLETION,
     resumption: {
-      defaultResumption: null,
+      days: 3,
+      time: "08:00",
       enableImmediate: true,
       enabledDateTimeSetup: true
     }
