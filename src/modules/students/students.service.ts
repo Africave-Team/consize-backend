@@ -195,7 +195,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
         let index = buttons.length
         // calculate the 
         let date = moment().add(settings.resumption.days, 'days')
-        let day = date.format('dddd, Do of MMM, YYYY')
+        let day = date.format('dddd, Do of MMMM, YYYY')
         buttons.push({
           type: "reply",
           reply: {
