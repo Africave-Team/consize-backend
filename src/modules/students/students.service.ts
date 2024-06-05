@@ -19,7 +19,6 @@ import { QuizInterface } from '../courses/interfaces.quizzes'
 import { sendWelcomeSlack, startCourseSlack } from '../slack/slack.services'
 import Courses from '../courses/model.courses'
 import Settings from '../courses/model.settings'
-import { convertTo12HourFormat } from '../webhooks/controllers.webhooks'
 
 export const bulkAddStudents = async (students: Student[]): Promise<string[]> => {
   try {
