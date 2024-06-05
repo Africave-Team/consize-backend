@@ -387,6 +387,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           switch (action) {
             case "resumption_time":
               const [courseId, value1, value2] = values.split('|')
+              console.log(courseId, value1, value2)
               // continue a course from the positions message
               const student = await studentService.findStudentByPhoneNumber(destination)
               if (student) {
