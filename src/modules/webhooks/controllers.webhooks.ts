@@ -436,7 +436,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                     console.log(index)
                     times.push({
                       id: `resumption_time-${courseId}|${value1}|${moment().hour(index).minute(0).second(0).format('HH:mm')}`,
-                      title: `${moment().hour(index).minute(0).second(0).format('HH:mm')} on ${dateValue.format('ddd, DD MMM, YYYY')}`,
+                      title: `${moment().hour(index).minute(0).second(0).format('hA')} on ${dateValue.format('DD-MMM-YY')}`,
                       description: ""
                     })
                   }
