@@ -412,50 +412,56 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             }
             break
           case "resumption_date":
-            if (value1) {
-              let dateValue = moment(value1)
-              let times: InteractiveMessageSectionRow[] = []
-              let start = 8
-              if (dateValue.isSame(moment(), 'day')) {
-                let currentTime = moment()
+            try {
+              if (value1) {
+                console.log(value1)
+                let dateValue = moment(value1)
+                console.log(dateValue)
+                let times: InteractiveMessageSectionRow[] = []
+                let start = 8
+                if (dateValue.isSame(moment(), 'day')) {
+                  let currentTime = moment()
 
-                // Get the current hour
-                const currentHour = currentTime.hour()
+                  // Get the current hour
+                  const currentHour = currentTime.hour()
 
-                // Calculate the next even hour
-                const nextEvenHour = currentHour % 2 === 0 ? currentHour + 2 : currentHour + 1
-                start = nextEvenHour
-              }
-
-              for (let index = start; index < 20; index + 2) {
-                times.push({
-                  id: `resumption_time-${courseId}|${value1}|${moment().hour(index).minute(0).second(0).format('HH:mm')}`,
-                  title: `${moment().hour(index).minute(0).second(0).format('HH:mm')} on ${dateValue.format('dddd, DD MM, YYYY')}`,
-                  description: ""
-                })
-              }
-              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                to: destination,
-                type: "interactive",
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                interactive: {
-                  body: {
-                    text: "Select a convenient time to start your course"
-                  },
-                  type: "list",
-                  action: {
-                    button: "Select a time",
-                    sections: [
-                      {
-                        title: "Select a convenient time to start your course",
-                        rows: times
-                      }
-                    ]
-                  }
+                  // Calculate the next even hour
+                  const nextEvenHour = currentHour % 2 === 0 ? currentHour + 2 : currentHour + 1
+                  start = nextEvenHour
                 }
-              })
 
+                for (let index = start; index < 20; index + 2) {
+                  times.push({
+                    id: `resumption_time-${courseId}|${value1}|${moment().hour(index).minute(0).second(0).format('HH:mm')}`,
+                    title: `${moment().hour(index).minute(0).second(0).format('HH:mm')} on ${dateValue.format('dddd, DD MM, YYYY')}`,
+                    description: ""
+                  })
+                }
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: destination,
+                  type: "interactive",
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  interactive: {
+                    body: {
+                      text: "Select a convenient time to start your course"
+                    },
+                    type: "list",
+                    action: {
+                      button: "Select a time",
+                      sections: [
+                        {
+                          title: "Select a convenient time to start your course",
+                          rows: times
+                        }
+                      ]
+                    }
+                  }
+                })
+
+              }
+            } catch (error) {
+              console.log(error)
             }
             break
 
