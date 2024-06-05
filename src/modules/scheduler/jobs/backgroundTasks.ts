@@ -1,6 +1,6 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
-import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE, GENERATE_COURSE_TRENDS, HANDLE_SUBSCRIPTION_GRACE_PERIOD_TERMINATION, HANDLE_SUBSCRIPTION_TERMINATION, INACTIVITY_REMINDER, INACTIVITY_REMINDER_SHORT, REMIND_ME, RESUME_TOMORROW } from '../MessageTypes'
+import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE, ENROLL_STUDENT_DEFAULT_DATE, GENERATE_COURSE_TRENDS, HANDLE_SUBSCRIPTION_GRACE_PERIOD_TERMINATION, HANDLE_SUBSCRIPTION_TERMINATION, INACTIVITY_REMINDER, INACTIVITY_REMINDER_SHORT, REMIND_ME, RESUME_TOMORROW } from '../MessageTypes'
 import { generateCurrentCourseTrends, handleStudentSlack, handleStudentWhatsapp, initiateDailyRoutine } from '../../courses/service.courses'
 import { CourseEnrollment, DailyReminderNotificationPayload } from '../../webhooks/interfaces.webhooks'
 import config from '../../../config/config'
@@ -9,6 +9,7 @@ import { initiateCourseForCohort, initiateCourseForCohortForSingleStudent } from
 import { sendResumptionMessageSlack } from '../../slack/slack.services'
 import { Distribution } from '../../courses/interfaces.courses'
 import { handleTerminateSubscription, handleTerminateSubscriptionGracePeriod } from '../../subscriptions/subscriptions.services'
+import { studentService } from '@/modules/students'
 
 export const handleCourseTrends: Processor<{ courseId: string, teamId: string }> = async (job: Job<{ courseId: string, teamId: string }>) => {
   try {
@@ -138,6 +139,17 @@ const handleSubGracePeriodTermination: Processor<{ subscriptionId: string }> = a
   }
 }
 
+const handleStudentEnrollment: Processor<{ studentId: string, courseId: string }> = async (job: Job<{ studentId: string, courseId: string }>) => {
+  try {
+    if (AppConfig.server !== "test") {
+      const data = job.attrs.data
+      studentService.startEnrollmentWhatsapp(data.studentId, data.courseId)
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
 module.exports = (agenda: Agenda) => {
   agenda.define<{ courseId: string, teamId: string }>(GENERATE_COURSE_TRENDS, handleCourseTrends)
   agenda.define<any>(DAILY_ROUTINE, handleStartDailyRoutine)
@@ -152,4 +164,6 @@ module.exports = (agenda: Agenda) => {
   // subscriptions
   agenda.define<{ subscriptionId: string }>(HANDLE_SUBSCRIPTION_TERMINATION, handleSubTermination)
   agenda.define<{ subscriptionId: string }>(HANDLE_SUBSCRIPTION_GRACE_PERIOD_TERMINATION, handleSubGracePeriodTermination)
+
+  agenda.define<{ studentId: string, courseId: string }>(ENROLL_STUDENT_DEFAULT_DATE, handleStudentEnrollment)
 }

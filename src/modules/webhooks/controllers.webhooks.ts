@@ -3,7 +3,7 @@ import he from "he"
 import { Request, Response } from 'express'
 import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
-import { RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { ENROLL_STUDENT_DEFAULT_DATE, RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE } from './interfaces.webhooks'
 import { convertToWhatsAppString, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement } from "./service.webhooks"
 import config from '../../config/config'
@@ -15,6 +15,7 @@ import { maxEnrollmentReached, resolveCourseWithShortcode, resolveTeamCourseWith
 import { studentService } from '../students'
 import Students from '../students/model.students'
 import Courses from '../courses/model.courses'
+import { courseService } from '../courses'
 // import { logger } from '../logger'
 
 const timezones = [
@@ -285,7 +286,26 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             // continue a course from the positions message
             const student = await studentService.findStudentByPhoneNumber(destination)
             if (student) {
-              studentService.startEnrollmentWhatsapp(student.id, courseId)
+              const course = await courseService.fetchSingleCourse({ courseId })
+              if (course) {
+                let settings = await courseService.fetchSingleSettings(course.settings)
+                if (settings && settings.resumption) {
+                  let day = moment().add(settings.resumption.days, 'days').format('dddd, DD of MM, YYYY')
+                  const now = moment.tz(student.tz)
+                  let dayFormatted = moment().add(settings.resumption.days, 'days').format('YYYY-MM-DD')
+                  const time = moment(`${dayFormatted} ${settings.resumption.time}`).subtract(now.utcOffset(), 'minutes')
+                  agenda.schedule<{ studentId: string, courseId: string }>(time.toDate(), ENROLL_STUDENT_DEFAULT_DATE, { courseId, studentId: student.id })
+                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                    to: student.phoneNumber,
+                    type: "text",
+                    messaging_product: "whatsapp",
+                    recipient_type: "individual",
+                    text: {
+                      body: `Thank you. You have scheduled to start this course ${settings.resumption.time} on ${day}.\n\n We will begin seding you this course content on the said date and time.`
+                    }
+                  })
+                }
+              }
             }
           }
           if (btnId.startsWith('choose_enroll_time_')) {
