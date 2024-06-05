@@ -432,7 +432,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                     start = nextEvenHour
                   }
                   console.log(start)
-                  for (let index = start; index < 20; index + 2) {
+                  for (let index = start; index < 20; index += 2) {
                     console.log(index)
                     times.push({
                       id: `resumption_time-${courseId}|${value1}|${moment().hour(index).minute(0).second(0).format('HH:mm')}`,
