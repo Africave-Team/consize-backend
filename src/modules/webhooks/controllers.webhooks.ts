@@ -399,7 +399,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   let settings = await courseService.fetchSingleSettings(course.settings)
                   if (settings && settings.resumption) {
                     let date = moment(value1)
-                    let day = date.format('dddd, Do of MMM, YYYY')
+                    let day = date.format('dddd, Do of MMMM, YYYY')
                     const now = moment.tz(student.tz)
                     let dayFormatted = moment(value1).format('YYYY-MM-DD')
                     const time = moment(`${dayFormatted} ${value2}`).subtract(now.utcOffset(), 'minutes')
