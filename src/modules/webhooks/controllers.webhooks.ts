@@ -313,7 +313,8 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 if (course) {
                   let settings = await courseService.fetchSingleSettings(course.settings)
                   if (settings && settings.resumption) {
-                    let day = moment().add(settings.resumption.days, 'days').format('dddd, Do of MMM, YYYY')
+                    let date = moment().add(settings.resumption.days, 'days')
+                    let day = date.format('dddd, Do of MMMM, YYYY')
                     const now = moment.tz(student.tz)
                     let dayFormatted = moment().add(settings.resumption.days, 'days').format('YYYY-MM-DD')
                     const time = moment(`${dayFormatted} ${settings.resumption.time}`).subtract(now.utcOffset(), 'minutes')
@@ -324,7 +325,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                       messaging_product: "whatsapp",
                       recipient_type: "individual",
                       text: {
-                        body: `Thank you. You have scheduled to start this course ${convertTo12HourFormat(settings.resumption.time)} on ${day}.\n\n We will begin sebding you this course content on the above date and time.`
+                        body: `Thank you. You have scheduled to start this course ${date.hour(Number(settings.resumption.time.replace(':00', ''))).format('hA')} on ${day}.\n\n We will begin sebding you this course content on the above date and time.`
                       }
                     })
                   }
