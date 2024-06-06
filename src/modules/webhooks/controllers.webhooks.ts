@@ -316,8 +316,10 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                     let date = moment().add(settings.resumption.days, 'days')
                     let day = date.format('dddd, Do of MMMM, YYYY')
                     const now = moment.tz(student.tz)
+                    const [h, m] = settings.resumption.time.split(':')
+                    let hours = Number(h), minutes = Number(m)
                     let dayFormatted = moment().add(settings.resumption.days, 'days').format('YYYY-MM-DD')
-                    const time = moment(`${dayFormatted} ${settings.resumption.time}`).subtract(now.utcOffset(), 'minutes')
+                    const time = moment(`${dayFormatted}`).hour(hours).minute(minutes).subtract(now.utcOffset(), 'minutes')
                     agenda.schedule<{ studentId: string, courseId: string }>(time.toDate(), ENROLL_STUDENT_DEFAULT_DATE, { courseId, studentId: student.id })
                     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                       to: student.phoneNumber,
@@ -325,7 +327,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                       messaging_product: "whatsapp",
                       recipient_type: "individual",
                       text: {
-                        body: `Thank you. You have scheduled to start the course *${course.title}* by ${date.hour(Number(settings.resumption.time.replace(':00', ''))).format('hA')} on ${day}.\n\n We will begin sending you this course content on the above date and time.`
+                        body: `Thank you. You have scheduled to start the course *${course.title}* by ${date.hour(hours).minute(minutes).format('hA')} on ${day}.\n\n We will begin sending you this course content on the above date and time.`
                       }
                     })
                   }
