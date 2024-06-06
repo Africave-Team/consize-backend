@@ -203,7 +203,9 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
             title: `${options[index]}. Use default time`
           }
         })
-        message = `${message}If you choose option *${options[index]}*, your course starts at a time set by the course creator, i.e. ${date.hour(Number(settings.resumption.time.replace(':00', ''))).format('hA')} on ${day}\n\n`
+        const [h, m] = settings.resumption.time.split(':')
+        let hours = Number(h), minutes = Number(m)
+        message = `${message}If you choose option *${options[index]}*, your course starts at a time set by the course creator, i.e. ${date.hour(hours).minute(minutes).format('hA')} on ${day}\n\n`
       }
 
       if (settings.resumption.enabledDateTimeSetup) {
