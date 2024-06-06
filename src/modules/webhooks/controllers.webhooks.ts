@@ -327,7 +327,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                       messaging_product: "whatsapp",
                       recipient_type: "individual",
                       text: {
-                        body: `Thank you. You have scheduled to start the course *${course.title}* by ${date.hour(hours).minute(minutes).format('hA')} on ${day}.\n\n We will begin sending you this course content on the above date and time.`
+                        body: `Thank you. You have scheduled to start the course *${course.title}* by ${date.hour(hours).minute(minutes).format('h:mmA')} on ${day}.\n\n We will begin sending you this course content on the above date and time.`
                       }
                     })
                   }

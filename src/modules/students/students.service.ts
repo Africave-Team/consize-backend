@@ -205,7 +205,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
         })
         const [h, m] = settings.resumption.time.split(':')
         let hours = Number(h), minutes = Number(m)
-        message = `${message}If you choose option *${options[index]}*, your course starts at a time set by the course creator, i.e. ${date.hour(hours).minute(minutes).format('hA')} on ${day}\n\n`
+        message = `${message}If you choose option *${options[index]}*, your course starts at a time set by the course creator, i.e. ${date.hour(hours).minute(minutes).format('h:mmA')} on ${day}\n\n`
       }
 
       if (settings.resumption.enabledDateTimeSetup) {
