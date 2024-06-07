@@ -428,7 +428,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
             recipient_type: "individual",
             interactive: {
               body: {
-                text: `Hey ${student.firstName}! It looks like you have been inactive in the course 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to resume the course.`
+                text: `Hey ${student.firstName}! It looks like you have been inactive in the course *${course.title}* 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to resume the course.`
               },
               type: "button",
               action: {
