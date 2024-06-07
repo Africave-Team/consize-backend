@@ -21,7 +21,7 @@ import Courses from '../courses/model.courses'
 import Settings from '../courses/model.settings'
 import { subscriptionService } from '../subscriptions'
 import { sessionService } from '../sessions'
-import { MAX_FREE_PLAN_MONTHLY_ENROLLMENTS } from 'src/config/constants'
+import { MAX_FREE_PLAN_MONTHLY_ENROLLMENTS } from '../../config/constants'
 
 export const bulkAddStudents = async (students: Student[]): Promise<string[]> => {
   try {

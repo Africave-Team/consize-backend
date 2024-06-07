@@ -27,7 +27,7 @@ import Surveys from '../surveys/survey.model'
 import Settings from '../courses/model.settings'
 import { sessionService } from '../sessions'
 import { subscriptionService } from '../subscriptions'
-import { MAX_FREE_PLAN_MONTHLY_ENROLLMENTS } from 'src/config/constants'
+import { MAX_FREE_PLAN_MONTHLY_ENROLLMENTS } from '../../config/constants'
 
 export const handleSlackWebhook = async function () { }
 
