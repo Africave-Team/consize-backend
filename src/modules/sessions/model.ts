@@ -20,7 +20,7 @@ const enrollmentSchema = new Schema<EnrollmentSessionInterface, EnrollmentSessio
   lessons: Object
 }, {
   collection: "enrollments",
-  timestamps: false
+  timestamps: true
 })
 
 enrollmentSchema.plugin(toJSON)
