@@ -13,6 +13,31 @@ import { agenda } from '../scheduler'
 import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, SEND_SLACK_MESSAGE } from '../scheduler/MessageTypes'
 import moment from 'moment-timezone'
 import { ACCEPT_INVITATION, REJECT_INVITATION } from '../webhooks/interfaces.webhooks'
+import { sessionService } from '../sessions'
+import { MAX_FREE_PLAN_MONTHLY_ENROLLMENTS } from 'src/config/constants'
+import { subscriptionService } from '../subscriptions'
+
+const checkSubscriptionEnrollmentCount = async (count: number, teamId: string) => {
+    const subscription = await subscriptionService.fetchMyActiveSubscription(teamId)
+    if (!subscription) {
+        // throw api error
+        throw new ApiError(httpStatus.BAD_REQUEST, "We found no active subscription for your account")
+    }
+    const plan = await subscriptionService.fetchSubscriptionPlanById(subscription.plan as string)
+    if (!plan) {
+        // throw api error
+        throw new ApiError(httpStatus.BAD_REQUEST, "Could not verify your subscription plan")
+    }
+    if (plan.price === 0) {
+        // free plan
+        // get all the team's enrollments
+        const today = new Date()
+        const enrolled = await sessionService.countTeamEnrollmentsPerMonth(teamId, today.getMonth(), today.getFullYear())
+        if ((enrolled + count) > MAX_FREE_PLAN_MONTHLY_ENROLLMENTS) {
+            throw new ApiError(httpStatus.BAD_REQUEST, "Your client account has exceeded the maximum enrollments for their subscription plan")
+        }
+    }
+}
 
 export const createCohort = async ({ courseId, distribution, name, members, channels, students, schedule, date, time }: CreateCohortInterface): Promise<CohortsInterface> => {
     const courseInformation = await courseService.fetchSingleCourse({ courseId })
@@ -35,6 +60,7 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
     if (distribution === Distribution.SLACK && team && team.slackToken) {
         let slackIds: string[] = []
         if (members) {
+            await checkSubscriptionEnrollmentCount(members.length, courseInformation.owner)
             slackIds = members
         }
         if (channels) {
@@ -129,6 +155,7 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
         }
     } else {
         if (students) {
+            await checkSubscriptionEnrollmentCount(students.length, courseInformation.owner)
             const studentsData = await Promise.all(students.map(e => studentService.findStudentById(e)))
             cohortMembers = studentsData.filter(e => e && e.id).map(e => {
                 if (e !== null) {
@@ -142,6 +169,7 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
             })
         }
     }
+
     const cohort = new Cohorts({ name, date, time, members: cohortMembers, schedule, distribution, courseId, status: CohortsStatus.PENDING })
     await cohort.save()
     if (schedule) {
