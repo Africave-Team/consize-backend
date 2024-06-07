@@ -170,10 +170,16 @@ export const generateCourseFlow = async function (courseId: string) {
                   halfLength = halfLength + halfString.indexOf('\n')
                   const first = content.slice(0, halfLength)
                   const second = content.slice(halfLength)
-                  flo.content = first
-                  flow.push(flo)
-                  flo.content = second
-                  flow.push(flo)
+                  let copy = { ...flo }
+                  copy.content = first
+                  delete copy.quiz
+                  flow.push(copy)
+                  copy = { ...flo }
+                  copy.content = second
+                  delete copy.mediaType
+                  delete copy.mediaUrl
+                  delete copy.thumbnailUrl
+                  flow.push(copy)
                 } else {
                   flow.push(flo)
                 }
@@ -200,10 +206,16 @@ export const generateCourseFlow = async function (courseId: string) {
                 halfLength = halfLength + halfString.indexOf('\n')
                 const first = content.slice(0, halfLength)
                 const second = content.slice(halfLength)
-                flo.content = first
-                flow.push(flo)
-                flo.content = second
-                flow.push(flo)
+                let copy = { ...flo }
+                copy.content = first
+                delete copy.quiz
+                flow.push(copy)
+                copy = { ...flo }
+                copy.content = second
+                delete copy.mediaType
+                delete copy.mediaUrl
+                delete copy.thumbnailUrl
+                flow.push(copy)
               } else {
                 flow.push(flo)
               }
