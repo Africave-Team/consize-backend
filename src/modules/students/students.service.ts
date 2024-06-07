@@ -333,7 +333,7 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
     messaging_product: "whatsapp",
     recipient_type: "individual",
     text: {
-      body: `hello ${student.firstName}! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
+      body: `Hello ${student.firstName}! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
     }
   })
   await generateCourseFlow(courseId)

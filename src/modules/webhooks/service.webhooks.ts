@@ -171,6 +171,7 @@ export const generateCourseFlow = async function (courseId: string) {
                   const first = content.slice(0, halfLength)
                   const second = content.slice(halfLength)
                   let copy = { ...flo }
+                  copy.type = CourseFlowMessageType.BLOCK
                   copy.content = first
                   delete copy.quiz
                   flow.push(copy)
