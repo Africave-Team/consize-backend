@@ -192,7 +192,21 @@ export const generateCourseFlow = async function (courseId: string) {
                   flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
                 }
               }
-              flow.push(flo)
+
+              if (content.length > 1024) {
+                let actualLength = content.length
+                let halfLength = Math.ceil(actualLength / 2) + 100
+                let halfString = content.slice(halfLength)
+                halfLength = halfLength + halfString.indexOf('\n')
+                const first = content.slice(0, halfLength)
+                const second = content.slice(halfLength)
+                flo.content = first
+                flow.push(flo)
+                flo.content = second
+                flow.push(flo)
+              } else {
+                flow.push(flo)
+              }
             }
           }
           blockIndex++
