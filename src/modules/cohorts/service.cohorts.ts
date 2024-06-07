@@ -14,7 +14,7 @@ import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, SEND_SLACK_MESSAGE } from '..
 import moment from 'moment-timezone'
 import { ACCEPT_INVITATION, REJECT_INVITATION } from '../webhooks/interfaces.webhooks'
 import { sessionService } from '../sessions'
-import { MAX_FREE_PLAN_MONTHLY_ENROLLMENTS } from 'src/config/constants'
+import { MAX_FREE_PLAN_MONTHLY_ENROLLMENTS } from '../../config/constants'
 import { subscriptionService } from '../subscriptions'
 
 const checkSubscriptionEnrollmentCount = async (count: number, teamId: string) => {
