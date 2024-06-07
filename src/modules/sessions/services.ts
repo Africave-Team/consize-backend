@@ -3,7 +3,7 @@ import Enrollments from './model'
 import { EnrollmentSession } from './sessions.interface'
 
 export const createEnrollment = async function (value: EnrollmentSession) {
-  await Enrollments.create(value)
+  await Enrollments.updateOne({ studentId: value.studentId, courseId: value.courseId }, value, { upsert: true })
 }
 
 export const updateEnrollment = async function (studentId: string, courseId: string, payload: Partial<StudentCourseStats>) {
