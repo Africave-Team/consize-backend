@@ -11,28 +11,16 @@ export const updateEnrollment = async function (studentId: string, courseId: str
 }
 
 export const countTeamEnrollmentsPerMonth = async function (teamId: string, month: number, year: number): Promise<number> {
-  const result = await Enrollments.aggregate([
-    {
-      $match: {
-        teamId,
-        createdAt: {
-          $gte: new Date(year, month - 1, 1), // Start of the month
-          $lt: new Date(year, month, 1), // Start of the next month
-        }
-      }
-    },
-    {
-      $count: "total" // Count the matched items
+  const result = await Enrollments.countDocuments({
+    teamId,
+    createdAt: {
+      $gte: new Date(year, month, 1), // Start of the month
+      $lt: new Date(year, month + 1, 1), // Start of the next month
     }
-  ])
-
-  // If there are no items, return 0
-  if (result.length === 0) {
-    return 0
-  }
+  })
 
   // Return the total count
-  return result[0].total
+  return result
 }
 
 export const countCourseEnrollments = async function (courseId: string): Promise<number> {
