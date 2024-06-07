@@ -19,6 +19,9 @@ import { QuizInterface } from '../courses/interfaces.quizzes'
 import { sendWelcomeSlack, startCourseSlack } from '../slack/slack.services'
 import Courses from '../courses/model.courses'
 import Settings from '../courses/model.settings'
+import { subscriptionService } from '../subscriptions'
+import { sessionService } from '../sessions'
+import { MAX_FREE_PLAN_MONTHLY_ENROLLMENTS } from 'src/config/constants'
 
 export const bulkAddStudents = async (students: Student[]): Promise<string[]> => {
   try {
@@ -172,6 +175,54 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
   if (!owner) {
     throw new ApiError(httpStatus.NOT_FOUND, "No team found.")
   }
+  // get active subscription
+  const subscription = await subscriptionService.fetchMyActiveSubscription(course.owner)
+  if (!subscription) {
+    // send subscription plan cap message
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: student.phoneNumber,
+      type: "text",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      text: {
+        body: `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`
+      }
+    })
+    return
+  }
+  const plan = await subscriptionService.fetchSubscriptionPlanById(subscription.plan as string)
+  if (!plan) {
+    // send subscription plan cap message
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: student.phoneNumber,
+      type: "text",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      text: {
+        body: `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`
+      }
+    })
+    return
+  }
+  if (plan.price === 0) {
+    // free plan
+    // get all the team's enrollments
+    const today = new Date()
+    const teamEnrollmentCount = await sessionService.countTeamEnrollmentsPerMonth(course.owner, today.getMonth(), today.getFullYear())
+    if ((teamEnrollmentCount + 1) > MAX_FREE_PLAN_MONTHLY_ENROLLMENTS) {
+      // send subscription plan cap message
+      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+        to: student.phoneNumber,
+        type: "text",
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        text: {
+          body: `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`
+        }
+      })
+      return
+    }
+  }
   const settings = await Settings.findById(course.settings)
 
   if (settings) {
@@ -282,7 +333,7 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
     messaging_product: "whatsapp",
     recipient_type: "individual",
     text: {
-      body: `Thank you for your message! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
+      body: `hello ${student.firstName}! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
     }
   })
   await generateCourseFlow(courseId)
@@ -291,6 +342,18 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
 
   let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
   await dbRef.child("students").child(studentId).set({
+    name: student.firstName + ' ' + student.otherNames,
+    phoneNumber: student.phoneNumber,
+    progress: 0,
+    studentId,
+    completed: false,
+    droppedOut: false,
+    scores: [],
+    lessons: {}
+  })
+  await sessionService.createEnrollment({
+    courseId,
+    teamId: course.owner,
     name: student.firstName + ' ' + student.otherNames,
     phoneNumber: student.phoneNumber,
     progress: 0,
@@ -382,7 +445,8 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
       ...data,
 
     }
-    dbRef.set(payload)
+    await dbRef.set(payload)
+    await sessionService.updateEnrollment(studentId, lesson.course, payload)
   }
 }
 
@@ -406,7 +470,8 @@ export const completeCourse = async function (teamId: string, studentId: string,
       certificate
 
     }
-    dbRef.set(payload)
+    await dbRef.set(payload)
+    await sessionService.updateEnrollment(studentId, courseId, payload)
   }
 }
 
@@ -430,7 +495,8 @@ export const saveCourseProgress = async function (teamId: string, studentId: str
       progress
 
     }
-    dbRef.set(payload)
+    await dbRef.set(payload)
+    await sessionService.updateEnrollment(studentId, courseId, payload)
   }
 }
 
@@ -512,7 +578,8 @@ export const saveQuizDuration = async function (teamId: string, studentId: strin
       ...data,
 
     }
-    dbRef.set(payload)
+    await dbRef.set(payload)
+    await sessionService.updateEnrollment(studentId, lesson.course, payload)
   }
 }
 

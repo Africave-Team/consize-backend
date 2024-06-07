@@ -90,6 +90,8 @@ export const fetchSubscriptionPlans = async (): Promise<SubscriptionPlanInterfac
   return plans
 }
 
+export const fetchSubscriptionPlanById = async (id: string) => SubscriptionPlans.findById(id)
+
 export const fetchMyActiveSubscription = async function (owner: string): Promise<SubscriptionInterface | null> {
   const subscription = await Subscriptions.findOne({
     owner,

@@ -16,6 +16,8 @@ import { CourseFlowMessageType, scheduleInactivityMessage } from '../webhooks/se
 import Students from '../students/model.students'
 import Teams from '../teams/model.teams'
 import { redisClient } from '../redis'
+// import { courseService } from '../courses'
+// import moment from 'moment'
 
 
 export const SlackWebhookChallengeHandler = catchAsync(async (req: Request, res: Response) => {
@@ -35,14 +37,14 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
         if (action && action.value) {
           let enrollments: CourseEnrollment[] = await fetchEnrollmentsSlack(channel.id)
           let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
-          const [btnId, messageId] = action.value.split('|')
-          if (messageId && !btnId?.startsWith("continue_")) {
-            if (enrollment) {
-              if (enrollment.lastMessageId && enrollment.lastMessageId !== messageId) {
-                return
-              }
-            }
-          }
+          const [btnId] = action.value.split('|')
+          // if (messageId && !btnId?.startsWith("continue_")) {
+          //   if (enrollment) {
+          //     if (enrollment.lastMessageId && enrollment.lastMessageId !== messageId) {
+          //       return
+          //     }
+          //   }
+          // }
           console.log(btnId)
           switch (btnId) {
             case START:
@@ -51,6 +53,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
               if (enrollment) {
                 let msgId = v4()
                 await handleContinueSlack(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, channel.id, response_url, msgId, enrollment)
+                scheduleInactivityMessage(enrollment, undefined, channel.id)
               }
               break
             case QUIZ_NO:
@@ -62,6 +65,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
               if (enrollment) {
                 const msgId = v4()
                 handleBlockQuiz(answer, enrollment, response_url, msgId, channel.id)
+                scheduleInactivityMessage(enrollment, undefined, channel.id)
               }
               break
             case QUIZ_A:
@@ -71,9 +75,9 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
               if (btnId === QUIZ_B) answerResponse = 1
               if (btnId === QUIZ_C) answerResponse = 2
               if (enrollment) {
-                console.log(answerResponse)
                 const msgId = v4()
                 await handleLessonQuiz(answerResponse, enrollment, response_url, msgId, channel.id)
+                scheduleInactivityMessage(enrollment, undefined, channel.id)
               }
               break
             case STATS:
@@ -86,6 +90,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 let copy = { ...enrollment }
                 copy.lastMessageId = v4()
                 await redisClient.set(key, JSON.stringify({ ...copy }))
+                scheduleInactivityMessage(enrollment, undefined, channel.id)
               }
               break
             case COURSES:
@@ -227,13 +232,41 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                     redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId, lastMessageId: msgId, currentBlock: enrollment.currentBlock + 1, nextBlock: enrollment.nextBlock + 1 }))
                   }
                 }
+                // if (btnId.startsWith('enroll_now_')) {
+                //   const courseId = btnId.replace("enroll_now_", "")
+                //   slackServices.startEnrollmentSlack(student.id, courseId)
+                // }
+                // if (btnId.startsWith('enroll_default_time_')) {
+                //   const courseId = btnId.replace("enroll_default_time_", "")
+                //   // continue a course from the positions message
+                //   const course = await courseService.fetchSingleCourse({ courseId })
+                //   if (course) {
+                //     let settings = await courseService.fetchSingleSettings(course.settings)
+                //     if (settings && settings.resumption) {
+                //       let date = moment().add(settings.resumption.days, 'days')
+                //       let day = date.format('dddd, Do of MMMM, YYYY')
+                //       const now = moment.tz(student.tz)
+                //       const [h, m] = settings.resumption.time.split(':')
+                //       let hours = Number(h), minutes = Number(m)
+                //       let dayFormatted = moment().add(settings.resumption.days, 'days').format('YYYY-MM-DD')
+                //       const time = moment(`${dayFormatted}`).hour(hours).minute(minutes).subtract(now.utcOffset(), 'minutes')
+                //       agenda.schedule<{ studentId: string, courseId: string }>(time.toDate(), ENROLL_STUDENT_DEFAULT_DATE, { courseId, studentId: student.id })
+                //       slackServices.sendEnrollmentScheduleAcknowledgement(response_url, `Thank you. You have scheduled to start the course *${course.title}* by ${date.hour(hours).minute(minutes).format('h:mmA')} on ${day}.\n\n We will begin sending you this course content on the above date and time.`)
+                //     }
+                //   }
+                // }
+                // if (btnId.startsWith('choose_enroll_time_')) {
+                //   // const courseId = btnId.replace("choose_enroll_time_", "")
+                //   // // continue a course from the positions message
+
+                //   // for (let index = 0; index < 7; index++) {
+
+                //   // }
+                // }
               }
               break
           }
 
-          if (enrollment) {
-            scheduleInactivityMessage(enrollment, undefined, channel.id)
-          }
 
         }
       }

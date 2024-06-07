@@ -25,6 +25,9 @@ import { SurveyResponse } from '../surveys'
 import { ResponseType } from '../surveys/survey.interfaces'
 import Surveys from '../surveys/survey.model'
 import Settings from '../courses/model.settings'
+import { sessionService } from '../sessions'
+import { subscriptionService } from '../subscriptions'
+import { MAX_FREE_PLAN_MONTHLY_ENROLLMENTS } from 'src/config/constants'
 
 export const handleSlackWebhook = async function () { }
 
@@ -374,6 +377,94 @@ export const enrollStudentToCourseSlack = async (studentId: string, courseId: st
   if (!owner || !owner.slackToken) {
     return
   }
+  // get active subscription
+  const subscription = await subscriptionService.fetchMyActiveSubscription(course.owner)
+  if (!subscription) {
+    // send subscription plan cap message
+    agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+      channel: student.channelId,
+      accessToken: owner.slackToken || "",
+      message: {
+        blocks: [
+          {
+            type: MessageBlockType.SECTION,
+            text: {
+              type: SlackTextMessageTypes.MARKDOWN,
+              text: `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`
+            }
+          }
+        ]
+      }
+    })
+    return
+  }
+  const plan = await subscriptionService.fetchSubscriptionPlanById(subscription.plan as string)
+  if (!plan) {
+    // send subscription plan cap message
+    agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+      channel: student.channelId,
+      accessToken: owner.slackToken || "",
+      message: {
+        blocks: [
+          {
+            type: MessageBlockType.SECTION,
+            text: {
+              type: SlackTextMessageTypes.MARKDOWN,
+              text: `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`
+            }
+          }
+        ]
+      }
+    })
+    return
+  }
+  if (plan.price === 0) {
+    // free plan
+    // get all the team's enrollments
+    const today = new Date()
+    const teamEnrollmentCount = await sessionService.countTeamEnrollmentsPerMonth(course.owner, today.getMonth(), today.getFullYear())
+    if ((teamEnrollmentCount + 1) > MAX_FREE_PLAN_MONTHLY_ENROLLMENTS) {
+      // send subscription plan cap message
+      agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+        channel: student.channelId,
+        accessToken: owner.slackToken || "",
+        message: {
+          blocks: [
+            {
+              type: MessageBlockType.SECTION,
+              text: {
+                type: SlackTextMessageTypes.MARKDOWN,
+                text: `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`
+              }
+            }
+          ]
+        }
+      })
+      return
+    }
+  }
+  startEnrollmentSlack(studentId, courseId)
+}
+
+export const startEnrollmentSlack = async (studentId: string, courseId: string): Promise<void> => {
+  const student = await Students.findOne({ _id: studentId })
+  if (!student) {
+    return
+  }
+  if (!student.verified) {
+    return
+  }
+
+  // enroll course
+  const course = await Courses.findById(courseId)
+  if (!course) {
+    return
+  }
+  const owner = await Teams.findById(course.owner)
+  if (!owner || !owner.slackToken) {
+    return
+  }
+
   await generateCourseFlow(courseId)
   const id = await startCourseSlack(student.channelId, courseId, student.id, owner.slackToken)
   await sendWelcomeSlack(courseId, student.slackId, owner.slackToken, id)
@@ -384,6 +475,18 @@ export const enrollStudentToCourseSlack = async (studentId: string, courseId: st
     phoneNumber: student.phoneNumber,
     studentId,
     progress: 0,
+    completed: false,
+    droppedOut: false,
+    scores: [],
+    lessons: {}
+  })
+  await sessionService.createEnrollment({
+    courseId,
+    teamId: course.owner,
+    name: student.firstName + ' ' + student.otherNames,
+    phoneNumber: student.phoneNumber,
+    progress: 0,
+    studentId,
     completed: false,
     droppedOut: false,
     scores: [],
@@ -1276,6 +1379,27 @@ export const sendScheduleAcknowledgement = async (url: string, time: string): Pr
             text: {
               type: SlackTextMessageTypes.MARKDOWN,
               text: `You have chosen to resume this course at ${time} tomorrow. \n\nWe will continue this course for you at this time.`
+            }
+          }
+        ]
+      }
+    })
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+  }
+}
+
+export const sendEnrollmentScheduleAcknowledgement = async (url: string, message: string): Promise<void> => {
+  try {
+    agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
+      url,
+      message: {
+        blocks: [
+          {
+            type: MessageBlockType.SECTION,
+            text: {
+              type: SlackTextMessageTypes.MARKDOWN,
+              text: message
             }
           }
         ]

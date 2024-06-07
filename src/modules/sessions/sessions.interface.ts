@@ -1,3 +1,6 @@
+import { Model, Document } from 'mongoose'
+import { StudentCourseStats } from '../students/interface.students'
+
 export interface SessionsRTDB {
   [sessionId: string]: {
     studentId: string
@@ -20,4 +23,20 @@ export interface SessionsRTDB {
       }
     },
   }
+}
+
+export interface EnrollmentSession extends StudentCourseStats {
+  studentId: string
+  courseId: string
+  teamId: string
+}
+
+
+export interface EnrollmentSessionInterface extends EnrollmentSession, Document {
+  _id: string
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+export interface EnrollmentSessionInterfaceModel extends Model<EnrollmentSessionInterface> {
 }

@@ -1,0 +1,1 @@
+export const MAX_FREE_PLAN_MONTHLY_ENROLLMENTS = 5
