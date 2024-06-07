@@ -233,6 +233,11 @@ export const searchTeamCourses = async ({ teamId, search }: { teamId: string, se
 
 }
 
+export const teamCoursesCount = async ({ teamId }: { teamId: string }): Promise<number> => {
+  return Course.countDocuments({ owner: teamId })
+
+}
+
 export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: string, courseId: string }): Promise<CourseInterface | null> => {
   let course = await Course.findOne({ owner: teamId, _id: courseId }).populate({
     path: "lessons",
