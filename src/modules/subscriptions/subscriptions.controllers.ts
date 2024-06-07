@@ -1,7 +1,6 @@
 import { Request, Response } from 'express'
 import { subscriptionService } from '.'
 import { catchAsync } from '../utils'
-import { courseService } from '../courses'
 
 
 export const seedPlans = catchAsync(async (_: Request, res: Response) => {
@@ -18,8 +17,7 @@ export const fetchPlans = catchAsync(async (_: Request, res: Response) => {
 
 export const myActiveSubscription = catchAsync(async (req: Request, res: Response) => {
   const subscription = await subscriptionService.fetchMyActiveSubscription(req.user.team)
-  const coursesCount = await courseService.teamCoursesCount({ teamId: req.user.team })
-  return res.status(200).json({ message: "Your active subscription", data: { ...subscription, coursesCount } })
+  return res.status(200).json({ message: "Your active subscription", data: { ...subscription } })
 })
 
 
