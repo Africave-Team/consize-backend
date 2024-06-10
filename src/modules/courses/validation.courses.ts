@@ -18,7 +18,12 @@ const createCourseRequest: Record<keyof CreateCoursePayload, any> = {
   price: Joi.number().optional(),
   source: Joi.string().optional().valid(...Object.values(Sources)),
   currentCohort: Joi.string().optional(),
-  survey: Joi.string().optional()
+  survey: Joi.string().optional(),
+  courses: Joi.when('bundle', {
+    is: true,
+    then: Joi.array().items(Joi.string()).required(),
+    otherwise: Joi.array().items(Joi.string()).optional()
+  })
 }
 
 const createCourseAIRequest: Record<keyof { jobId: string }, any> = {
@@ -50,7 +55,12 @@ export const updateCourse = {
     }).unknown(true),
     title: Joi.string(),
     description: Joi.string(),
-    price: Joi.number().optional()
+    price: Joi.number().optional(),
+    courses: Joi.when('bundle', {
+    is: true,
+    then: Joi.array().items(Joi.string()).min(2).required(),
+    otherwise: Joi.array().items(Joi.string()).optional()
+  })
   }).unknown(true),
   params: Joi.object().keys({
     course: Joi.string().required()

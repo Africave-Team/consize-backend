@@ -59,6 +59,7 @@ export interface CreateCoursePayload {
     price?: number
     currentCohort?: string
     survey?: string
+    courses?: string[]
 }
 
 export interface CourseInterface extends Course, Document {
