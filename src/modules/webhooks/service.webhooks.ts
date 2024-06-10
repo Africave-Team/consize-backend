@@ -8,7 +8,7 @@ import config from '../../config/config'
 import { redisClient } from '../redis'
 import Courses from '../courses/model.courses'
 import { Team } from '../teams'
-import { CourseInterface, MediaType } from '../courses/interfaces.courses'
+import { CourseInterface, CourseStatus, MediaType } from '../courses/interfaces.courses'
 import he from "he"
 import db from "../rtdb"
 import Settings from '../courses/model.settings'
@@ -111,7 +111,7 @@ export const generateCourseFlow = async function (courseId: string) {
   const courseKey = `${config.redisBaseKey}courses:${courseId}`
   // get the course with all its lessons
   const course = await Courses.findById(courseId)
-  if (course) {
+  if (course && course.status === CourseStatus.PUBLISHED) {
     const courseOwner = await Team.findById(course.owner)
     const settings = await Settings.findById(course.settings)
     // welcome message

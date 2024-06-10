@@ -26,8 +26,6 @@ import { ResponseType } from '../surveys/survey.interfaces'
 import Surveys from '../surveys/survey.model'
 import Settings from '../courses/model.settings'
 import { sessionService } from '../sessions'
-import { subscriptionService } from '../subscriptions'
-import { MAX_FREE_PLAN_MONTHLY_ENROLLMENTS } from '../../config/constants'
 
 export const handleSlackWebhook = async function () { }
 
@@ -295,11 +293,22 @@ export async function fetchEnrollmentsSlack (channel: string): Promise<CourseEnr
   const enrollments: CourseEnrollment[] = []
   if (redisClient.isReady) {
     const pattern = `${config.redisBaseKey}enrollments:slack:${channel}:*`
-    const { keys } = await redisClient.scan(0, {
-      COUNT: 100,
-      MATCH: pattern
-    })
-    for (let key of keys) {
+    let cursor = 0
+    const allKeys = []
+
+    do {
+      const result = await redisClient.scan(cursor, {
+        COUNT: 100,
+        MATCH: pattern
+      })
+
+      cursor = result.cursor
+      const keys = result.keys
+
+      allKeys.push(...keys)
+    } while (cursor !== 0)
+
+    for (let key of allKeys) {
       const dt = await redisClient.get(key)
       if (dt) {
         enrollments.push(JSON.parse(dt))
@@ -377,72 +386,6 @@ export const enrollStudentToCourseSlack = async (studentId: string, courseId: st
   if (!owner || !owner.slackToken) {
     return
   }
-  // get active subscription
-  const subscription = await subscriptionService.fetchMyActiveSubscription(course.owner)
-  if (!subscription) {
-    // send subscription plan cap message
-    agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
-      channel: student.channelId,
-      accessToken: owner.slackToken || "",
-      message: {
-        blocks: [
-          {
-            type: MessageBlockType.SECTION,
-            text: {
-              type: SlackTextMessageTypes.MARKDOWN,
-              text: `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`
-            }
-          }
-        ]
-      }
-    })
-    return
-  }
-  const plan = await subscriptionService.fetchSubscriptionPlanById(subscription.plan as string)
-  if (!plan) {
-    // send subscription plan cap message
-    agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
-      channel: student.channelId,
-      accessToken: owner.slackToken || "",
-      message: {
-        blocks: [
-          {
-            type: MessageBlockType.SECTION,
-            text: {
-              type: SlackTextMessageTypes.MARKDOWN,
-              text: `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`
-            }
-          }
-        ]
-      }
-    })
-    return
-  }
-  if (plan.price === 0) {
-    // free plan
-    // get all the team's enrollments
-    const today = new Date()
-    const teamEnrollmentCount = await sessionService.countTeamEnrollmentsPerMonth(course.owner, today.getMonth(), today.getFullYear())
-    if ((teamEnrollmentCount + 1) > MAX_FREE_PLAN_MONTHLY_ENROLLMENTS) {
-      // send subscription plan cap message
-      agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
-        channel: student.channelId,
-        accessToken: owner.slackToken || "",
-        message: {
-          blocks: [
-            {
-              type: MessageBlockType.SECTION,
-              text: {
-                type: SlackTextMessageTypes.MARKDOWN,
-                text: `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`
-              }
-            }
-          ]
-        }
-      })
-      return
-    }
-  }
   startEnrollmentSlack(studentId, courseId)
 }
 
@@ -464,42 +407,46 @@ export const startEnrollmentSlack = async (studentId: string, courseId: string):
   if (!owner || !owner.slackToken) {
     return
   }
+  const conversation = await createConversation(owner.slackToken, student.slackId)
 
-  await generateCourseFlow(courseId)
-  const id = await startCourseSlack(student.channelId, courseId, student.id, owner.slackToken)
-  await sendWelcomeSlack(courseId, student.slackId, owner.slackToken, id)
+  if (conversation) {
+    await Students.findByIdAndUpdate(studentId, { $set: { channelId: conversation } })
+    await generateCourseFlow(courseId)
+    const id = await startCourseSlack(conversation, courseId, student.id, owner.slackToken)
+    await sendWelcomeSlack(courseId, student.slackId, owner.slackToken, id)
 
-  let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
-  await dbRef.child("students").child(studentId).set({
-    name: student.firstName + ' ' + student.otherNames,
-    phoneNumber: student.phoneNumber,
-    studentId,
-    progress: 0,
-    completed: false,
-    droppedOut: false,
-    scores: [],
-    lessons: {}
-  })
-  await sessionService.createEnrollment({
-    courseId,
-    teamId: course.owner,
-    name: student.firstName + ' ' + student.otherNames,
-    phoneNumber: student.phoneNumber,
-    progress: 0,
-    studentId,
-    completed: false,
-    droppedOut: false,
-    scores: [],
-    lessons: {}
-  })
-
-  const jobs = await agenda.jobs({ 'data.courseId': courseId })
-  if (jobs.length === 0) {
-    // Queue the trends generator
-    agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
-      courseId,
-      teamId: course.owner
+    let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
+    await dbRef.child("students").child(studentId).set({
+      name: student.firstName + ' ' + student.otherNames,
+      phoneNumber: student.phoneNumber,
+      studentId,
+      progress: 0,
+      completed: false,
+      droppedOut: false,
+      scores: [],
+      lessons: {}
     })
+    await sessionService.createEnrollment({
+      courseId,
+      teamId: course.owner,
+      name: student.firstName + ' ' + student.otherNames,
+      phoneNumber: student.phoneNumber,
+      progress: 0,
+      studentId,
+      completed: false,
+      droppedOut: false,
+      scores: [],
+      lessons: {}
+    })
+
+    const jobs = await agenda.jobs({ 'data.courseId': courseId })
+    if (jobs.length === 0) {
+      // Queue the trends generator
+      agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
+        courseId,
+        teamId: course.owner
+      })
+    }
   }
 
 }
