@@ -3,6 +3,11 @@ import { Request, Response } from 'express'
 import catchAsync from '../utils/catchAsync'
 import { studentService } from './'
 
+export const getAllStudents = catchAsync(async (req: Request, res: Response) => {
+  console.log(req.user.team);
+  const students = await studentService.getAllStudents(req.user.team)
+  res.status(httpStatus.OK).send({ data: students, message: "students retrieved" })
+})
 
 export const bulkAddStudents = catchAsync(async (req: Request, res: Response) => {
   const students = await studentService.bulkAddStudents(req.body.students)

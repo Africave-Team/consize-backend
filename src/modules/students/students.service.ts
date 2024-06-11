@@ -1,6 +1,7 @@
 import httpStatus from 'http-status'
 import ApiError from '../errors/ApiError'
 import Students from './model.students'
+import Enrollments from '../sessions/model'
 import randomstring from "randomstring"
 import { CreateStudentPayload, Student, StudentCourseStats, StudentInterface } from './interface.students'
 import { agenda } from '../scheduler'
@@ -616,4 +617,12 @@ export const testCourseWhatsapp = async (phoneNumber: string, courseId: string):
   await startCourse(phoneNumber, courseId, phoneNumber)
   await sendWelcome(courseId, phoneNumber)
 
+}
+
+export const getAllStudents = async (teamId: string): Promise<any> => {
+  const students = await Enrollments.find({ teamId })
+  if (!students) {
+    throw new ApiError(httpStatus.NOT_FOUND, "team does not have any enrolled students")
+  }
+  return students;
 }
