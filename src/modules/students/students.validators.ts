@@ -32,3 +32,9 @@ export const registerStudent = {
     custom: Joi.object().optional().unknown(true)
   }),
 }
+
+export const fetchStudentByCourse = {
+  params: Joi.object().keys({
+    course: Joi.string().required().description("course id"),
+  }),
+}
