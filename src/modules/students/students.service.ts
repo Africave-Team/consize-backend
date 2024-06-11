@@ -626,3 +626,12 @@ export const getAllStudents = async (teamId: string): Promise<any> => {
   }
   return students;
 }
+
+export const getStudentsByCourseId = async (courseId: string): Promise<any> => {
+  const students = await Enrollments.find({ courseId })
+  if (!students) {
+    throw new ApiError(httpStatus.NOT_FOUND, "course does not have any enrolled students")
+  }
+  return students;
+}
+
