@@ -105,7 +105,7 @@ const handleSendSlackResponseMessage: Processor<SendSlackResponsePayload> = asyn
       await sendSlackResponseMessage(url, message)
     }
   } catch (error) {
-    console.log(((error as AxiosError).response?.config.data), "error send message")
+    console.log(error)
   }
 }
 

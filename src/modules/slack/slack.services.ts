@@ -502,17 +502,24 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
           image_url: data.mediaUrl || '',
           alt_text: 'Block header image'
         })
-      } else if (data.mediaType === "video") {
+      } else if (data.mediaType === "video" && data.mediaUrlEmbed) {
         blocks.push({
           "type": MessageBlockType.VIDEO,
           "title": {
             "type": SlackTextMessageTypes.PLAINTEXT,
-            "text": "Video title"
+            "text": "Video title",
+            "emoji": true
+          },
+          "title_url": "https://www.dailymotion.com/embed/video/x9043y4?autoplay=1" || data.mediaUrlEmbed,
+          "description": {
+            "type": SlackTextMessageTypes.PLAINTEXT,
+            "text": "Video title",
+            "emoji": true
           },
           "alt_text": "alt text for vide",
           "thumbnail_url": data.thumbnailUrl || "https://picsum.photos/200/300.jpg",
-          "video_url": data.mediaUrl
-        },)
+          "video_url": "https://www.dailymotion.com/embed/video/x9043y4?autoplay=1" || data.mediaUrlEmbed
+        })
       } else {
 
         content = `${content}\n\n${data.mediaUrl}`
