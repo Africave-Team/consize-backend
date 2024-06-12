@@ -619,16 +619,21 @@ export const testCourseWhatsapp = async (phoneNumber: string, courseId: string):
 
 }
 
-export const getAllStudents = async (teamId: string): Promise<any> => {
-  const students = await Enrollments.find({ teamId })
+export const getAllStudents = async (teamId: string, page: number = 1): Promise<any> => {
+  const studentIds = await Enrollments.distinct('studentId', { teamId });
+
+  const students = await Students.paginate({ _id: { $in: studentIds } },{ sortBy: 'createdAt:desc', page, limit: 10 });
+
   if (!students) {
     throw new ApiError(httpStatus.NOT_FOUND, "team does not have any enrolled students")
   }
   return students;
 }
 
-export const getStudentsByCourseId = async (courseId: string): Promise<any> => {
-  const students = await Enrollments.find({ courseId })
+export const getStudentsByCourseId = async (courseId: string, page: number = 1): Promise<any> => {
+  const studentIds = await Enrollments.distinct('studentId', { courseId });
+
+  const students = await Students.paginate({ _id: { $in: studentIds } },{ sortBy: 'createdAt:desc', page, limit: 10 });
   if (!students) {
     throw new ApiError(httpStatus.NOT_FOUND, "course does not have any enrolled students")
   }
