@@ -41,6 +41,14 @@ const StudentSchema = new Schema<StudentInterface>({
   custom: {
     type: Object
   },
+  deleted: {
+      type: Boolean,
+      default: false
+  },
+  deletedAt: {
+      type: Date,
+      default: null
+  },
 
 }, {
   collection: "students"

@@ -31,6 +31,14 @@ const BlockSchema = new Schema<BlockInterface, BlockInterfaceModel>(
     },
     bodyMedia: {
       type: MediaSchema
+    },
+    deleted: {
+    type: Boolean,
+    default: false
+    },
+    deletedAt: {
+      type: Date,
+      default: null
     }
   },
   {

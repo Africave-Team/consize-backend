@@ -21,7 +21,7 @@ export interface SessionsRTDB {
       retakes: {
         [lessonIndex: string]: number[]
       }
-    },
+    }
   }
 }
 
@@ -36,6 +36,8 @@ export interface EnrollmentSessionInterface extends EnrollmentSession, Document 
   _id: string
   createdAt?: Date
   updatedAt?: Date
+  deleted: boolean
+  deletedAt: Date
 }
 
 export interface EnrollmentSessionInterfaceModel extends Model<EnrollmentSessionInterface> {

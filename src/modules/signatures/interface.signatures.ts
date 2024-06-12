@@ -13,7 +13,9 @@ export interface SignatureInterface extends Document {
     owner: string
     "position"?: string,
     "signature"?: string,
-    "status"?: SignaturesStatus
+    "status"?: SignaturesStatus,
+    deleted?: boolean,
+    deletedAt?: Date
 }
 
 export interface CreateSignatureInterface {

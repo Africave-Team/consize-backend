@@ -12,6 +12,8 @@ export interface Student {
   email: string
   tz: string
   custom?: any
+  deleted?: boolean,
+  deletedAt?: Date
 }
 
 export interface StudentInterface extends Student, Document {

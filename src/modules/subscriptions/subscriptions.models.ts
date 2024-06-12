@@ -26,7 +26,15 @@ const subSchema = new Schema<SubscriptionInterface, SubscriptionInterfaceModel>(
   expires: {
     required: true,
     type: Date
-  }
+  },
+  deleted: {
+    type: Boolean,
+    default: false
+  },
+  deletedAt: {
+    type: Date,
+    default: null
+  },
 }, {
   collection: "subscriptions"
 })

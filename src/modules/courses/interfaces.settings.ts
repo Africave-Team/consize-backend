@@ -8,6 +8,8 @@ export interface EnrollmentField {
   defaultField: boolean
   id: string
   position: number
+  deleted?: boolean
+  deletedAt?: Date
 }
 
 export interface CourseMetadata {

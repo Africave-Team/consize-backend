@@ -15,6 +15,8 @@ export interface Media {
     awsFileKey: string
     mediaType: MediaType
     url: string
+    deleted?: boolean
+    deletedAt?: Date
 }
 
 export enum CourseStatus {
@@ -46,6 +48,8 @@ interface Course {
     price?: number
     currentCohort?: string
     survey?: string
+    deleted: boolean,
+    deletedAt: Date
 }
 
 export interface CreateCoursePayload {

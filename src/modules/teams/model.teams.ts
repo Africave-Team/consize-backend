@@ -48,6 +48,14 @@ export const TeamSchema = new Schema<TeamsInterface, ITeamModel>(
         verified: {
             type: Boolean,
             default: false
+        },
+        deleted: {
+            type: Boolean,
+            default: false
+        },
+        deletedAt: {
+            type: Date,
+            default: null
         }
     },
     {

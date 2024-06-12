@@ -8,6 +8,8 @@ interface Lesson {
   quizzes: string[]
   course: string
   description?: string
+  deleted?: boolean
+  deletedAt?: Date
 }
 
 export interface CreateLessonPayload {

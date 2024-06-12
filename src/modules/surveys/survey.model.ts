@@ -28,6 +28,14 @@ const SurveySchema = new Schema<SurveyInterface, SurveyInterfaceModel>(
     questions: {
       type: [QuestionSchema],
       default: []
+    },
+    deleted: {
+      type: Boolean,
+      default: false
+    },
+    deletedAt: {
+      type: Date,
+      default: null
     }
   },
   {

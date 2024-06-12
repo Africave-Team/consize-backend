@@ -13,6 +13,14 @@ export const MediaSchema = new Schema<Media>(
       type: String,
       enum: Object.values(MediaType),
       default: MediaType.IMAGE
+    },
+    deleted: {
+    type: Boolean,
+    default: false
+    },
+    deletedAt: {
+      type: Date,
+      default: null
     }
   },
   {

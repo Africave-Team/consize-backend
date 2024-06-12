@@ -10,6 +10,8 @@ interface Block {
   bodyMedia?: Media
   lesson: string
   course: string
+  deleted?: boolean
+  deletedAt?: Date
 }
 
 export interface CreateBlockPayload {

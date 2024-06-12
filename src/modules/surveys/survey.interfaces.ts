@@ -18,6 +18,8 @@ interface Survey {
   team: string
   title: string
   questions: Question[]
+  deleted?: boolean,
+  deletedAt?: Date
 }
 
 export interface CreateSurveyPayload {

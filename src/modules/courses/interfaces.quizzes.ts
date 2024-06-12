@@ -12,6 +12,8 @@ interface Quiz {
   block?: string
   lesson: string
   course: string
+  deleted?: boolean
+  deletedAt?: Date
 }
 
 export interface CreateQuizPayload {

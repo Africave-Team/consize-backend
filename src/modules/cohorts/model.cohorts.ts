@@ -38,6 +38,14 @@ const CohortSchema = new Schema<CohortsInterface, CohortsInterfaceModel>(
         time: {
             type: String,
         },
+        deleted: {
+        type: Boolean,
+        default: false
+        },
+        deletedAt: {
+            type: Date,
+            default: null
+        },
 
     },
     {

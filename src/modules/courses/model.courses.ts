@@ -76,7 +76,15 @@ const CourseSchema = new Schema<CourseInterface, CourseInterfaceModel>(
         },
         survey: {
             type: String
-        }
+        },
+        deleted: {
+        type: Boolean,
+        default: false
+        },
+        deletedAt: {
+            type: Date,
+            default: null
+        },
     },
     {
         collection: 'courses',

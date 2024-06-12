@@ -14,6 +14,8 @@ export interface TeamsInterface extends Document {
     logo?: string
     createdAt?: Date
     updatedAt?: Date
+    deleted?: boolean
+    deletedAt?: Date
 }
 
 export interface DistributionChannel {
@@ -35,4 +37,4 @@ export interface ITeamModel extends Model<ITeamDoc> {
     paginate (filter: Record<string, any>, options: Record<string, any>): Promise<QueryResult<ITeamDoc>>
 }
 
-export type NewTeamUser = Omit<IUser, 'isEmailVerified' | 'team' | 'password' | 'avatar'>
+export type NewTeamUser = Omit<IUser, 'isEmailVerified' | 'team' | 'password' | 'avatar' | 'deleted' | 'deletedAt'>

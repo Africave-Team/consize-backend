@@ -17,7 +17,15 @@ const enrollmentSchema = new Schema<EnrollmentSessionInterface, EnrollmentSessio
   certificate: String,
   distribution: String,
   scores: [Number],
-  lessons: Object
+  lessons: Object,
+  deleted: {
+  type: Boolean,
+  default: false
+  },
+  deletedAt: {
+      type: Date,
+      default: null
+  }
 }, {
   collection: "enrollments",
   timestamps: true

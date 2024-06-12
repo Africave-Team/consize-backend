@@ -26,6 +26,14 @@ const LessonSchema = new Schema<LessonInterface, LessonInterfaceModel>(
     blocks: {
       type: [String],
       ref: "Blocks"
+    },
+    deleted: {
+    type: Boolean,
+    default: false
+    },
+    deletedAt: {
+      type: Date,
+      default: null
     }
   },
   {

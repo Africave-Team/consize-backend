@@ -26,6 +26,14 @@ const SignatureSchema = new Schema<SignatureInterface, SignatureInterfaceModel>(
         signature: {
             type: String,
         },
+        deleted: {
+            type: Boolean,
+            default: false
+        },
+        deletedAt: {
+            type: Date,
+            default: null
+        },
 
     },
     {

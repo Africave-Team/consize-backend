@@ -21,6 +21,14 @@ const EnrollFieldSchema = new Schema<EnrollmentField>({
   position: {
     type: Number
   },
+  deleted: {
+    type: Boolean,
+    default: false
+  },
+  deletedAt: {
+    type: Date,
+    default: null
+  }
 }, {
   _id: false,
   timestamps: false

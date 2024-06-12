@@ -46,6 +46,14 @@ const QuizSchema = new Schema<QuizInterface, QuizInterfaceModel>(
       type: String,
       ref: "Courses",
       required: true
+    },
+    deleted: {
+    type: Boolean,
+    default: false
+    },
+    deletedAt: {
+      type: Date,
+      default: null
     }
   },
   {

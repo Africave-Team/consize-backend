@@ -73,6 +73,14 @@ const userSchema = new mongoose.Schema<IUserDoc, IUserModel>(
     },
     permissionGroup: {
       type: pgSchema
+    },
+    deleted: {
+      type: Boolean,
+      default: false
+    },
+    deletedAt: {
+      type: Date,
+      default: null
     }
   },
   {

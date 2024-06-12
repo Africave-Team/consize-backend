@@ -11,6 +11,8 @@ export interface IUser {
   permissionGroup: IPG
   password: string
   isEmailVerified: boolean
+  deleted?: boolean
+  deletedAt?: Date
 }
 
 export interface IUserDoc extends IUser, Document {
@@ -24,7 +26,7 @@ export interface IUserModel extends Model<IUserDoc> {
 
 export type UpdateUserBody = Partial<IUser>
 
-export type NewRegisteredUser = Omit<IUser, 'permissionGroup' | 'isEmailVerified' | 'team' | 'avatar'>
+export type NewRegisteredUser = Omit<IUser, 'permissionGroup' | 'isEmailVerified' | 'team' | 'avatar' | 'deleted' | 'deletedAt'>
 
 export type NewCreatedUser = Omit<IUser, 'isEmailVerified'>
 

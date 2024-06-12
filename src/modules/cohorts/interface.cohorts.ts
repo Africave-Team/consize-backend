@@ -17,7 +17,9 @@ export interface CohortsInterface extends Document {
     courseId: string,
     date?: Date,
     time?: string,
-    status: CohortsStatus
+    status: CohortsStatus,
+    deleted?: boolean,
+    deletedAt?: Date
 }
 
 export interface CreateCohortInterface {

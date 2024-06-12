@@ -13,6 +13,8 @@ export interface Subscription {
   plan: string | SubscriptionPlan
   status: SubscriptionStatus
   expires: Date
+  deleted?: boolean
+  deletedAt?: Date
 }
 
 export interface SubscribePayload {
