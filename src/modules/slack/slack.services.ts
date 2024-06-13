@@ -525,7 +525,7 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
         content = `${content}\n\n${data.mediaUrl}`
       }
     }
-
+    console.log(blocks)
 
     blocks.push({
       type: MessageBlockType.SECTION,
