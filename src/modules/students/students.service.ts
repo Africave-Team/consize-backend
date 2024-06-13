@@ -316,6 +316,8 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
           }
         }
       })
+    } else {
+      startEnrollmentWhatsapp(studentId, courseId, source)
     }
   } else {
     startEnrollmentWhatsapp(studentId, courseId, source)
