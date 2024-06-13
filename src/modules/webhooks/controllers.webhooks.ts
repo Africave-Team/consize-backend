@@ -301,7 +301,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               // continue a course from the positions message
               const student = await studentService.findStudentByPhoneNumber(destination)
               if (student) {
-                studentService.startEnrollmentWhatsapp(student.id, courseId)
+                studentService.startEnrollmentWhatsapp(student.id, courseId, "qr")
               }
             }
             if (btnId.startsWith('enroll_default_time_')) {
@@ -558,7 +558,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                     body: `Thank you for your message! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
                   }
                 })
-                await studentService.enrollStudentToCourse(student.id, courseId)
+                await studentService.enrollStudentToCourse(student.id, courseId, "qr")
                 redisClient.del(fieldKey)
                 redisClient.del(fieldsKey)
                 redisClient.del(keySelected)
@@ -591,7 +591,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   // check if the student exists
                   const student = await Students.findOne({ phoneNumber: destination })
                   if (student) {
-                    await studentService.enrollStudentToCourse(student.id, selected)
+                    await studentService.enrollStudentToCourse(student.id, selected, "qr")
                     redisClient.del(key)
                   } else {
                     const keySelected = `${config.redisBaseKey}selected:${destination}`
@@ -719,7 +719,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 } else {
                   const student = await Students.findOne({ phoneNumber: destination })
                   if (student) {
-                    await studentService.enrollStudentToCourse(student.id, course.id)
+                    await studentService.enrollStudentToCourse(student.id, course.id, "qr")
                   } else {
                     const fields = [{
                       question: `What is your full name?`,
@@ -800,7 +800,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 const keySelected = `${config.redisBaseKey}selected:${destination}`
                 let courseId = await redisClient.get(keySelected)
                 if (courseId && student) {
-                  await studentService.enrollStudentToCourse(student.id, courseId)
+                  await studentService.enrollStudentToCourse(student.id, courseId, "qr")
                 }
               }
             }

@@ -209,8 +209,8 @@ export const initiateCourseForCohort = async function (cohortId: string) {
                 await slackServices.enrollStudentToCourseSlack(student, cohort.courseId)
             }))
         } else {
-            await Promise.all(cohort.members.map(async (student) => {
-                await studentService.enrollStudentToCourse(student, cohort.courseId)
+            await Promise.all(cohort.members.map(async (student: string) => {
+                await studentService.enrollStudentToCourse(student, cohort.courseId, "api")
             }))
         }
 
@@ -226,7 +226,7 @@ export const initiateCourseForCohortForSingleStudent = async function (cohortId:
         if (cohort.distribution === Distribution.SLACK) {
             await slackServices.enrollStudentToCourseSlack(studentId, cohort.courseId)
         } else {
-            await studentService.enrollStudentToCourse(studentId, cohort.courseId)
+            await studentService.enrollStudentToCourse(studentId, cohort.courseId, "api")
         }
 
         cohort.status = CohortsStatus.DISABLED

@@ -27,9 +27,9 @@ router.use(auth())
 router
   .route('/all')
   .get(studentController.getAllStudents)
-  
+
 router
   .route('/:course')
-  .get( validate(studentValidators.fetchStudentByCourse), studentController.getStudentsByCourse)
+  .get(validate(studentValidators.fetchStudentByCourse), studentController.getStudentsByCourse)
 
 export default router
