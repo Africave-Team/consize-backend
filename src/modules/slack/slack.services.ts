@@ -521,8 +521,7 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
           "video_url": data.mediaUrlEmbed
         })
       } else {
-
-        content = `${content}\n\n${data.mediaUrl}`
+        content = `${content}\n\nFurther content can be found ${data.mediaUrl}`
       }
     }
     console.log(blocks)

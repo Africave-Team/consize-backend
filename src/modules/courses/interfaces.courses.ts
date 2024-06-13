@@ -12,9 +12,10 @@ export enum Distribution {
     WHATSAPP = 'whatsapp',
 }
 export interface Media {
-    awsFileKey: string
+    awsFileKey?: string
     mediaType: MediaType
     url: string
+    embedUrl?: string
 }
 
 export enum CourseStatus {
