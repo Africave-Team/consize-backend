@@ -716,7 +716,10 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
   return initialMessageId
 }
 
-
+export const startBundle = async (course: string): Promise<void> => {
+  //create start course bundle
+  
+}
 
 export async function fetchEnrollments (phoneNumber: string): Promise<CourseEnrollment[]> {
   const enrollments: CourseEnrollment[] = []

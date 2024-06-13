@@ -327,51 +327,78 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
   if (!owner) {
     throw new ApiError(httpStatus.NOT_FOUND, "No team found.")
   }
-  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-    to: student.phoneNumber,
-    type: "text",
-    messaging_product: "whatsapp",
-    recipient_type: "individual",
-    text: {
-      body: `Hello ${student.firstName}! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
-    }
-  })
-  await generateCourseFlow(courseId)
-  await startCourse(student.phoneNumber, courseId, student.id)
-  await sendWelcome(courseId, student.phoneNumber)
 
-  let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
-  await dbRef.child("students").child(studentId).set({
-    name: student.firstName + ' ' + student.otherNames,
-    phoneNumber: student.phoneNumber,
-    progress: 0,
-    studentId,
-    completed: false,
-    droppedOut: false,
-    scores: [],
-    lessons: {}
-  })
-  await sessionService.createEnrollment({
-    courseId,
-    teamId: course.owner,
-    name: student.firstName + ' ' + student.otherNames,
-    phoneNumber: student.phoneNumber,
-    progress: 0,
-    studentId,
-    completed: false,
-    droppedOut: false,
-    scores: [],
-    lessons: {}
-  })
-
-  const jobs = await agenda.jobs({ 'data.courseId': courseId, name: GENERATE_COURSE_TRENDS })
-  if (jobs.length === 0) {
-    // Queue the trends generator
-    agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
-      courseId,
-      teamId: course.owner
+  if (!course.bundle) {
+      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: student.phoneNumber,
+      type: "text",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      text: {
+        body: `Hello ${student.firstName}! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
+      }
     })
+    await generateCourseFlow(courseId)
+    await startCourse(student.phoneNumber, courseId, student.id)
+    await sendWelcome(courseId, student.phoneNumber)
+
+    let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
+    await dbRef.child("students").child(studentId).set({
+      name: student.firstName + ' ' + student.otherNames,
+      phoneNumber: student.phoneNumber,
+      progress: 0,
+      studentId,
+      completed: false,
+      droppedOut: false,
+      scores: [],
+      lessons: {}
+    })
+    await sessionService.createEnrollment({
+      courseId,
+      teamId: course.owner,
+      name: student.firstName + ' ' + student.otherNames,
+      phoneNumber: student.phoneNumber,
+      progress: 0,
+      studentId,
+      completed: false,
+      droppedOut: false,
+      scores: [],
+      lessons: {}
+    })
+
+    const jobs = await agenda.jobs({ 'data.courseId': courseId, name: GENERATE_COURSE_TRENDS })
+    if (jobs.length === 0) {
+      // Queue the trends generator
+      agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
+        courseId,
+        teamId: course.owner
+      })
+    }
+  } else {
+    const courses = course.courses
+    if (courses[0]) {
+      const courseFlowPromises = courses.map(courseId => generateCourseFlow(courseId));
+      await Promise.all(courseFlowPromises);
+
+      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: student.phoneNumber,
+      type: "text",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      text: {
+        body: `Hello ${student.firstName}! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
+      }
+      })
+      
+      await startCourse(student.phoneNumber, courses[0], student.id)
+      await sendWelcome(courseId, student.phoneNumber)
+
+    } else {
+      throw new ApiError(httpStatus.NOT_FOUND, "No course in this course bundle, please add course")
+    }
+    
   }
+
 }
 
 export const findStudentById = (studentId: string) => Students.findById(studentId)
