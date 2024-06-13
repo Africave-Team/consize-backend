@@ -507,13 +507,7 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
           "type": MessageBlockType.VIDEO,
           "title": {
             "type": SlackTextMessageTypes.PLAINTEXT,
-            "text": "Video title",
-            "emoji": true
-          },
-          "title_url": data.mediaUrlEmbed,
-          "description": {
-            "type": SlackTextMessageTypes.PLAINTEXT,
-            "text": "Video title",
+            "text": data.block?.title || "Video title",
             "emoji": true
           },
           "alt_text": "alt text for vide",
