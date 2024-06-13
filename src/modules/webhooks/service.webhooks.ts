@@ -197,9 +197,10 @@ export const generateCourseFlow = async function (courseId: string) {
               }
               if (blockData.bodyMedia && blockData.bodyMedia.url && blockData.bodyMedia.url.length > 10) {
                 flo.mediaType = blockData.bodyMedia.mediaType
-                flo.mediaUrl = `https://www.youtube.com/embed/aTtgcLrVK-E`
+                flo.mediaUrl = blockData.bodyMedia.url
                 if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
                   flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
+                  flo.mediaUrlEmbed = `${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`
                 }
               }
 

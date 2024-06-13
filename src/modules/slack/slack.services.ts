@@ -510,7 +510,7 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
             "text": "Video title",
             "emoji": true
           },
-          "title_url": "https://www.dailymotion.com/embed/video/x9043y4?autoplay=1" || data.mediaUrlEmbed,
+          "title_url": data.mediaUrlEmbed,
           "description": {
             "type": SlackTextMessageTypes.PLAINTEXT,
             "text": "Video title",
@@ -518,7 +518,7 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
           },
           "alt_text": "alt text for vide",
           "thumbnail_url": data.thumbnailUrl || "https://picsum.photos/200/300.jpg",
-          "video_url": "https://www.dailymotion.com/embed/video/x9043y4?autoplay=1" || data.mediaUrlEmbed
+          "video_url": data.mediaUrlEmbed
         })
       } else {
 
