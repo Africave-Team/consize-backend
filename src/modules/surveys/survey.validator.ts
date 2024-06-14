@@ -7,6 +7,14 @@ export const createSurvey: Record<keyof CreateSurveyPayload, any> = {
 
 export const createQuestion: Record<keyof Omit<Question, "id">, any> = {
   question: Joi.string().required(),
-  choices: Joi.array().items(Joi.string()).min(1),
-  responseType: Joi.string().valid(...Object.values(ResponseType))
+  choices: Joi.array().items(Joi.string()).when('responseType', {
+    is: ResponseType.MULTI_CHOICE,
+    then: Joi.array().min(3).messages({
+      'array.min': 'Provide three choices for the user to select from'
+    }),
+    otherwise: Joi.array().min(0)
+  }),
+  responseType: Joi.string().valid(...Object.values(ResponseType)).messages({
+    'any.only': 'Select a valid response type'
+  })
 }
