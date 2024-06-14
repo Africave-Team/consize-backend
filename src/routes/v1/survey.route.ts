@@ -6,7 +6,10 @@ import { SurveyControllers, SurveyValidators } from "../../modules/surveys"
 const router: Router = express.Router()
 router.use(auth())
 
-router.post('/', validate(SurveyValidators.createSurvey), SurveyControllers.createSurveyController)
 router.post('/:id', validate(SurveyValidators.createQuestion), SurveyControllers.createSurveyQuestion)
+
+router.route('/')
+  .post(validate(SurveyValidators.createSurvey), SurveyControllers.createSurveyController)
+  .get(SurveyControllers.fetchTeamSurveysController)
 
 export default router 

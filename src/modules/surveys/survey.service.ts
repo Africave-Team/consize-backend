@@ -12,3 +12,7 @@ export const addQuestion = async (question: Omit<Question, "id">, surveyId: stri
   await Surveys.findByIdAndUpdate(surveyId, { $push: { questions: { ...question } } })
   return Surveys.findById(surveyId)
 }
+
+export const fetchTeamSurveys = async (team: string): Promise<SurveyInterface[]> => {
+  return Surveys.find({ team })
+}

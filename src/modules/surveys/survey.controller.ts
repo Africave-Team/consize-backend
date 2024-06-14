@@ -7,6 +7,11 @@ export const createSurveyController = catchAsync(async (req: Request, res: Respo
   res.status(200).send({ message: "Survey created", data: survey })
 })
 
+export const fetchTeamSurveysController = catchAsync(async (req: Request, res: Response) => {
+  const surveys = await SurveyServices.fetchTeamSurveys(req.user.team)
+  res.status(200).send({ message: "Survey created", data: surveys })
+})
+
 export const createSurveyQuestion = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params
   if (id) {
