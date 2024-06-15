@@ -110,6 +110,11 @@ export interface CourseEnrollment {
   slackResponseUrl?: string
   slackToken?: string
   blockStartTime?: Date | null
+  bundle?: boolean
+  courses?: {
+    key: string
+    status: "completed" | "pending" | "progress"
+  }[]
   lessons?: {
     [id: string]: {
       scores: number[]

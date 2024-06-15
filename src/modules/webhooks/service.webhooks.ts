@@ -714,10 +714,62 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
   return initialMessageId
 }
 
-// export const startBundle = async (course: string): Promise<void> => {
-//   //create start course bundle
-  
-// }
+export const startBundle = async (phoneNumber: string, courseId: string, studentId: string): Promise<string> => { 
+  const course: CourseInterface | null = await Courses.findById(courseId)
+  const student: StudentInterface | null = await Students.findById(studentId)
+  const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${courseId}`
+  const initialMessageId = v4()
+  if (course && student) {
+    const settings = await Settings.findById(course.settings)
+    if (redisClient.isReady) {
+      const totalBlocks = (await Promise.all(course.courses.map(async (course)=>{
+        let flow = await redisClient.get(`${config.redisBaseKey}courses:${course}`)
+        if(flow){
+          const courseFlowData: CourseFlowItem[] = JSON.parse(flow)
+          return courseFlowData.length
+        }
+        return 0
+      }))).reduce((acc, curr)=>{
+        return acc+curr
+      }, 0)
+      if (totalBlocks>0) {
+        const redisData: CourseEnrollment = {
+          team: course.owner,
+          tz: student.tz,
+          student: studentId,
+          id: courseId,
+          inactivityPeriod: settings?.inactivityPeriod,
+          lastActivity: new Date().toISOString(),
+          lastLessonCompleted: new Date().toISOString(),
+          lastMessageId: initialMessageId,
+          title: course.title,
+          description: convertToWhatsAppString(he.decode(course.description)),
+          active: true,
+          quizAttempts: 0,
+          progress: 0,
+          currentBlock: 0,
+          nextBlock: 1,
+          totalBlocks,
+          bundle: true,
+          courses: course.courses.map((id, index)=>({key: `${config.redisBaseKey}courses:${id}`, status: index===0?"progress":"pending"}))
+        }
+        let enrollments: CourseEnrollment[] = await fetchEnrollments(phoneNumber)
+        let active: CourseEnrollment[] = enrollments.filter(e => e.active)
+        if (active.length > 0) {
+          // mark it as not active
+          for (let act of active) {
+            let copy = { ...act }
+            copy.active = false
+            const keyOld = `${config.redisBaseKey}enrollments:${phoneNumber}:${act.id}`
+            await redisClient.set(keyOld, JSON.stringify(copy))
+          }
+        }
+        await redisClient.set(key, JSON.stringify(redisData))
+      }
+    }
+  }
+  return initialMessageId
+}
 
 export async function fetchEnrollments (phoneNumber: string): Promise<CourseEnrollment[]> {
   const enrollments: CourseEnrollment[] = []
