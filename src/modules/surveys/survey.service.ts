@@ -86,9 +86,10 @@ export const fetchSurveyResponses = async (course: string): Promise<SurveyRespon
         $project: {
           _id: 0,
           student: {
-            _id: '$student._id',
-            name: '$student.name',
-            email: '$student.email'
+            id: '$student._id',
+            name: { $concat: ['$student.firstName', ' ', '$student.otherNames'] },
+            email: '$student.email',
+            phoneNumber: '$student.phoneNumber'
           },
           responses: 1
         }
