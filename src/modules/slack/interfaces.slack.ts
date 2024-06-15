@@ -74,8 +74,10 @@ export interface SlackMessageBlock {
   element?: SlackActionBlock
   image_url?: string
   video_url?: string
+  title_url?: string
   thumbnail_url?: string
   title?: SlackTextMessage
+  description?: SlackTextMessage
   alt_text?: string
   block_id?: string
   label?: SlackTextMessage

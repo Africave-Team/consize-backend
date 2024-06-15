@@ -4,6 +4,7 @@ import { v4 } from "uuid"
 import { toJSON } from '../toJSON'
 import { paginate } from '../paginate'
 import { MediaSchema } from './model.media'
+import { generateCourseFlow } from '../webhooks/service.webhooks'
 
 const BlockSchema = new Schema<BlockInterface, BlockInterfaceModel>(
   {
@@ -42,5 +43,18 @@ BlockSchema.plugin(toJSON)
 BlockSchema.plugin(paginate)
 
 const Blocks = mongoose.model<BlockInterface, BlockInterfaceModel>('Blocks', BlockSchema)
+
+Blocks.watch([], { fullDocument: 'updateLookup' }).
+  on('change', async (data: {
+    operationType: string,
+    documentKey: { _id: string },
+    fullDocument: BlockInterface
+  }) => {
+    generateCourseFlow(data.fullDocument.course)
+
+  })
+
+
+
 
 export default Blocks

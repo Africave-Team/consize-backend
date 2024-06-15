@@ -29,6 +29,7 @@ import Teams from '../teams/model.teams'
 import randomstring from "randomstring"
 import { generateOutlinePrompt } from './prompts'
 import { buildCourse } from '../ai/services'
+import { sessionService } from '../sessions'
 
 interface SessionStudent extends StudentCourseStats {
   id: string
@@ -1314,5 +1315,29 @@ export const generateCourseOutlineAI = async function ({ title, lessonCount, job
     id,
     title,
     lessonCount
+  }
+}
+
+export const synStudentCourseEnrollment = async function (courseId: string, teamId: string) {
+  const dbRef = db.ref(COURSE_STATS).child(teamId).child(courseId).child("students")
+  const snapshot = await dbRef.once('value')
+  let data: { [id: string]: StudentCourseStats } | null = snapshot.val()
+  if (data) {
+    for (let studentRecord of Object.values(data)) {
+      await sessionService.createEnrollment({
+        courseId,
+        lessons: studentRecord.lessons,
+        name: studentRecord.name,
+        phoneNumber: studentRecord.phoneNumber,
+        progress: studentRecord.progress,
+        scores: studentRecord.scores,
+        studentId: studentRecord.studentId,
+        teamId,
+        certificate: studentRecord.certificate || "",
+        completed: studentRecord.completed || false,
+        distribution: studentRecord.distribution || Distribution.WHATSAPP,
+        droppedOut: studentRecord.droppedOut || false
+      })
+    }
   }
 }

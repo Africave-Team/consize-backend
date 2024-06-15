@@ -3,6 +3,7 @@ import mongoose, { Schema } from 'mongoose'
 import { v4 } from "uuid"
 import { toJSON } from '../toJSON'
 import { paginate } from '../paginate'
+import { generateCourseFlow } from '../webhooks/service.webhooks'
 
 const QuizSchema = new Schema<QuizInterface, QuizInterfaceModel>(
   {
@@ -58,4 +59,12 @@ QuizSchema.plugin(paginate)
 
 const Quizzes = mongoose.model<QuizInterface, QuizInterfaceModel>('Quizzes', QuizSchema)
 
+Quizzes.watch([], { fullDocument: 'updateLookup' }).
+  on('change', async (data: {
+    operationType: string,
+    documentKey: { _id: string },
+    fullDocument: QuizInterface
+  }) => {
+    generateCourseFlow(data.fullDocument.course)
+  })
 export default Quizzes
