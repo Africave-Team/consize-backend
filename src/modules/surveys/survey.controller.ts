@@ -20,3 +20,20 @@ export const createSurveyQuestion = catchAsync(async (req: Request, res: Respons
   }
 })
 
+export const deleteSurvey = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params
+  if (id) {
+    await SurveyServices.deleteSurvey(id)
+    res.status(200).send({ message: "Survey deleted" })
+  }
+})
+
+
+export const updateSurvey = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params
+  if (id) {
+    const survey = await SurveyServices.updateSurvey(req.body, id)
+    res.status(200).send({ message: "Survey updated", data: survey })
+  }
+})
+
