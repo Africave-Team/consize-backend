@@ -1,5 +1,6 @@
 // import { ApiError } from '../errors'
 // import httpStatus from 'http-status'
+import Courses from '../courses/model.courses'
 import { CreateSurveyPayload, Question, SurveyInterface } from './survey.interfaces'
 import Surveys from './survey.model'
 
@@ -14,6 +15,7 @@ export const updateSurvey = async (surveyPayload: CreateSurveyPayload, id: strin
 }
 
 export const deleteSurvey = async (id: string): Promise<void> => {
+  await Courses.updateMany({ survey: id }, { $set: { survey: null } })
   await Surveys.findByIdAndDelete(id)
 }
 
