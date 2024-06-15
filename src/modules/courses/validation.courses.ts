@@ -57,10 +57,10 @@ export const updateCourse = {
     description: Joi.string(),
     price: Joi.number().optional(),
     courses: Joi.when('bundle', {
-    is: true,
-    then: Joi.array().items(Joi.string()).min(2).required(),
-    otherwise: Joi.array().items(Joi.string()).optional()
-  })
+      is: true,
+      then: Joi.array().items(Joi.string()).min(2).required(),
+      otherwise: Joi.array().items(Joi.string()).optional()
+    })
   }).unknown(true),
   params: Joi.object().keys({
     course: Joi.string().required()
@@ -100,7 +100,8 @@ export const createBlock = {
     bodyMedia: Joi.object<Media>().keys({
       awsFileKey: Joi.string().optional(),
       mediaType: Joi.string().valid(...Object.values(MediaType)),
-      url: Joi.string().optional().allow("")
+      url: Joi.string().optional().allow(""),
+      embedUrl: Joi.string().optional().allow("")
     }).optional(),
     quiz: Joi.string().optional()
   }),
@@ -117,7 +118,8 @@ export const updateBlock = {
     bodyMedia: Joi.object<Media>().keys({
       awsFileKey: Joi.string().required(),
       mediaType: Joi.string().valid(...Object.values(MediaType)),
-      url: Joi.string().required()
+      url: Joi.string().required(),
+      embedUrl: Joi.string().optional().allow("")
     }).optional(),
     quiz: Joi.string().optional()
   }),

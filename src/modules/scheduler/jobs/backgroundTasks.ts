@@ -144,7 +144,7 @@ const handleStudentEnrollment: Processor<{ studentId: string, courseId: string }
   try {
     if (AppConfig.server !== "test") {
       const data = job.attrs.data
-      studentService.startEnrollmentWhatsapp(data.studentId, data.courseId)
+      studentService.startEnrollmentWhatsapp(data.studentId, data.courseId, "qr")
     }
   } catch (error) {
     console.log(error, "error send message")

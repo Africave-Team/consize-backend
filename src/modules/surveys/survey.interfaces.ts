@@ -22,6 +22,7 @@ interface Survey {
 
 export interface CreateSurveyPayload {
   title: string
+  questions: Question[]
 }
 
 export interface SurveyInterface extends Survey, Document {

@@ -157,7 +157,7 @@ export const verifyOTP = async (code: string): Promise<StudentInterface> => {
 
 
 // course sessions
-export const enrollStudentToCourse = async (studentId: string, courseId: string): Promise<void> => {
+export const enrollStudentToCourse = async (studentId: string, courseId: string, source: "api" | "qr"): Promise<void> => {
   const student = await Students.findOne({ _id: studentId })
   if (!student) {
     throw new ApiError(httpStatus.NOT_FOUND, "No student account found.")
@@ -180,38 +180,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
   const subscription = await subscriptionService.fetchMyActiveSubscription(course.owner)
   if (!subscription) {
     // send subscription plan cap message
-    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-      to: student.phoneNumber,
-      type: "text",
-      messaging_product: "whatsapp",
-      recipient_type: "individual",
-      text: {
-        body: `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`
-      }
-    })
-    return
-  }
-  const plan = await subscriptionService.fetchSubscriptionPlanById(subscription.plan as string)
-  if (!plan) {
-    // send subscription plan cap message
-    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-      to: student.phoneNumber,
-      type: "text",
-      messaging_product: "whatsapp",
-      recipient_type: "individual",
-      text: {
-        body: `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`
-      }
-    })
-    return
-  }
-  if (plan.price === 0) {
-    // free plan
-    // get all the team's enrollments
-    const today = new Date()
-    const teamEnrollmentCount = await sessionService.countTeamEnrollmentsPerMonth(course.owner, today.getMonth(), today.getFullYear())
-    if ((teamEnrollmentCount + 1) > MAX_FREE_PLAN_MONTHLY_ENROLLMENTS) {
-      // send subscription plan cap message
+    if (source === "qr") {
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
         to: student.phoneNumber,
         type: "text",
@@ -222,94 +191,141 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string)
         }
       })
       return
+    } else {
+      throw new ApiError(httpStatus.BAD_REQUEST, `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`)
+    }
+  }
+  const plan = await subscriptionService.fetchSubscriptionPlanById(subscription.plan as string)
+  if (!plan) {
+    // send subscription plan cap message
+    if (source === "qr") {
+      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+        to: student.phoneNumber,
+        type: "text",
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        text: {
+          body: `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`
+        }
+      })
+      return
+    } else {
+      throw new ApiError(httpStatus.BAD_REQUEST, `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`)
+    }
+  }
+  if (plan.price === 0) {
+    // free plan
+    // get all the team's enrollments
+    const today = new Date()
+    const teamEnrollmentCount = await sessionService.countTeamEnrollmentsPerMonth(course.owner, today.getMonth(), today.getFullYear())
+    if ((teamEnrollmentCount + 1) > MAX_FREE_PLAN_MONTHLY_ENROLLMENTS) {
+      // send subscription plan cap message
+      if (source === "qr") {
+        agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+          to: student.phoneNumber,
+          type: "text",
+          messaging_product: "whatsapp",
+          recipient_type: "individual",
+          text: {
+            body: `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`
+          }
+        })
+        return
+      } else {
+        throw new ApiError(httpStatus.BAD_REQUEST, `The organization who owns this course, *${owner.name}*, have exceeded the maximum enrollments for their subscription plan`)
+      }
     }
   }
   const settings = await Settings.findById(course.settings)
 
   if (settings) {
-    const buttons: ReplyButton[] = []
-    let message = `Hello ${student.firstName}! Thank you for enrolling on the course *${course.title}*\nPlease select when you would like to start this course.\n\n`
-    let options = ['A', 'B', 'C']
-    if (settings.resumption) {
-      if (settings.resumption.enableImmediate) {
-        let index = buttons.length
+    if (source === "qr") {
+      const buttons: ReplyButton[] = []
+      let message = `Hello ${student.firstName}! Thank you for enrolling on the course *${course.title}*\nPlease select when you would like to start this course.\n\n`
+      let options = ['A', 'B', 'C']
+      if (settings.resumption) {
+        if (settings.resumption.enableImmediate) {
+          let index = buttons.length
+          buttons.push({
+            type: "reply",
+            reply: {
+              id: `enroll_now_${courseId}`,
+              title: `${options[index]}. Start now`
+            }
+          })
+          message = `${message}If you choose option *${options[index]}*, you start the course immediately\n\n`
+        }
+
+        if (settings.resumption.days !== null && settings.resumption.time !== null) {
+          let index = buttons.length
+          // calculate the 
+          let date = moment().add(settings.resumption.days, 'days')
+          let day = date.format('dddd, Do of MMMM, YYYY')
+          buttons.push({
+            type: "reply",
+            reply: {
+              id: `enroll_default_time_${courseId}`,
+              title: `${options[index]}. Use default time`
+            }
+          })
+          const [h, m] = settings.resumption.time.split(':')
+          let hours = Number(h), minutes = Number(m)
+          message = `${message}If you choose option *${options[index]}*, your course starts at a time set by the course creator, i.e. ${date.hour(hours).minute(minutes).format('h:mmA')} on ${day}\n\n`
+        }
+
+        if (settings.resumption.enabledDateTimeSetup) {
+          let index = buttons.length
+          buttons.push({
+            type: "reply",
+            reply: {
+              id: `choose_enroll_time_${courseId}`,
+              title: `${options[index]}. Choose your time`
+            }
+          })
+          message = `${message}If you choose option *${options[index]}*, you may choose your own time\n`
+        }
+      } else {
+        message = `${message}If you choose option A, your course starts immediately.\n\nIf you choose option B, you may choose when you want to start the course.`
         buttons.push({
           type: "reply",
           reply: {
             id: `enroll_now_${courseId}`,
-            title: `${options[index]}. Start now`
+            title: "A. Start now"
           }
-        })
-        message = `${message}If you choose option *${options[index]}*, you start the course immediately\n\n`
-      }
-
-      if (settings.resumption.days !== null && settings.resumption.time !== null) {
-        let index = buttons.length
-        // calculate the 
-        let date = moment().add(settings.resumption.days, 'days')
-        let day = date.format('dddd, Do of MMMM, YYYY')
-        buttons.push({
-          type: "reply",
-          reply: {
-            id: `enroll_default_time_${courseId}`,
-            title: `${options[index]}. Use default time`
-          }
-        })
-        const [h, m] = settings.resumption.time.split(':')
-        let hours = Number(h), minutes = Number(m)
-        message = `${message}If you choose option *${options[index]}*, your course starts at a time set by the course creator, i.e. ${date.hour(hours).minute(minutes).format('h:mmA')} on ${day}\n\n`
-      }
-
-      if (settings.resumption.enabledDateTimeSetup) {
-        let index = buttons.length
-        buttons.push({
+        }, {
           type: "reply",
           reply: {
             id: `choose_enroll_time_${courseId}`,
-            title: `${options[index]}. Choose your time`
+            title: "B. Choose your time"
           }
-        })
-        message = `${message}If you choose option *${options[index]}*, you may choose your own time\n`
+        },)
       }
+      // send the extra message
+      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+        to: student.phoneNumber,
+        type: "interactive",
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        interactive: {
+          body: {
+            text: message
+          },
+          type: "button",
+          action: {
+            buttons
+          }
+        }
+      })
     } else {
-      message = `${message}If you choose option A, your course starts immediately.\n\nIf you choose option B, you may choose when you want to start the course.`
-      buttons.push({
-        type: "reply",
-        reply: {
-          id: `enroll_now_${courseId}`,
-          title: "A. Start now"
-        }
-      }, {
-        type: "reply",
-        reply: {
-          id: `choose_enroll_time_${courseId}`,
-          title: "B. Choose your time"
-        }
-      },)
+      startEnrollmentWhatsapp(studentId, courseId, source)
     }
-    // send the extra message
-    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-      to: student.phoneNumber,
-      type: "interactive",
-      messaging_product: "whatsapp",
-      recipient_type: "individual",
-      interactive: {
-        body: {
-          text: message
-        },
-        type: "button",
-        action: {
-          buttons
-        }
-      }
-    })
   } else {
-    startEnrollmentWhatsapp(studentId, courseId)
+    startEnrollmentWhatsapp(studentId, courseId, source)
   }
 
 }
 
-export const startEnrollmentWhatsapp = async function (studentId: string, courseId: string): Promise<void> {
+export const startEnrollmentWhatsapp = async function (studentId: string, courseId: string, source: "api" | "qr"): Promise<void> {
   const student = await Students.findOne({ _id: studentId })
   if (!student) {
     throw new ApiError(httpStatus.NOT_FOUND, "No student account found.")
@@ -328,6 +344,44 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
   if (!owner) {
     throw new ApiError(httpStatus.NOT_FOUND, "No team found.")
   }
+  if (source === "qr") {
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: student.phoneNumber,
+      type: "text",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      text: {
+        body: `Hello ${student.firstName}! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
+      }
+    })
+  }
+  await generateCourseFlow(courseId)
+  await startCourse(student.phoneNumber, courseId, student.id)
+  await sendWelcome(courseId, student.phoneNumber)
+
+  let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
+  await dbRef.child("students").child(studentId).set({
+    name: student.firstName + ' ' + student.otherNames,
+    phoneNumber: student.phoneNumber,
+    progress: 0,
+    studentId,
+    completed: false,
+    droppedOut: false,
+    scores: [],
+    lessons: {}
+  })
+  await sessionService.createEnrollment({
+    courseId,
+    teamId: course.owner,
+    name: student.firstName + ' ' + student.otherNames,
+    phoneNumber: student.phoneNumber,
+    progress: 0,
+    studentId,
+    completed: false,
+    droppedOut: false,
+    scores: [],
+    lessons: {}
+  })
 
   if (!course.bundle) {
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -646,19 +700,24 @@ export const testCourseWhatsapp = async (phoneNumber: string, courseId: string):
 
 }
 
-export const getAllStudents = async (teamId: string): Promise<any> => {
-  const students = await Enrollments.find({ teamId })
+export const getAllStudents = async (teamId: string, page: number = 1): Promise<any> => {
+  const studentIds = await Enrollments.distinct('studentId', { teamId })
+
+  const students = await Students.paginate({ _id: { $in: studentIds } }, { sortBy: 'createdAt:desc', page, limit: 10 })
+
   if (!students) {
     throw new ApiError(httpStatus.NOT_FOUND, "team does not have any enrolled students")
   }
-  return students;
+  return students
 }
 
-export const getStudentsByCourseId = async (courseId: string): Promise<any> => {
-  const students = await Enrollments.find({ courseId })
+export const getStudentsByCourseId = async (courseId: string, page: number = 1): Promise<any> => {
+  const studentIds = await Enrollments.distinct('studentId', { courseId })
+
+  const students = await Students.paginate({ _id: { $in: studentIds } }, { sortBy: 'createdAt:desc', page, limit: 10 })
   if (!students) {
     throw new ApiError(httpStatus.NOT_FOUND, "course does not have any enrolled students")
   }
-  return students;
+  return students
 }
 

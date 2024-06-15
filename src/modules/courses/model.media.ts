@@ -9,6 +9,9 @@ export const MediaSchema = new Schema<Media>(
     url: {
       type: String,
     },
+    embedUrl: {
+      type: String,
+    },
     mediaType: {
       type: String,
       enum: Object.values(MediaType),
