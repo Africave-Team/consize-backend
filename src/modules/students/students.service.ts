@@ -356,59 +356,60 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
       }
     })
   }
-  
+
   if (!course.bundle) {
     await generateCourseFlow(courseId)
     await startCourse(student.phoneNumber, courseId, student.id)
-    await sendWelcome(courseId, student.phoneNumber)
+    await sendWelcome(student.phoneNumber)
 
   } else {
     const courses = course.courses
-    if (courses.length>0) {
-      const courseFlowPromises = courses.map((id: string) => generateCourseFlow(id));
-      await Promise.all(courseFlowPromises);
-      
+    if (courses.length > 0) {
+      const courseFlowPromises = courses.map((id: string) => generateCourseFlow(id))
+
+      await Promise.all(courseFlowPromises)
+
       await startBundle(student.phoneNumber, courseId, student.id)
-      await sendWelcome(courseId, student.phoneNumber)
+      await sendWelcome(student.phoneNumber)
 
     } else {
       throw new ApiError(httpStatus.NOT_FOUND, "No course in this course bundle, please add course")
     }
-    
+
   }
   let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
-    await dbRef.child("students").child(studentId).set({
-      name: student.firstName + ' ' + student.otherNames,
-      phoneNumber: student.phoneNumber,
-      progress: 0,
-      studentId,
-      completed: false,
-      droppedOut: false,
-      scores: [],
-      lessons: {}
-    })
-  
-    await sessionService.createEnrollment({
-      courseId,
-      teamId: course.owner,
-      name: student.firstName + ' ' + student.otherNames,
-      phoneNumber: student.phoneNumber,
-      progress: 0,
-      studentId,
-      completed: false,
-      droppedOut: false,
-      scores: [],
-      lessons: {}
-    })
+  await dbRef.child("students").child(studentId).set({
+    name: student.firstName + ' ' + student.otherNames,
+    phoneNumber: student.phoneNumber,
+    progress: 0,
+    studentId,
+    completed: false,
+    droppedOut: false,
+    scores: [],
+    lessons: {}
+  })
 
-   const jobs = await agenda.jobs({ 'data.courseId': courseId, name: GENERATE_COURSE_TRENDS })
-    if (jobs.length === 0) {
-      // Queue the trends generator
-      agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
-        courseId,
-        teamId: course.owner
-      })
-    }
+  await sessionService.createEnrollment({
+    courseId,
+    teamId: course.owner,
+    name: student.firstName + ' ' + student.otherNames,
+    phoneNumber: student.phoneNumber,
+    progress: 0,
+    studentId,
+    completed: false,
+    droppedOut: false,
+    scores: [],
+    lessons: {}
+  })
+
+  const jobs = await agenda.jobs({ 'data.courseId': courseId, name: GENERATE_COURSE_TRENDS })
+  if (jobs.length === 0) {
+    // Queue the trends generator
+    agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
+      courseId,
+      teamId: course.owner
+    })
+  }
 }
 
 export const findStudentById = (studentId: string) => Students.findById(studentId)
@@ -651,7 +652,7 @@ export const testCourseWhatsapp = async (phoneNumber: string, courseId: string):
   }
   await generateCourseFlow(courseId)
   await startCourse(phoneNumber, courseId, phoneNumber)
-  await sendWelcome(courseId, phoneNumber)
+  await sendWelcome(phoneNumber)
 
 }
 
