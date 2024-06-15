@@ -128,7 +128,7 @@ export const generateCourseFlow = async function (courseId: string) {
       mediaType: course.headerMedia.mediaType,
       mediaUrl: course.headerMedia.url,
       content: `*Course title*: ${course.title}\n\n*Course description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total lessons in the course: ${course.lessons.length}\n⏰ Avg. time you'd spend on each lesson: ${settings?.metadata.idealLessonTime.value} ${settings?.metadata.idealLessonTime.type}\n🏁 Max lessons per day: ${settings?.metadata.maxLessonsPerDay}\n🗓 Number of days to complete: 2\n\nPlease tap 'Continue' to start your first lesson
-      `
+        `
     })
 
     // assesments(if any)
@@ -714,7 +714,75 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
   return initialMessageId
 }
 
+export const startBundle = async (phoneNumber: string, courseId: string, studentId: string): Promise<string> => {
+  const course: CourseInterface | null = await Courses.findById(courseId)
+  const student: StudentInterface | null = await Students.findById(studentId)
+  const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${courseId}`
+  const initialMessageId = v4()
+  if (course && student) {
+    let courses = await Courses.find({ id: { $in: course.courses } })
+    const settings = await Settings.findById(course.settings)
+    if (redisClient.isReady) {
+      let totalBlocks = 0
+      const description = convertToWhatsAppString(he.decode(course.description))
+      const courseOwner = await Team.findById(course.owner)
+      let flows: CourseFlowItem[] = [
+        {
+          type: CourseFlowMessageType.INTRO,
+          mediaType: course.headerMedia?.mediaType || "",
+          mediaUrl: course.headerMedia?.url || "",
+          content: `This is a bundle of courses. *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nYou will receive the following courses in this order\n\n\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \n\nHappy learning.`
+        }
+      ]
 
+      for (let id of course.courses) {
+        let flow = await redisClient.get(`${config.redisBaseKey}courses:${id}`)
+        if (flow) {
+          const courseFlowData: CourseFlowItem[] = JSON.parse(flow)
+          flows.push(...courseFlowData)
+        }
+      }
+      flows = flows.filter(e => !e.surveyId)
+      totalBlocks = flows.length
+      redisClient.set(`${config.redisBaseKey}courses:${courseId}`, JSON.stringify(flows))
+
+      if (totalBlocks > 0) {
+        const redisData: CourseEnrollment = {
+          team: course.owner,
+          tz: student.tz,
+          student: studentId,
+          id: courseId,
+          inactivityPeriod: settings?.inactivityPeriod,
+          lastActivity: new Date().toISOString(),
+          lastLessonCompleted: new Date().toISOString(),
+          lastMessageId: initialMessageId,
+          title: course.title,
+          description: convertToWhatsAppString(he.decode(course.description)),
+          active: true,
+          quizAttempts: 0,
+          progress: 0,
+          currentBlock: 0,
+          nextBlock: 1,
+          totalBlocks,
+          bundle: true,
+        }
+        let enrollments: CourseEnrollment[] = await fetchEnrollments(phoneNumber)
+        let active: CourseEnrollment[] = enrollments.filter(e => e.active)
+        if (active.length > 0) {
+          // mark it as not active
+          for (let act of active) {
+            let copy = { ...act }
+            copy.active = false
+            const keyOld = `${config.redisBaseKey}enrollments:${phoneNumber}:${act.id}`
+            await redisClient.set(keyOld, JSON.stringify(copy))
+          }
+        }
+        await redisClient.set(key, JSON.stringify(redisData))
+      }
+    }
+  }
+  return initialMessageId
+}
 
 export async function fetchEnrollments (phoneNumber: string): Promise<CourseEnrollment[]> {
   const enrollments: CourseEnrollment[] = []
@@ -840,29 +908,19 @@ export const sendFreeformSurvey = async (item: CourseFlowItem, phoneNumber: stri
   }
 }
 
-export const sendWelcome = async (currentIndex: string, phoneNumber: string): Promise<void> => {
+export const sendWelcome = async (phoneNumber: string): Promise<void> => {
   try {
-    if (redisClient.isReady) {
-      const courseKey = `${config.redisBaseKey}courses:${currentIndex}`
-      const courseFlow = await redisClient.get(courseKey)
-      if (courseFlow) {
-        const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
-        const item = courseFlowData[0]
-        if (item) {
-          let payload: Message = {
-            "messaging_product": "whatsapp",
-            "recipient_type": "individual",
-            "to": phoneNumber,
-            "type": "template",
-            "template": {
-              "language": { "code": "en_US" },
-              "name": "successful_optin_no_variable"
-            },
-          }
-          agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
-        }
-      }
+    let payload: Message = {
+      "messaging_product": "whatsapp",
+      "recipient_type": "individual",
+      "to": phoneNumber,
+      "type": "template",
+      "template": {
+        "language": { "code": "en_US" },
+        "name": "successful_optin_no_variable"
+      },
     }
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }

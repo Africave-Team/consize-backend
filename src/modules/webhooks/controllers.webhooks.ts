@@ -136,7 +136,8 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           case CONTINUE:
             if (enrollment) {
               let msgId = v4()
-              await handleContinue(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, enrollment)
+              let key = `${config.redisBaseKey}courses:${enrollment.id}`
+              await handleContinue(enrollment.nextBlock, key, destination, msgId, enrollment)
               // schedule inactivity message
               scheduleInactivityMessage(enrollment, destination)
             }
