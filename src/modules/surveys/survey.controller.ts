@@ -46,3 +46,11 @@ export const fetchSurveyResponseByCourseID = catchAsync(async (req: Request, res
   }
 })
 
+export const fetchSurveyResponseChartByCourseID = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params
+  if (id) {
+    let responses = await SurveyServices.fetchMultiChoiceChartData(id)
+    res.status(200).send({ message: "Finished", data: responses })
+  }
+})
+

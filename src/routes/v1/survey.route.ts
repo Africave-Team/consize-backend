@@ -18,4 +18,7 @@ router.route('/')
 router.route('/course/:id')
   .get(SurveyControllers.fetchSurveyResponseByCourseID)
 
+router.route('/course/:id/chart')
+  .get(SurveyControllers.fetchSurveyResponseChartByCourseID)
+
 export default router 

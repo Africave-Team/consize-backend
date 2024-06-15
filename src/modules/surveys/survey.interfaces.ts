@@ -54,3 +54,16 @@ export interface SurveyResponseInterface extends SurveyResponse, Document {
 
 export interface SurveyResponseInterfaceModel extends Model<SurveyResponseInterface> {
 }
+
+export interface ChartDataInformation {
+  surveyId: string
+  questionId: string
+  questionText: string
+  choices: string[]
+  responses: { option: string, count: number, percent: number }[]
+  totalCount: number
+}
+
+export interface ResponseMap {
+  [option: string]: number
+}
