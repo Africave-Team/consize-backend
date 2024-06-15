@@ -37,3 +37,12 @@ export const updateSurvey = catchAsync(async (req: Request, res: Response) => {
   }
 })
 
+
+export const fetchSurveyResponseByCourseID = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params
+  if (id) {
+    let responses = await SurveyServices.fetchSurveyResponses(id)
+    res.status(200).send({ message: "Finished", data: responses })
+  }
+})
+

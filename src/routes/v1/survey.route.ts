@@ -15,4 +15,7 @@ router.route('/')
   .post(validate(SurveyValidators.createSurvey), SurveyControllers.createSurveyController)
   .get(SurveyControllers.fetchTeamSurveysController)
 
+router.route('/course/:id')
+  .get(SurveyControllers.fetchSurveyResponseByCourseID)
+
 export default router 
