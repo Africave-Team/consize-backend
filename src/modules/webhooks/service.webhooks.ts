@@ -970,11 +970,14 @@ export const sendIntro = async (currentIndex: string, phoneNumber: string): Prom
 
 export const handleContinue = async (nextIndex: number, courseKey: string, phoneNumber: string, messageId: string, data: CourseEnrollment): Promise<void> => {
   const flow = await redisClient.get(courseKey)
+  console.log(flow, "all course flow")
   if (flow) {
     const flowData: CourseFlowItem[] = JSON.parse(flow)
     let item = flowData[nextIndex]
+    console.log(item, "current item")
     const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data?.id}`
     if (item) {
+      console.log(data, "enrollment data")
       if (data) {
         let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: nextIndex, nextBlock: nextIndex + 1 }
         let currentItem = flowData[data.currentBlock]
