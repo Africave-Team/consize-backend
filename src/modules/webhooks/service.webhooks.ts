@@ -726,13 +726,16 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
       let totalBlocks = 0
       const description = convertToWhatsAppString(he.decode(course.description))
       const courseOwner = await Team.findById(course.owner)
+      let payload: CourseFlowItem = {
+        type: CourseFlowMessageType.INTRO,
+        content: `This is a bundle of courses. *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nYou will receive the following courses in this order\n\n\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \n\nHappy learning.`
+      }
+      if (course.headerMedia && course.headerMedia.url && course.headerMedia.url.startsWith('https://')) {
+        payload.mediaType = course.headerMedia.mediaType
+        payload.mediaUrl = course.headerMedia.url
+      }
       let flows: CourseFlowItem[] = [
-        {
-          type: CourseFlowMessageType.INTRO,
-          mediaType: course.headerMedia?.mediaType || "",
-          mediaUrl: course.headerMedia?.url || "",
-          content: `This is a bundle of courses. *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nYou will receive the following courses in this order\n\n\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \n\nHappy learning.`
-        }
+        payload
       ]
 
       for (let id of course.courses) {
