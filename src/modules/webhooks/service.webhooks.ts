@@ -762,8 +762,8 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
           active: true,
           quizAttempts: 0,
           progress: 0,
-          currentBlock: 0,
-          nextBlock: 1,
+          currentBlock: -1,
+          nextBlock: 0,
           totalBlocks,
           bundle: true,
         }
