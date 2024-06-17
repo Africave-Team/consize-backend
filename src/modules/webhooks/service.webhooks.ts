@@ -2,7 +2,7 @@ import httpStatus from 'http-status'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
+import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -1146,34 +1146,38 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.INTRO:
+            let interactive: InteractiveMessage["interactive"] = {
+              header: {
+                type: item.mediaType || MediaType.IMAGE,
+                image: {
+                  link: item.mediaUrl || ""
+                }
+              },
+              body: {
+                text: item.content
+              },
+              type: "button",
+              action: {
+                buttons: [
+                  {
+                    type: "reply",
+                    reply: {
+                      id: CONTINUE,
+                      title: "Continue"
+                    }
+                  }
+                ]
+              }
+            }
+            if (!item.mediaUrl || !item.mediaUrl.startsWith("https://")) {
+              delete interactive.header
+            }
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
               type: "interactive",
               messaging_product: "whatsapp",
               recipient_type: "individual",
-              interactive: {
-                header: {
-                  type: item.mediaType || MediaType.IMAGE,
-                  image: {
-                    link: item.mediaUrl || ""
-                  }
-                },
-                body: {
-                  text: item.content
-                },
-                type: "button",
-                action: {
-                  buttons: [
-                    {
-                      type: "reply",
-                      reply: {
-                        id: CONTINUE,
-                        title: "Continue"
-                      }
-                    }
-                  ]
-                }
-              }
+              interactive
             })
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break

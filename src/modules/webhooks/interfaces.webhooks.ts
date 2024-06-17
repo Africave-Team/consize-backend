@@ -35,7 +35,7 @@ interface InteractiveMessageSection {
   rows: InteractiveMessageSectionRow[]
 }
 
-interface InteractiveMessage {
+export interface InteractiveMessage {
   type: "interactive"
   interactive: {
     type: "button" | "list"
