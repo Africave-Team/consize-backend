@@ -743,6 +743,7 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
         }
       }
       flows = flows.filter(e => !e.surveyId)
+      flows = flows.filter(e => e.type !== CourseFlowMessageType.WELCOME)
       totalBlocks = flows.length
       redisClient.set(`${config.redisBaseKey}courses:${courseId}`, JSON.stringify(flows))
 
@@ -970,14 +971,16 @@ export const sendIntro = async (currentIndex: string, phoneNumber: string): Prom
 
 export const handleContinue = async (nextIndex: number, courseKey: string, phoneNumber: string, messageId: string, data: CourseEnrollment): Promise<void> => {
   const flow = await redisClient.get(courseKey)
-  console.log(flow, "all course flow")
   if (flow) {
     const flowData: CourseFlowItem[] = JSON.parse(flow)
     let item = flowData[nextIndex]
-    console.log(item, "current item")
     const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data?.id}`
     if (item) {
-      console.log(data, "enrollment data")
+      if (item.type === CourseFlowMessageType.WELCOME) {
+        nextIndex += 1
+        item = flowData[nextIndex]
+        if (!item) return
+      }
       if (data) {
         let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: nextIndex, nextBlock: nextIndex + 1 }
         let currentItem = flowData[data.currentBlock]
@@ -995,6 +998,8 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             updatedData = { ...updatedData, blockStartTime: null, lastActivity: new Date().toISOString() }
           }
         }
+
+
 
 
         switch (item.type) {
