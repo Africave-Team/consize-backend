@@ -4,7 +4,7 @@ import httpStatus from 'http-status'
 import { QueryResult } from '../paginate/paginate'
 import db from "../rtdb"
 import { COURSE_STATS, COURSE_TRENDS } from '../rtdb/nodes'
-import { CourseInterface, CourseStatus, CreateCoursePayload, Distribution } from './interfaces.courses'
+import { CourseInterface, CourseStatus, CreateCoursePayload, Distribution, MediaType } from './interfaces.courses'
 import Course from './model.courses'
 import { CreateLessonPayload, LessonInterface } from './interfaces.lessons'
 import Lessons from './model.lessons'
@@ -293,7 +293,7 @@ export const duplicateCourse = async ({ courseId, title, headerMediaUrl, descrip
       bundle: oldCourse.bundle,
       private: oldCourse.private,
       headerMedia: {
-        ...oldCourse.headerMedia,
+        mediaType: MediaType.IMAGE,
         url: headerMediaUrl
       },
       title: nTitle,
@@ -360,6 +360,10 @@ export const duplicateCourse = async ({ courseId, title, headerMediaUrl, descrip
 
         }
       }
+    }
+    if (oldCourse.status === CourseStatus.PUBLISHED) {
+      course.status = CourseStatus.PUBLISHED
+      await course.save()
     }
     return course
 
