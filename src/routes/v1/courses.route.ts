@@ -13,6 +13,8 @@ router.post('/', validate(courseValidators.createCourse), courseControllers.crea
 router.route('/:course')
   .get(courseControllers.fetchTeamSingleCourse)
   .put(validate(courseValidators.updateCourse), courseControllers.updateCourse)
+  .post(courseControllers.duplicateCourse)
+  .delete(courseControllers.deleteCourse)
 router.put('/settings/:id', courseControllers.updateCourseSetting)
 router.post('/settings/add-learner-group/:id', courseControllers.addLearnerGroup)
 router.delete('/settings/remove-learner-group/:id/:groupId', courseControllers.removeLearnerGroup)

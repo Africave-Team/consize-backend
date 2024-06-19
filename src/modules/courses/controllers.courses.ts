@@ -325,3 +325,21 @@ export const generateCourseOutline = catchAsync(async (req: Request, res: Respon
   const data = await courseService.generateCourseOutlineAI({ title, lessonCount, jobId })
   res.status(200).send({ message: "Job has been queued", data })
 })
+
+
+export const deleteCourse = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+  if (course) {
+    await courseService.deleteCourse({ courseId: course })
+  }
+  res.status(200).send({ message: "Course deleted" })
+})
+
+
+export const duplicateCourse = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+  if (course) {
+    await courseService.duplicateCourse({ courseId: course })
+  }
+  res.status(200).send({ message: "Course duplicated" })
+})

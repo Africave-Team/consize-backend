@@ -273,6 +273,92 @@ export const fetchSingleCourse = async ({ courseId }: { courseId: string }): Pro
   return course
 }
 
+export const deleteCourse = async ({ courseId }: { courseId: string }): Promise<void> => {
+  await Course.findByIdAndDelete(courseId)
+}
+
+export const duplicateCourse = async ({ courseId }: { courseId: string }): Promise<CourseInterface | null> => {
+  const oldCourse = await Course.findOne({ _id: courseId })
+  if (oldCourse) {
+    let titleRegex = new RegExp(oldCourse.title)
+    let existingNames = await Course.countDocuments({ title: { $regex: titleRegex, $options: "i" } })
+    let title = `${oldCourse.title} ${existingNames + 1}`
+    let course = await createCourse({
+      free: oldCourse.free,
+      bundle: oldCourse.bundle,
+      private: oldCourse.private,
+      headerMedia: oldCourse.headerMedia,
+      title,
+      description: oldCourse.description,
+      source: oldCourse.source,
+      price: oldCourse.price || 0,
+      currentCohort: oldCourse.currentCohort || "",
+      survey: oldCourse.survey || "",
+      courses: oldCourse.courses || [],
+    }, oldCourse.owner)
+    if (!oldCourse.bundle && course) {
+      for (let lessonId of oldCourse.lessons) {
+        // duplicate the lesson
+        let lesson = await Lessons.findById(lessonId).lean()
+        if (lesson) {
+          let newlesson = await createLesson({
+            title: lesson.title,
+            description: lesson.description || ""
+          }, course.id)
+          let blocks = await Blocks.find({ _id: { $in: lesson.blocks } })
+          await Promise.all(blocks.map(async (e) => {
+            let payload: CreateBlockPayload = {
+              content: e.content,
+              title: e.title,
+            }
+            if (e.bodyMedia) {
+              payload.bodyMedia = e.bodyMedia
+            }
+
+            const block = await createBlock(payload, newlesson.id, courseId)
+            if (e.quiz && block) {
+              let old = await Quizzes.findById(e.quiz)
+              if (old) {
+                await addBlockQuiz({
+                  question: old.question,
+                  choices: old.choices,
+                  revisitChunk: old.revisitChunk,
+                  wrongAnswerContext: old.wrongAnswerContext,
+                  correctAnswerContext: old.correctAnswerContext,
+                  correctAnswerIndex: old.correctAnswerIndex,
+                  hint: old.hint || ""
+                }, lessonId, courseId, block.id)
+              }
+
+            }
+            return e
+          }))
+
+          let quizzes = await Quizzes.find({ _id: { $in: lesson.quizzes } })
+          await Promise.all(quizzes.map(async (e) => {
+            if (e) {
+              await addLessonQuiz({
+                question: e.question,
+                choices: e.choices,
+                revisitChunk: e.revisitChunk,
+                wrongAnswerContext: e.wrongAnswerContext,
+                correctAnswerContext: e.correctAnswerContext,
+                correctAnswerIndex: e.correctAnswerIndex,
+                hint: e.hint || ""
+              }, lessonId, courseId)
+            }
+            return e
+          }))
+
+        }
+      }
+    }
+
+
+  }
+  return null
+}
+
 // lessons
 
 export const createLesson = async (lessonPayload: CreateLessonPayload, course: string): Promise<LessonInterface> => {
