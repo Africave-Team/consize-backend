@@ -33,6 +33,14 @@ const createCourseAIRequest: Record<keyof { jobId: string }, any> = {
 export const createCourse = {
   body: Joi.object().keys(createCourseRequest),
 }
+
+export const duplicateCourse = {
+  body: Joi.object().keys({
+    headerMediaUrl: Joi.string().required(),
+    title: Joi.string().required(),
+    description: Joi.string().required(),
+  }),
+}
 export const createCourseAi = {
   body: Joi.object().keys(createCourseAIRequest),
 }

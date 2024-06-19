@@ -338,8 +338,10 @@ export const deleteCourse = catchAsync(async (req: Request, res: Response) => {
 
 export const duplicateCourse = catchAsync(async (req: Request, res: Response) => {
   const { course } = req.params
+  const { title, headerMediaUrl, description } = req.body
+  let data
   if (course) {
-    await courseService.duplicateCourse({ courseId: course })
+    data = await courseService.duplicateCourse({ courseId: course, title, headerMediaUrl, description })
   }
-  res.status(200).send({ message: "Course duplicated" })
+  res.status(200).send({ message: "Course duplicated", data })
 })

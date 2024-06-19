@@ -277,19 +277,27 @@ export const deleteCourse = async ({ courseId }: { courseId: string }): Promise<
   await Course.findByIdAndDelete(courseId)
 }
 
-export const duplicateCourse = async ({ courseId }: { courseId: string }): Promise<CourseInterface | null> => {
+export const duplicateCourse = async ({ courseId, title, headerMediaUrl, description }: { courseId: string, title: string, headerMediaUrl: string, description: string }): Promise<CourseInterface | null> => {
   const oldCourse = await Course.findOne({ _id: courseId })
   if (oldCourse) {
-    let titleRegex = new RegExp(oldCourse.title)
+    let nTitle = ""
+    let titleRegex = new RegExp(title)
     let existingNames = await Course.countDocuments({ title: { $regex: titleRegex, $options: "i" } })
-    let title = `${oldCourse.title} ${existingNames + 1}`
+    if (existingNames > 0) {
+      nTitle = `${oldCourse.title} ${existingNames + 1}`
+    } else {
+      nTitle = title
+    }
     let course = await createCourse({
       free: oldCourse.free,
       bundle: oldCourse.bundle,
       private: oldCourse.private,
-      headerMedia: oldCourse.headerMedia,
-      title,
-      description: oldCourse.description,
+      headerMedia: {
+        ...oldCourse.headerMedia,
+        url: headerMediaUrl
+      },
+      title: nTitle,
+      description: description,
       source: oldCourse.source,
       price: oldCourse.price || 0,
       currentCohort: oldCourse.currentCohort || "",
@@ -353,7 +361,7 @@ export const duplicateCourse = async ({ courseId }: { courseId: string }): Promi
         }
       }
     }
-
+    return course
 
   }
   return null
