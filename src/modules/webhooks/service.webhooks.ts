@@ -50,8 +50,8 @@ export enum CourseFlowMessageType {
   SURVEY_MULTI_CHOICE = 'survey-multi-choice',
   SURVEY_FREE_FORM = 'survey-free-form',
   START_SURVEY = "start-survey",
-  END_SURVEY = 'end-survey'
-
+  END_SURVEY = 'end-survey',
+  END_OF_BUNDLE = 'end-of-bundle'
 }
 
 export interface CourseFlowItem {
@@ -742,6 +742,15 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
           flows.push(...courseFlowData)
         }
       }
+      const endOfBundleMessage = {
+          type: CourseFlowMessageType.END_OF_BUNDLE,
+          mediaType: course.headerMedia?.mediaType || "",
+          mediaUrl: course.headerMedia?.url || "",
+          content: `Congratulations on completing. *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n\n\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \n\nHappy learning.`
+        }
+
+      flows.push(endOfBundleMessage)
+
       flows = flows.filter(e => !e.surveyId)
       totalBlocks = flows.length
       redisClient.set(`${config.redisBaseKey}courses:${courseId}`, JSON.stringify(flows))
@@ -1078,7 +1087,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             })
             await delay(5000)
             let next = flowData[nextIndex + 1]
-            if (next?.surveyId && next.surveyQuestion) {
+            if (next) {
               updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
               handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
             } else {
@@ -1088,6 +1097,17 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               })
             }
 
+            break
+          case CourseFlowMessageType.END_OF_BUNDLE:
+            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: phoneNumber,
+              type: "text",
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              text: {
+                body: item.content.replace('{survey}', '')
+              }
+            })
             break
           case CourseFlowMessageType.ENDLESSON:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
