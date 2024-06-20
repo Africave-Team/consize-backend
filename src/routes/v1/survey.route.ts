@@ -7,6 +7,7 @@ const router: Router = express.Router()
 router.use(auth())
 
 router.route('/:id')
+  .get(SurveyControllers.fetchSurvey)
   .post(validate(SurveyValidators.createQuestion), SurveyControllers.createSurveyQuestion)
   .put(validate(SurveyValidators.createSurvey), SurveyControllers.updateSurvey)
   .delete(SurveyControllers.deleteSurvey)

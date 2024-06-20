@@ -29,6 +29,15 @@ export const deleteSurvey = catchAsync(async (req: Request, res: Response) => {
 })
 
 
+export const fetchSurvey = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params
+  if (id) {
+    const data = await SurveyServices.fetchSingleSurvey(id)
+    res.status(200).send({ message: "Survey data", data })
+  }
+})
+
+
 export const updateSurvey = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params
   if (id) {

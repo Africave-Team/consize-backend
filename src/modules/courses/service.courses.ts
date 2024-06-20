@@ -277,7 +277,26 @@ export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: stri
     populate: {
       path: 'quizzes' // Populating quizzes at the lesson level
     }
-  }).populate("courses").lean()
+  }).populate({
+    path: "courses",
+    populate: {
+      path: "lessons",
+      populate: {
+        path: "blocks",
+        populate: {
+          path: "quiz"
+        }
+      }
+    }
+  }).populate({
+    path: "courses",
+    populate: {
+      path: "lessons",
+      populate: {
+        path: "quizzes",
+      }
+    }
+  }).lean()
   if (course) {
     if (!course.shortCode) {
       let code = randomstring.generate({
