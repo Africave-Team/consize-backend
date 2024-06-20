@@ -228,9 +228,33 @@ export const fetchPublishedCourses = async ({ page, pageSize }: { page: number, 
 
 }
 
-export const searchTeamCourses = async ({ teamId, search }: { teamId: string, search: string }): Promise<CourseInterface[]> => {
+export const searchTeamCourses = async ({ teamId, search, filter }: { teamId: string, search: string, filter?: PageType }): Promise<CourseInterface[]> => {
+  const q: any = { $and: [{ owner: teamId, }] }
+  console.log(filter, teamId)
+  if (filter) {
+    switch (filter) {
+      case PageType.ALL:
+        q.$and.push({ $or: [{ status: CourseStatus.COMPLETED }, { status: CourseStatus.PUBLISHED }] })
+        break
+      case PageType.BUNDLE:
+        q['bundle'] = true
+        q.$and.push({ $or: [{ status: CourseStatus.COMPLETED }, { status: CourseStatus.PUBLISHED }] })
+        break
+      case PageType.COURSE:
+        q['bundle'] = false
+        q.$and.push({ $or: [{ status: CourseStatus.COMPLETED }, { status: CourseStatus.PUBLISHED }] })
+        break
+      case PageType.DRAFT:
+        q.$and.push({ $or: [{ status: CourseStatus.DRAFT }] })
+        break
+      default:
+        break
+    }
+  }
   const regex = new RegExp(search, "i")
-  return Course.find({ owner: teamId, $or: [{ title: { $regex: regex } }, { description: { $regex: regex } }] }).limit(16)
+  q.$and.push({ $or: [{ title: { $regex: regex } }, { description: { $regex: regex } }] })
+  console.log(q)
+  return Course.find({ ...q }).limit(16)
 
 }
 

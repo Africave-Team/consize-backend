@@ -84,11 +84,11 @@ export const fetchSingleCourse = catchAsync(async (req: Request, res: Response) 
 
 
 export const searchTeamCourses = catchAsync(async (req: Request, res: Response) => {
-  const { page, search } = req.query
+  const { page, search, filter } = req.query
   const parsedPage = parseInt(page as string, 10) || 1
 
   const searchKey = search as string
-  const query: any = { teamId: req.user.team, page: parsedPage }
+  const query: any = { teamId: req.user.team, page: parsedPage, filter }
 
   if (search) {
     query['search'] = searchKey

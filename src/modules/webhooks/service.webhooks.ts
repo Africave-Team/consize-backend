@@ -746,11 +746,11 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
         }
       }
       const endOfBundleMessage = {
-          type: CourseFlowMessageType.END_OF_BUNDLE,
-          mediaType: course.headerMedia?.mediaType || "",
-          mediaUrl: course.headerMedia?.url || "",
-          content: `Congratulations on completing. *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n\n\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \n\nHappy learning.`
-        }
+        type: CourseFlowMessageType.END_OF_BUNDLE,
+        mediaType: course.headerMedia?.mediaType || "",
+        mediaUrl: course.headerMedia?.url || "",
+        content: `Congratulations on completing. *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n\n\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \n\nHappy learning.`
+      }
 
       flows.push(endOfBundleMessage)
 
