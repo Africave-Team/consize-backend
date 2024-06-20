@@ -163,7 +163,7 @@ export const generateCourseFlow = async function (courseId: string) {
                   flo.mediaUrl = blockData.bodyMedia.url
                   if (blockData.bodyMedia.mediaType === MediaType.VIDEO && blockData.bodyMedia.embedUrl) {
                     flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
-                    flo.mediaUrlEmbed = blockData.bodyMedia.embedUrl
+                    flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
                   }
                 }
                 if (content.length > 1024) {
@@ -200,7 +200,7 @@ export const generateCourseFlow = async function (courseId: string) {
                 flo.mediaUrl = blockData.bodyMedia.url
                 if (blockData.bodyMedia.mediaType === MediaType.VIDEO && blockData.bodyMedia.embedUrl) {
                   flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
-                  flo.mediaUrlEmbed = blockData.bodyMedia.embedUrl
+                  flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
                 }
               }
 
