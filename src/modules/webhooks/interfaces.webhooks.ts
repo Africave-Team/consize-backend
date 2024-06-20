@@ -35,7 +35,7 @@ interface InteractiveMessageSection {
   rows: InteractiveMessageSectionRow[]
 }
 
-interface InteractiveMessage {
+export interface InteractiveMessage {
   type: "interactive"
   interactive: {
     type: "button" | "list"
@@ -110,6 +110,11 @@ export interface CourseEnrollment {
   slackResponseUrl?: string
   slackToken?: string
   blockStartTime?: Date | null
+  bundle?: boolean
+  courses?: {
+    key: string
+    status: "completed" | "pending" | "progress"
+  }[]
   lessons?: {
     [id: string]: {
       scores: number[]

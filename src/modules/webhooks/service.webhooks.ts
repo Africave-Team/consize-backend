@@ -2,7 +2,7 @@ import httpStatus from 'http-status'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
+import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -50,8 +50,8 @@ export enum CourseFlowMessageType {
   SURVEY_MULTI_CHOICE = 'survey-multi-choice',
   SURVEY_FREE_FORM = 'survey-free-form',
   START_SURVEY = "start-survey",
-  END_SURVEY = 'end-survey'
-
+  END_SURVEY = 'end-survey',
+  END_OF_BUNDLE = 'end-of-bundle'
 }
 
 export interface CourseFlowItem {
@@ -128,7 +128,7 @@ export const generateCourseFlow = async function (courseId: string) {
       mediaType: course.headerMedia.mediaType,
       mediaUrl: course.headerMedia.url,
       content: `*Course title*: ${course.title}\n\n*Course description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total lessons in the course: ${course.lessons.length}\n⏰ Avg. time you'd spend on each lesson: ${settings?.metadata.idealLessonTime.value} ${settings?.metadata.idealLessonTime.type}\n🏁 Max lessons per day: ${settings?.metadata.maxLessonsPerDay}\n🗓 Number of days to complete: 2\n\nPlease tap 'Continue' to start your first lesson
-      `
+        `
     })
 
     // assesments(if any)
@@ -714,7 +714,88 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
   return initialMessageId
 }
 
+export const startBundle = async (phoneNumber: string, courseId: string, studentId: string): Promise<string> => {
+  const course: CourseInterface | null = await Courses.findById(courseId)
+  const student: StudentInterface | null = await Students.findById(studentId)
+  const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${courseId}`
+  const initialMessageId = v4()
+  if (course && student) {
+    let courses = await Courses.find({ _id: { $in: course.courses } })
+    const settings = await Settings.findById(course.settings)
+    if (redisClient.isReady) {
+      let totalBlocks = 0
+      const description = convertToWhatsAppString(he.decode(course.description))
+      const courseOwner = await Team.findById(course.owner)
+      let payload: CourseFlowItem = {
+        type: CourseFlowMessageType.INTRO,
+        content: `This is a bundle of courses. \n*Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nYou will receive the following courses in this order;\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \nHappy learning.`
+      }
+      if (course.headerMedia && course.headerMedia.url && course.headerMedia.url.startsWith('https://')) {
+        payload.mediaType = course.headerMedia.mediaType
+        payload.mediaUrl = course.headerMedia.url
+      }
+      let flows: CourseFlowItem[] = [
+        payload
+      ]
 
+      for (let id of course.courses) {
+        let flow = await redisClient.get(`${config.redisBaseKey}courses:${id}`)
+        if (flow) {
+          const courseFlowData: CourseFlowItem[] = JSON.parse(flow)
+          flows.push(...courseFlowData)
+        }
+      }
+      const endOfBundleMessage = {
+        type: CourseFlowMessageType.END_OF_BUNDLE,
+        mediaType: course.headerMedia?.mediaType || "",
+        mediaUrl: course.headerMedia?.url || "",
+        content: `Congratulations on completing. *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n\n\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \n\nHappy learning.`
+      }
+
+      flows.push(endOfBundleMessage)
+
+      flows = flows.filter(e => !e.surveyId)
+      flows = flows.filter(e => e.type !== CourseFlowMessageType.WELCOME)
+      totalBlocks = flows.length
+      redisClient.set(`${config.redisBaseKey}courses:${courseId}`, JSON.stringify(flows))
+
+      if (totalBlocks > 0) {
+        const redisData: CourseEnrollment = {
+          team: course.owner,
+          tz: student.tz,
+          student: studentId,
+          id: courseId,
+          inactivityPeriod: settings?.inactivityPeriod,
+          lastActivity: new Date().toISOString(),
+          lastLessonCompleted: new Date().toISOString(),
+          lastMessageId: initialMessageId,
+          title: course.title,
+          description: convertToWhatsAppString(he.decode(course.description)),
+          active: true,
+          quizAttempts: 0,
+          progress: 0,
+          currentBlock: -1,
+          nextBlock: 0,
+          totalBlocks,
+          bundle: true,
+        }
+        let enrollments: CourseEnrollment[] = await fetchEnrollments(phoneNumber)
+        let active: CourseEnrollment[] = enrollments.filter(e => e.active)
+        if (active.length > 0) {
+          // mark it as not active
+          for (let act of active) {
+            let copy = { ...act }
+            copy.active = false
+            const keyOld = `${config.redisBaseKey}enrollments:${phoneNumber}:${act.id}`
+            await redisClient.set(keyOld, JSON.stringify(copy))
+          }
+        }
+        await redisClient.set(key, JSON.stringify(redisData))
+      }
+    }
+  }
+  return initialMessageId
+}
 
 export async function fetchEnrollments (phoneNumber: string): Promise<CourseEnrollment[]> {
   const enrollments: CourseEnrollment[] = []
@@ -840,29 +921,19 @@ export const sendFreeformSurvey = async (item: CourseFlowItem, phoneNumber: stri
   }
 }
 
-export const sendWelcome = async (currentIndex: string, phoneNumber: string): Promise<void> => {
+export const sendWelcome = async (phoneNumber: string): Promise<void> => {
   try {
-    if (redisClient.isReady) {
-      const courseKey = `${config.redisBaseKey}courses:${currentIndex}`
-      const courseFlow = await redisClient.get(courseKey)
-      if (courseFlow) {
-        const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
-        const item = courseFlowData[0]
-        if (item) {
-          let payload: Message = {
-            "messaging_product": "whatsapp",
-            "recipient_type": "individual",
-            "to": phoneNumber,
-            "type": "template",
-            "template": {
-              "language": { "code": "en_US" },
-              "name": "successful_optin_no_variable"
-            },
-          }
-          agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
-        }
-      }
+    let payload: Message = {
+      "messaging_product": "whatsapp",
+      "recipient_type": "individual",
+      "to": phoneNumber,
+      "type": "template",
+      "template": {
+        "language": { "code": "en_US" },
+        "name": "successful_optin_no_variable"
+      },
     }
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
@@ -917,6 +988,11 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
     let item = flowData[nextIndex]
     const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data?.id}`
     if (item) {
+      if (item.type === CourseFlowMessageType.WELCOME) {
+        nextIndex += 1
+        item = flowData[nextIndex]
+        if (!item) return
+      }
       if (data) {
         let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: nextIndex, nextBlock: nextIndex + 1 }
         let currentItem = flowData[data.currentBlock]
@@ -934,6 +1010,8 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             updatedData = { ...updatedData, blockStartTime: null, lastActivity: new Date().toISOString() }
           }
         }
+
+
 
 
         switch (item.type) {
@@ -1020,7 +1098,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             })
             await delay(5000)
             let next = flowData[nextIndex + 1]
-            if (next?.surveyId && next.surveyQuestion) {
+            if (next) {
               updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
               handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
             } else {
@@ -1030,6 +1108,17 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               })
             }
 
+            break
+          case CourseFlowMessageType.END_OF_BUNDLE:
+            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: phoneNumber,
+              type: "text",
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              text: {
+                body: item.content.replace('{survey}', '')
+              }
+            })
             break
           case CourseFlowMessageType.ENDLESSON:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -1077,34 +1166,38 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.INTRO:
+            let interactive: InteractiveMessage["interactive"] = {
+              header: {
+                type: item.mediaType || MediaType.IMAGE,
+                image: {
+                  link: item.mediaUrl || ""
+                }
+              },
+              body: {
+                text: item.content
+              },
+              type: "button",
+              action: {
+                buttons: [
+                  {
+                    type: "reply",
+                    reply: {
+                      id: CONTINUE,
+                      title: "Continue"
+                    }
+                  }
+                ]
+              }
+            }
+            if (!item.mediaUrl || !item.mediaUrl.startsWith("https://")) {
+              delete interactive.header
+            }
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
               type: "interactive",
               messaging_product: "whatsapp",
               recipient_type: "individual",
-              interactive: {
-                header: {
-                  type: item.mediaType || MediaType.IMAGE,
-                  image: {
-                    link: item.mediaUrl || ""
-                  }
-                },
-                body: {
-                  text: item.content
-                },
-                type: "button",
-                action: {
-                  buttons: [
-                    {
-                      type: "reply",
-                      reply: {
-                        id: CONTINUE,
-                        title: "Continue"
-                      }
-                    }
-                  ]
-                }
-              }
+              interactive
             })
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break

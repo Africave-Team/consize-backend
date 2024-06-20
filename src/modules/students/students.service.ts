@@ -11,7 +11,7 @@ import OTP from './model.otp'
 import db from "../rtdb"
 import moment from 'moment-timezone'
 import config from '../../config/config'
-import { generateCourseFlow, sendWelcome, startCourse } from '../webhooks/service.webhooks'
+import { generateCourseFlow, sendWelcome, startBundle, startCourse } from '../webhooks/service.webhooks'
 import { LessonInterface } from '../courses/interfaces.lessons'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { COURSE_STATS } from '../rtdb/nodes'
@@ -344,6 +344,7 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
   if (!owner) {
     throw new ApiError(httpStatus.NOT_FOUND, "No team found.")
   }
+
   if (source === "qr") {
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: student.phoneNumber,
@@ -355,10 +356,27 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
       }
     })
   }
-  await generateCourseFlow(courseId)
-  await startCourse(student.phoneNumber, courseId, student.id)
-  await sendWelcome(courseId, student.phoneNumber)
 
+  if (!course.bundle) {
+    await generateCourseFlow(courseId)
+    await startCourse(student.phoneNumber, courseId, student.id)
+    await sendWelcome(student.phoneNumber)
+
+  } else {
+    const courses = course.courses
+    if (courses.length > 0) {
+      const courseFlowPromises = courses.map((id: string) => generateCourseFlow(id))
+
+      await Promise.all(courseFlowPromises)
+
+      await startBundle(student.phoneNumber, courseId, student.id)
+      await sendWelcome(student.phoneNumber)
+
+    } else {
+      throw new ApiError(httpStatus.NOT_FOUND, "No course in this course bundle, please add course")
+    }
+
+  }
   let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
   await dbRef.child("students").child(studentId).set({
     name: student.firstName + ' ' + student.otherNames,
@@ -370,6 +388,7 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
     scores: [],
     lessons: {}
   })
+
   await sessionService.createEnrollment({
     courseId,
     teamId: course.owner,
@@ -633,7 +652,7 @@ export const testCourseWhatsapp = async (phoneNumber: string, courseId: string):
   }
   await generateCourseFlow(courseId)
   await startCourse(phoneNumber, courseId, phoneNumber)
-  await sendWelcome(courseId, phoneNumber)
+  await sendWelcome(phoneNumber)
 
 }
 

@@ -4,7 +4,7 @@ import httpStatus from 'http-status'
 import { QueryResult } from '../paginate/paginate'
 import db from "../rtdb"
 import { COURSE_STATS, COURSE_TRENDS } from '../rtdb/nodes'
-import { CourseInterface, CourseStatus, CreateCoursePayload, Distribution } from './interfaces.courses'
+import { CourseInterface, CourseStatus, CreateCoursePayload, Distribution, MediaType } from './interfaces.courses'
 import Course from './model.courses'
 import { CreateLessonPayload, LessonInterface } from './interfaces.lessons'
 import Lessons from './model.lessons'
@@ -228,9 +228,33 @@ export const fetchPublishedCourses = async ({ page, pageSize }: { page: number, 
 
 }
 
-export const searchTeamCourses = async ({ teamId, search }: { teamId: string, search: string }): Promise<CourseInterface[]> => {
+export const searchTeamCourses = async ({ teamId, search, filter }: { teamId: string, search: string, filter?: PageType }): Promise<CourseInterface[]> => {
+  const q: any = { $and: [{ owner: teamId, }] }
+  console.log(filter, teamId)
+  if (filter) {
+    switch (filter) {
+      case PageType.ALL:
+        q.$and.push({ $or: [{ status: CourseStatus.COMPLETED }, { status: CourseStatus.PUBLISHED }] })
+        break
+      case PageType.BUNDLE:
+        q['bundle'] = true
+        q.$and.push({ $or: [{ status: CourseStatus.COMPLETED }, { status: CourseStatus.PUBLISHED }] })
+        break
+      case PageType.COURSE:
+        q['bundle'] = false
+        q.$and.push({ $or: [{ status: CourseStatus.COMPLETED }, { status: CourseStatus.PUBLISHED }] })
+        break
+      case PageType.DRAFT:
+        q.$and.push({ $or: [{ status: CourseStatus.DRAFT }] })
+        break
+      default:
+        break
+    }
+  }
   const regex = new RegExp(search, "i")
-  return Course.find({ owner: teamId, $or: [{ title: { $regex: regex } }, { description: { $regex: regex } }] }).limit(16)
+  q.$and.push({ $or: [{ title: { $regex: regex } }, { description: { $regex: regex } }] })
+  console.log(q)
+  return Course.find({ ...q }).limit(16)
 
 }
 
@@ -271,6 +295,104 @@ export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: stri
 export const fetchSingleCourse = async ({ courseId }: { courseId: string }): Promise<CourseInterface | null> => {
   const course = await Course.findOne({ _id: courseId }).populate("lessons").populate("courses").populate('settings').populate('owner')
   return course
+}
+
+export const deleteCourse = async ({ courseId }: { courseId: string }): Promise<void> => {
+  await Course.findByIdAndDelete(courseId)
+}
+
+export const duplicateCourse = async ({ courseId, title, headerMediaUrl, description }: { courseId: string, title: string, headerMediaUrl: string, description: string }): Promise<CourseInterface | null> => {
+  const oldCourse = await Course.findOne({ _id: courseId })
+  if (oldCourse) {
+    let nTitle = ""
+    let titleRegex = new RegExp(title)
+    let existingNames = await Course.countDocuments({ title: { $regex: titleRegex, $options: "i" } })
+    if (existingNames > 0) {
+      nTitle = `${oldCourse.title} ${existingNames + 1}`
+    } else {
+      nTitle = title
+    }
+    let course = await createCourse({
+      free: oldCourse.free,
+      bundle: oldCourse.bundle,
+      private: oldCourse.private,
+      headerMedia: {
+        mediaType: MediaType.IMAGE,
+        url: headerMediaUrl
+      },
+      title: nTitle,
+      description: description,
+      source: oldCourse.source,
+      price: oldCourse.price || 0,
+      currentCohort: oldCourse.currentCohort || "",
+      survey: oldCourse.survey || "",
+      courses: oldCourse.courses || [],
+    }, oldCourse.owner)
+    if (!oldCourse.bundle && course) {
+      for (let lessonId of oldCourse.lessons) {
+        // duplicate the lesson
+        let lesson = await Lessons.findById(lessonId).lean()
+        if (lesson) {
+          let newlesson = await createLesson({
+            title: lesson.title,
+            description: lesson.description || ""
+          }, course.id)
+          let blocks = await Blocks.find({ _id: { $in: lesson.blocks } })
+          await Promise.all(blocks.map(async (e) => {
+            let payload: CreateBlockPayload = {
+              content: e.content,
+              title: e.title,
+            }
+            if (e.bodyMedia) {
+              payload.bodyMedia = e.bodyMedia
+            }
+
+            const block = await createBlock(payload, newlesson.id, courseId)
+            if (e.quiz && block) {
+              let old = await Quizzes.findById(e.quiz)
+              if (old) {
+                await addBlockQuiz({
+                  question: old.question,
+                  choices: old.choices,
+                  revisitChunk: old.revisitChunk,
+                  wrongAnswerContext: old.wrongAnswerContext,
+                  correctAnswerContext: old.correctAnswerContext,
+                  correctAnswerIndex: old.correctAnswerIndex,
+                  hint: old.hint || ""
+                }, lessonId, courseId, block.id)
+              }
+
+            }
+            return e
+          }))
+
+          let quizzes = await Quizzes.find({ _id: { $in: lesson.quizzes } })
+          await Promise.all(quizzes.map(async (e) => {
+            if (e) {
+              await addLessonQuiz({
+                question: e.question,
+                choices: e.choices,
+                revisitChunk: e.revisitChunk,
+                wrongAnswerContext: e.wrongAnswerContext,
+                correctAnswerContext: e.correctAnswerContext,
+                correctAnswerIndex: e.correctAnswerIndex,
+                hint: e.hint || ""
+              }, lessonId, courseId)
+            }
+            return e
+          }))
+
+        }
+      }
+    }
+    if (oldCourse.status === CourseStatus.PUBLISHED) {
+      course.status = CourseStatus.PUBLISHED
+      await course.save()
+    }
+    return course
+
+  }
+  return null
 }
 
 // lessons
