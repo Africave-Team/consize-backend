@@ -784,18 +784,32 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
         }
       }
       const endOfBundleMessage = {
-        type: CourseFlowMessageType.END_OF_BUNDLE,
-        mediaType: course.headerMedia?.mediaType || "",
-        mediaUrl: course.headerMedia?.url || "",
-        content: `Congratulations on completing. *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n\n\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \n\nHappy learning.`
-      }
+          type: CourseFlowMessageType.END_OF_BUNDLE,
+          mediaType: course.headerMedia?.mediaType || "",
+          mediaUrl: course.headerMedia?.url || "",
+          content: `Congratulations on completing.\n *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n\n\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \n\nHappy learning.`
+        }
+
 
       flows.push(endOfBundleMessage)
 
       flows = flows.filter(e => !e.surveyId)
       flows = flows.filter(e => e.type !== CourseFlowMessageType.WELCOME)
-      totalBlocks = flows.length
-      redisClient.set(`${config.redisBaseKey}courses:${courseId}`, JSON.stringify(flows))
+
+      const updatedFlows = flows.map(item => {
+        if (item.type === 'end-of-course') {
+          return {
+            type: 'end-of-course',
+            mediaType: course?.headerMedia?.mediaType || "",
+            mediaUrl:  course?.headerMedia?.url || "",
+            content: 'Congratulations on completing this course,\nYou will receive the next course in the bundle, shortly \n'
+          };
+        }
+        return item;
+      });
+
+      totalBlocks = updatedFlows.length
+      redisClient.set(`${config.redisBaseKey}courses:${courseId}`, JSON.stringify(updatedFlows))
 
       if (totalBlocks > 0) {
         const redisData: CourseEnrollment = {
