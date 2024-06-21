@@ -9,10 +9,14 @@ router.route('/public/single/:course').get(courseControllers.fetchSingleCourse)
 router.use(auth())
 router.get('/', courseControllers.fetchTeamCourses)
 router.get('/search', courseControllers.searchTeamCourses)
+router.post('/ai', validate(courseValidators.createCourseAi), courseControllers.createCourseAI)
+router.post('/ai/generate-outline', validate(courseValidators.generateCourseOutlineAI), courseControllers.generateCourseOutline)
 router.post('/', validate(courseValidators.createCourse), courseControllers.createCourseManually)
 router.route('/:course')
   .get(courseControllers.fetchTeamSingleCourse)
   .put(validate(courseValidators.updateCourse), courseControllers.updateCourse)
+  .post(validate(courseValidators.duplicateCourse), courseControllers.duplicateCourse)
+  .delete(courseControllers.deleteCourse)
 router.put('/settings/:id', courseControllers.updateCourseSetting)
 router.post('/settings/add-learner-group/:id', courseControllers.addLearnerGroup)
 router.delete('/settings/remove-learner-group/:id/:groupId', courseControllers.removeLearnerGroup)
@@ -20,7 +24,5 @@ router.delete('/settings/remove-learner-group/:id/:groupId', courseControllers.r
 router.patch('/settings/launchtimes/:id/:groupId', courseControllers.setLearnerGroupLaunchTime)
 
 // AI apis
-router.post('/ai', validate(courseValidators.createCourseAi), courseControllers.createCourseAI)
-router.post('/ai/generate-outline', validate(courseValidators.generateCourseOutlineAI), courseControllers.generateCourseOutline)
 
 export default router

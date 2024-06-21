@@ -2,7 +2,7 @@ import httpStatus from 'http-status'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
+import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -163,7 +163,7 @@ export const generateCourseFlow = async function (courseId: string) {
                   flo.mediaUrl = blockData.bodyMedia.url
                   if (blockData.bodyMedia.mediaType === MediaType.VIDEO && blockData.bodyMedia.embedUrl) {
                     flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
-                    flo.mediaUrlEmbed = blockData.bodyMedia.embedUrl
+                    flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
                   }
                 }
                 if (content.length > 1024) {
@@ -200,7 +200,7 @@ export const generateCourseFlow = async function (courseId: string) {
                 flo.mediaUrl = blockData.bodyMedia.url
                 if (blockData.bodyMedia.mediaType === MediaType.VIDEO && blockData.bodyMedia.embedUrl) {
                   flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
-                  flo.mediaUrlEmbed = blockData.bodyMedia.embedUrl
+                  flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
                 }
               }
 
@@ -720,19 +720,22 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
   const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${courseId}`
   const initialMessageId = v4()
   if (course && student) {
-    let courses = await Courses.find({ id: { $in: course.courses } })
+    let courses = await Courses.find({ _id: { $in: course.courses } })
     const settings = await Settings.findById(course.settings)
     if (redisClient.isReady) {
       let totalBlocks = 0
       const description = convertToWhatsAppString(he.decode(course.description))
       const courseOwner = await Team.findById(course.owner)
+      let payload: CourseFlowItem = {
+        type: CourseFlowMessageType.INTRO,
+        content: `This is a bundle of courses. \n*Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nYou will receive the following courses in this order;\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \nHappy learning.`
+      }
+      if (course.headerMedia && course.headerMedia.url && course.headerMedia.url.startsWith('https://')) {
+        payload.mediaType = course.headerMedia.mediaType
+        payload.mediaUrl = course.headerMedia.url
+      }
       let flows: CourseFlowItem[] = [
-        {
-          type: CourseFlowMessageType.INTRO,
-          mediaType: course.headerMedia?.mediaType || "",
-          mediaUrl: course.headerMedia?.url || "",
-          content: `This is a bundle of courses. *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nYou will receive the following courses in this order\n\n\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \n\nHappy learning.`
-        }
+        payload
       ]
 
       for (let id of course.courses) {
@@ -749,9 +752,11 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
           content: `Congratulations on completing.\n *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n\n\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \n\nHappy learning.`
         }
 
+
       flows.push(endOfBundleMessage)
 
       flows = flows.filter(e => !e.surveyId)
+      flows = flows.filter(e => e.type !== CourseFlowMessageType.WELCOME)
 
       const updatedFlows = flows.map(item => {
         if (item.type === 'end-of-course') {
@@ -783,8 +788,8 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
           active: true,
           quizAttempts: 0,
           progress: 0,
-          currentBlock: 0,
-          nextBlock: 1,
+          currentBlock: -1,
+          nextBlock: 0,
           totalBlocks,
           bundle: true,
         }
@@ -997,6 +1002,11 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
     let item = flowData[nextIndex]
     const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data?.id}`
     if (item) {
+      if (item.type === CourseFlowMessageType.WELCOME) {
+        nextIndex += 1
+        item = flowData[nextIndex]
+        if (!item) return
+      }
       if (data) {
         let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: nextIndex, nextBlock: nextIndex + 1 }
         let currentItem = flowData[data.currentBlock]
@@ -1014,6 +1024,8 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             updatedData = { ...updatedData, blockStartTime: null, lastActivity: new Date().toISOString() }
           }
         }
+
+
 
 
         switch (item.type) {
@@ -1168,34 +1180,38 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.INTRO:
+            let interactive: InteractiveMessage["interactive"] = {
+              header: {
+                type: item.mediaType || MediaType.IMAGE,
+                image: {
+                  link: item.mediaUrl || ""
+                }
+              },
+              body: {
+                text: item.content
+              },
+              type: "button",
+              action: {
+                buttons: [
+                  {
+                    type: "reply",
+                    reply: {
+                      id: CONTINUE,
+                      title: "Continue"
+                    }
+                  }
+                ]
+              }
+            }
+            if (!item.mediaUrl || !item.mediaUrl.startsWith("https://")) {
+              delete interactive.header
+            }
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
               type: "interactive",
               messaging_product: "whatsapp",
               recipient_type: "individual",
-              interactive: {
-                header: {
-                  type: item.mediaType || MediaType.IMAGE,
-                  image: {
-                    link: item.mediaUrl || ""
-                  }
-                },
-                body: {
-                  text: item.content
-                },
-                type: "button",
-                action: {
-                  buttons: [
-                    {
-                      type: "reply",
-                      reply: {
-                        id: CONTINUE,
-                        title: "Continue"
-                      }
-                    }
-                  ]
-                }
-              }
+              interactive
             })
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break

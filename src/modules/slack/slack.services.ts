@@ -454,7 +454,7 @@ export const startEnrollmentSlack = async (studentId: string, courseId: string):
 
 
 
-export const sendBlockContent = async (data: CourseFlowItem, url: string, messageId: string): Promise<void> => {
+export const sendBlockContent = async (data: CourseFlowItem, url: string, messageId: string, token: string, channel: string): Promise<void> => {
   try {
     let buttons: SlackActionBlock[] = []
     if (data.type === CourseFlowMessageType.BLOCK) {
@@ -492,6 +492,7 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
         }
       ]
     }
+    let videoPresent = false
 
     let blocks: SlackMessageBlock[] = []
     let content = data.content
@@ -503,11 +504,18 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
           alt_text: 'Block header image'
         })
       } else if (data.mediaType === "video" && data.mediaUrlEmbed) {
+        videoPresent = true
         blocks.push({
           "type": MessageBlockType.VIDEO,
           "title": {
             "type": SlackTextMessageTypes.PLAINTEXT,
-            "text": data.block?.title || "Video title",
+            "text": "Video title",
+            "emoji": true
+          },
+          "title_url": data.mediaUrlEmbed,
+          "description": {
+            "type": SlackTextMessageTypes.PLAINTEXT,
+            "text": "Video title",
             "emoji": true
           },
           "alt_text": "alt text for vide",
@@ -515,10 +523,11 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
           "video_url": data.mediaUrlEmbed
         })
       } else {
-        content = `${content}\n\nFurther content can be found ${data.mediaUrl}`
+
+        content = `${content}\n\n${data.mediaUrl}`
       }
     }
-    console.log(blocks)
+
 
     blocks.push({
       type: MessageBlockType.SECTION,
@@ -531,12 +540,22 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
       elements: buttons
     })
 
-    agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
-      url,
-      message: {
-        blocks
-      }
-    })
+    if (videoPresent) {
+      agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+        channel,
+        accessToken: token,
+        message: {
+          blocks
+        }
+      })
+    } else {
+      agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
+        url,
+        message: {
+          blocks
+        }
+      })
+    }
 
 
     // update the blockStartTime
@@ -872,7 +891,9 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
             break
           case CourseFlowMessageType.BLOCK:
           case CourseFlowMessageType.BLOCKWITHQUIZ:
-            await sendBlockContent(item, url, messageId)
+            if (data.slackToken) {
+              await sendBlockContent(item, url, messageId, data.slackToken, channel)
+            }
             updatedData = { ...updatedData, blockStartTime: new Date() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break

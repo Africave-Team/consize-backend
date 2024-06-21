@@ -84,11 +84,11 @@ export const fetchSingleCourse = catchAsync(async (req: Request, res: Response) 
 
 
 export const searchTeamCourses = catchAsync(async (req: Request, res: Response) => {
-  const { page, search } = req.query
+  const { page, search, filter } = req.query
   const parsedPage = parseInt(page as string, 10) || 1
 
   const searchKey = search as string
-  const query: any = { teamId: req.user.team, page: parsedPage }
+  const query: any = { teamId: req.user.team, page: parsedPage, filter }
 
   if (search) {
     query['search'] = searchKey
@@ -324,4 +324,24 @@ export const generateCourseOutline = catchAsync(async (req: Request, res: Respon
   const { lessonCount, title, jobId } = req.body
   const data = await courseService.generateCourseOutlineAI({ title, lessonCount, jobId })
   res.status(200).send({ message: "Job has been queued", data })
+})
+
+
+export const deleteCourse = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+  if (course) {
+    await courseService.deleteCourse({ courseId: course })
+  }
+  res.status(200).send({ message: "Course deleted" })
+})
+
+
+export const duplicateCourse = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+  const { title, headerMediaUrl, description } = req.body
+  let data
+  if (course) {
+    data = await courseService.duplicateCourse({ courseId: course, title, headerMediaUrl, description })
+  }
+  res.status(200).send({ message: "Course duplicated", data })
 })

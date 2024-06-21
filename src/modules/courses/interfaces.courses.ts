@@ -58,6 +58,7 @@ export interface CreateCoursePayload {
     description: string
     source?: Sources
     price?: number
+    status?: CourseStatus
     currentCohort?: string
     survey?: string
     courses?: string[]

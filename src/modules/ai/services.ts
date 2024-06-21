@@ -11,6 +11,8 @@ import Courses from '../courses/model.courses'
 import Lessons from '../courses/model.lessons'
 import { ApiError } from '../errors'
 import httpStatus from 'http-status'
+import Teams from '../teams/model.teams'
+import { generateCourseHeaderImage } from '../generators/generator.service'
 const openai = new OpenAI({
   apiKey: config.openAI.key
 })
@@ -100,6 +102,7 @@ export const buildCourse = async function (jobId: string, teamId: string) {
   const jobData: JobData | null = snapshot.val()
   if (jobData) {
     // create the course
+
     const course = await courseService.createCourse({
       title: jobData.title,
       headerMedia: {
@@ -113,6 +116,18 @@ export const buildCourse = async function (jobId: string, teamId: string) {
       free: true,
       description: jobData.result.description
     }, teamId)
+
+    const team = await Teams.findById(teamId)
+    if (team) {
+      const headerMedia = await generateCourseHeaderImage(course, team)
+      console.log(headerMedia)
+      await courseService.updateCourse({
+        headerMedia: {
+          url: headerMedia,
+          mediaType: MediaType.IMAGE
+        }
+      }, course.id, teamId)
+    }
     await dbRef.update({ courseId: course.id })
     let lessons = jobData.result.lessons
     const progressRef = dbRef.child("progress")
