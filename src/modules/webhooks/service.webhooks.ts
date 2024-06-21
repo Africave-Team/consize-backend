@@ -108,6 +108,35 @@ export function convertToWhatsAppString (html: string, indent: number = 0): stri
   return formattedText.trim()
 }
 
+function splitStringIntoChunks (str: string, chunkSize = 1000) {
+  const chunks = []
+  let start = 0
+  while (start < str.length) {
+    let end = start + chunkSize
+    if (end < str.length) {
+      // Ensure we don't split in the middle of a line
+      const nextNewline = str.indexOf('\n', end)
+      const prevNewline = str.lastIndexOf('\n', end)
+      if (nextNewline === -1 && prevNewline === -1) {
+        // No newline found, just use the chunk size
+        end = str.length
+      } else if (nextNewline !== -1 && (prevNewline === -1 || (nextNewline - end) < (end - prevNewline))) {
+        // Next newline is closer than the previous one
+        end = nextNewline + 1
+      } else {
+        // Previous newline is closer or there is no next newline
+        end = prevNewline + 1
+      }
+    } else {
+      // We're at the end of the string
+      end = str.length
+    }
+    chunks.push(str.slice(start, end))
+    start = end
+  }
+  return chunks
+}
+
 export const generateCourseFlow = async function (courseId: string) {
   const flow: CourseFlowItem[] = []
   const courseKey = `${config.redisBaseKey}courses:${courseId}`
@@ -167,23 +196,27 @@ export const generateCourseFlow = async function (courseId: string) {
                   }
                 }
                 if (content.length > 1024) {
-                  let actualLength = content.length
-                  let halfLength = Math.ceil(actualLength / 2) + 100
-                  let halfString = content.slice(halfLength)
-                  halfLength = halfLength + halfString.indexOf('\n')
-                  const first = content.slice(0, halfLength)
-                  const second = content.slice(halfLength)
-                  let copy = { ...flo }
-                  copy.type = CourseFlowMessageType.BLOCK
-                  copy.content = first
-                  delete copy.quiz
-                  flow.push(copy)
-                  copy = { ...flo }
-                  copy.content = second
-                  delete copy.mediaType
-                  delete copy.mediaUrl
-                  delete copy.thumbnailUrl
-                  flow.push(copy)
+                  let chunks = splitStringIntoChunks(content)
+                  for (let index = 0; index < chunks.length; index++) {
+                    let copy = { ...flo }
+                    const element = chunks[index]
+                    if (element) {
+                      if (index === 0) {
+                        copy.type = CourseFlowMessageType.BLOCK
+                        copy.content = element
+                        delete copy.quiz
+                        flow.push(copy)
+                      } else {
+                        copy = { ...flo }
+                        copy.content = element
+                        delete copy.mediaType
+                        delete copy.mediaUrl
+                        delete copy.thumbnailUrl
+                        flow.push(copy)
+                      }
+                    }
+
+                  }
                 } else {
                   flow.push(flo)
                 }
@@ -205,22 +238,27 @@ export const generateCourseFlow = async function (courseId: string) {
               }
 
               if (content.length > 1024) {
-                let actualLength = content.length
-                let halfLength = Math.ceil(actualLength / 2) + 100
-                let halfString = content.slice(halfLength)
-                halfLength = halfLength + halfString.indexOf('\n')
-                const first = content.slice(0, halfLength)
-                const second = content.slice(halfLength)
-                let copy = { ...flo }
-                copy.content = first
-                delete copy.quiz
-                flow.push(copy)
-                copy = { ...flo }
-                copy.content = second
-                delete copy.mediaType
-                delete copy.mediaUrl
-                delete copy.thumbnailUrl
-                flow.push(copy)
+                let chunks = splitStringIntoChunks(content)
+                for (let index = 0; index < chunks.length; index++) {
+                  let copy = { ...flo }
+                  const element = chunks[index]
+                  if (element) {
+                    if (index === 0) {
+                      copy.type = CourseFlowMessageType.BLOCK
+                      copy.content = element
+                      delete copy.quiz
+                      flow.push(copy)
+                    } else {
+                      copy = { ...flo }
+                      copy.content = element
+                      delete copy.mediaType
+                      delete copy.mediaUrl
+                      delete copy.thumbnailUrl
+                      flow.push(copy)
+                    }
+                  }
+
+                }
               } else {
                 flow.push(flo)
               }
