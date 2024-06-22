@@ -1112,7 +1112,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             })
             await delay(5000)
             let next = flowData[nextIndex + 1]
-            if (next) {
+            if ((next?.surveyId && next.surveyQuestion) || data.bundle) {
               updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
               handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
             } else {
