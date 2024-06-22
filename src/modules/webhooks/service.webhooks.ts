@@ -1338,7 +1338,7 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
       }
       await redisClient.set(key, JSON.stringify(updatedData))
       if (saveStats) {
-        saveQuizDuration(data.team, data.student, duration, score, retakes, item.lesson, item.quiz)
+        saveQuizDuration(data.team, data.student, updatedData.id, duration, score, retakes, item.lesson, item.quiz)
       }
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
     }

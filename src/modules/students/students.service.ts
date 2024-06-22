@@ -520,10 +520,10 @@ export const saveCourseProgress = async function (teamId: string, studentId: str
 }
 
 
-export const saveQuizDuration = async function (teamId: string, studentId: string, duration: number, score: number, attempts: number, lesson?: LessonInterface, quiz?: QuizInterface) {
+export const saveQuizDuration = async function (teamId: string, studentId: string, courseId: string, duration: number, score: number, attempts: number, lesson?: LessonInterface, quiz?: QuizInterface) {
   const student = await Students.findById(studentId)
   if (lesson && quiz && student) {
-    const dbRef = db.ref(COURSE_STATS).child(teamId).child(lesson.course).child("students").child(studentId)
+    const dbRef = db.ref(COURSE_STATS).child(teamId).child(courseId).child("students").child(studentId)
     // get existing data
     const snapshot = await dbRef.once('value')
 

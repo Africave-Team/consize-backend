@@ -1178,7 +1178,7 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, u
       }
       await redisClient.set(key, JSON.stringify(updatedData))
       if (saveStats) {
-        saveQuizDuration(data.team, data.student, duration, score, retakes, item.lesson, item.quiz)
+        saveQuizDuration(data.team, data.student, updatedData.id, duration, score, retakes, item.lesson, item.quiz)
       }
       agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
         url,
