@@ -1172,11 +1172,17 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               }
             })
 
-            await delay(5000)
-
-            agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
+             await delay(5000)
+            let nextFlow = flowData[nextIndex + 1]
+            if (nextFlow?.surveyId && nextFlow.surveyQuestion) {
+              updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
+              handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
+            } else {
+              // if no survey for this course, then send the certificate
+              agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
                 ...updatedData
               })
+            }
 
             break
           case CourseFlowMessageType.ENDLESSON:
