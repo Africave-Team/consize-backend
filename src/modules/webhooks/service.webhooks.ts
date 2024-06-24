@@ -7,7 +7,7 @@ import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import Courses from '../courses/model.courses'
-import { Team } from '../teams'
+import { Team, teamService } from '../teams'
 import { CourseInterface, CourseStatus, MediaType } from '../courses/interfaces.courses'
 import he from "he"
 import db from "../rtdb"
@@ -1172,7 +1172,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               }
             })
 
-             await delay(5000)
+            await delay(5000)
             let nextFlow = flowData[nextIndex + 1]
             if (nextFlow?.surveyId && nextFlow.surveyQuestion) {
               updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
@@ -1733,4 +1733,30 @@ export const sendScheduleAcknowledgement = async (phoneNumber: string, time: str
   }
 }
 
+
+
+export const exchangeFacebookToken = async function (code: string, team: string) {
+  try {
+    console.log({
+      'client_id': config.facebook.id,
+      'client_secret': config.facebook.secret,
+      'code': code,
+      'redirect_uri': config.facebook.redirectUrl
+    })
+    const result: AxiosResponse = await axios.get(`https://graph.facebook.com/v12.0/oauth/access_token`, {
+      params: {
+        'client_id': config.facebook.id,
+        'client_secret': config.facebook.secret,
+        'code': code
+      }
+    })
+
+    await teamService.updateTeamInfo(team, {
+      facebookToken: result.data.access_token
+    })
+  } catch (error) {
+    // @ts-ignore
+    console.log((error as AxiosError).response.data)
+  }
+}
 
