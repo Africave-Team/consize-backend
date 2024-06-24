@@ -1133,6 +1133,13 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 body: item.content.replace('{survey}', '')
               }
             })
+
+            await delay(5000)
+
+            agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
+                ...updatedData
+              })
+
             break
           case CourseFlowMessageType.ENDLESSON:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
