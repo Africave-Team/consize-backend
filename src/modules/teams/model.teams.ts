@@ -41,6 +41,9 @@ export const TeamSchema = new Schema<TeamsInterface, ITeamModel>(
         slackToken: {
             type: Schema.Types.String
         },
+        facebookToken: {
+            type: Schema.Types.String
+        },
         owner: {
             type: String,
             ref: "User"
