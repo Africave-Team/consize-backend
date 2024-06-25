@@ -1200,7 +1200,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               messaging_product: "whatsapp",
               recipient_type: "individual",
               text: {
-                body: `total lessons covered today ${data.dailyLessonsCount + 1} \n total lessons left for today ${ data.maxLessonsPerDay + data.owedLessonsCount} \n Please do ensure you complete your daily lessons target for today`
+                body: `total lessons covered today ${data.dailyLessonsCount + 1} \n total lessons left for today ${ data.maxLessonsPerDay + data.owedLessonsCount - (data.dailyLessonsCount + 1)} \n Please do ensure you complete your daily lessons target for today`
               }
             })
             if((data.maxLessonsPerDay + data.owedLessonsCount - data.dailyLessonsCount) > 0 ){
