@@ -347,7 +347,11 @@ export const startCourseSlack = async (channel: string, courseId: string, studen
           currentBlock: 0,
           nextBlock: 1,
           totalBlocks: courseFlowData.length,
-          slackToken: token
+          slackToken: token,
+          maxLessonsPerDay: settings?.metadata?.maxLessonsPerDay || 0,
+          minLessonsPerDay: settings?.metadata?.minLessonsPerDay || 4,
+          dailyLessonsCount: 0,
+          owedLessonsCount: 0
         }
         let enrollments: CourseEnrollment[] = await fetchEnrollmentsSlack(channel)
         let active: CourseEnrollment[] = enrollments.filter(e => e.active)
