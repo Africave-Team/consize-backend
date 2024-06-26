@@ -52,6 +52,17 @@ export const generateCourseOutlineAI = {
     lessonCount: Joi.number().required()
   }),
 }
+
+export const createCourseFile = {
+  body: Joi.object().keys(createCourseAIRequest),
+}
+export const generateCourseOutlineFile = {
+  body: Joi.object().keys({
+    jobId: Joi.string().optional(),
+    title: Joi.string().required(),
+    files: Joi.array().items(Joi.string().required()).min(1)
+  }),
+}
 export const updateCourse = {
   body: Joi.object<Partial<CreateCoursePayload>>().keys({
     free: Joi.boolean(),

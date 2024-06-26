@@ -1,12 +1,13 @@
 import OpenAI from 'openai'
 import db from "../rtdb"
+import fs from "fs"
 import config from '../../config/config'
-import { BuildSectionPayload, QuizAI, JobData, SectionResultAI } from './interfaces'
+import { BuildSectionPayload, QuizAI, JobData, SectionResultAI, Curriculum, BuildSectionFromFilePayload } from './interfaces'
 import { courseService } from '../courses'
 import { MediaType, Sources } from '../courses/interfaces.courses'
 import { agenda } from '../scheduler'
-import { GENERATE_SECTION_AI } from '../scheduler/MessageTypes'
-import { generateFollowupQuestionPrompt, generateQuizPrompt, generateSectionNoSeedPrompt, generateSectionPrompt } from '../courses/prompts'
+import { GENERATE_SECTION_AI, GENERATE_SECTION_FILE } from '../scheduler/MessageTypes'
+import { generateFollowupQuestionPrompt, generateQuizPrompt, generateSectionFilePrompt, generateSectionNoSeedPrompt, generateSectionPrompt } from '../courses/prompts'
 import Courses from '../courses/model.courses'
 import Lessons from '../courses/model.lessons'
 import { ApiError } from '../errors'
@@ -207,95 +208,98 @@ export const buildSection = async function (payload: BuildSectionPayload) {
 
 
   let prompt1 = generateSectionPrompt(payload.title, payload.lessonName, payload.seedTitle, payload.seedContent)
-  await openAICall(0, prompt1, async (data) => {
-    let section: SectionResultAI
-    let followupQuiz: QuizAI[] = []
-    let quiz: QuizAI[] = []
-    let flqId = "", qId = ""
-    if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
-      try {
-        section = JSON.parse(data.choices[0].message.content.replace("```json", '').replace("```", ""))
+  await openAICall(0,
+    prompt1,
+    async (data) => {
+      let section: SectionResultAI
+      let followupQuiz: QuizAI[] = []
+      let quiz: QuizAI[] = []
+      let flqId = "", qId = ""
+      if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+        try {
+          section = JSON.parse(data.choices[0].message.content.replace("```json", '').replace("```", ""))
 
-        // Replace each emoji with a newline followed by the emoji
-        let sectionContent = addCharacterAfterThirdFullStop(section.sectionContent, '<br/><br/>')
-        const block = await courseService.createBlock({
-          content: sectionContent,
-          title: section.sectionName,
-        }, payload.lessonId, payload.courseId)
-        await dbRef
-          .update({
-            blockId: block.id
-          })
-        let prompt2 = generateFollowupQuestionPrompt(section.sectionContent)
-        let prompt3 = generateQuizPrompt(section.sectionContent)
-        await Promise.all([
-          await openAICall(0, prompt2, async (data) => {
-            if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
-              try {
-                followupQuiz = JSON.parse(data.choices[0].message.content.replace("```json", '').replace("```", "")).questions
-                if (followupQuiz && followupQuiz[0]) {
-                  let answer = followupQuiz[0].correct_answer
-                  let index = followupQuiz[0].options.findIndex((e) => e.toLowerCase() === answer.toLowerCase())
-                  const q = await courseService.addBlockQuiz({
-                    question: followupQuiz[0].question,
-                    choices: followupQuiz[0].options.map(e => e.toLowerCase()),
-                    correctAnswerContext: `${followupQuiz[0].explanation}`,
-                    correctAnswerIndex: index,
-                    revisitChunk: "",
-                    wrongAnswerContext: `${followupQuiz[0].explanation}`
-                  }, payload.lessonId, payload.courseId, block.id)
-                  flqId = q.id
+          // Replace each emoji with a newline followed by the emoji
+          let sectionContent = addCharacterAfterThirdFullStop(section.sectionContent, '<br/><br/>')
+          const block = await courseService.createBlock({
+            content: sectionContent,
+            title: section.sectionName,
+          }, payload.lessonId, payload.courseId)
+          await dbRef
+            .update({
+              blockId: block.id
+            })
+          let prompt2 = generateFollowupQuestionPrompt(section.sectionContent)
+          let prompt3 = generateQuizPrompt(section.sectionContent)
+          await Promise.all([
+            await openAICall(0, prompt2, async (data) => {
+              if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+                try {
+                  followupQuiz = JSON.parse(data.choices[0].message.content.replace("```json", '').replace("```", "")).questions
+                  if (followupQuiz && followupQuiz[0]) {
+                    let answer = followupQuiz[0].correct_answer
+                    let index = followupQuiz[0].options.findIndex((e) => e.toLowerCase() === answer.toLowerCase())
+                    const q = await courseService.addBlockQuiz({
+                      question: followupQuiz[0].question,
+                      choices: followupQuiz[0].options.map(e => e.toLowerCase()),
+                      correctAnswerContext: `${followupQuiz[0].explanation}`,
+                      correctAnswerIndex: index,
+                      revisitChunk: "",
+                      wrongAnswerContext: `${followupQuiz[0].explanation}`
+                    }, payload.lessonId, payload.courseId, block.id)
+                    flqId = q.id
+                  }
+                } catch (error) {
+                  console.log(error)
                 }
-              } catch (error) {
-                console.log(error)
               }
-            }
-          }),
-          await openAICall(0, prompt3, async (data) => {
-            if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
-              try {
-                quiz = JSON.parse(data.choices[0].message.content.replace("```json", '').replace("```", "")).questions
+            }),
+            await openAICall(0, prompt3, async (data) => {
+              if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+                try {
+                  quiz = JSON.parse(data.choices[0].message.content.replace("```json", '').replace("```", "")).questions
 
-                if (quiz && quiz[0]) {
-                  const dp = await courseService.addLessonQuiz({
-                    question: quiz[0].question,
-                    choices: quiz[0].options,
-                    correctAnswerContext: `${quiz[0].explanation}`,
-                    correctAnswerIndex: Number(quiz[0].correct_answer),
-                    hint: quiz[0].hint,
-                    block: block.id,
-                    revisitChunk: quiz[0].explanation,
-                    wrongAnswerContext: `${quiz[0].explanation}`
-                  }, payload.lessonId, payload.courseId)
-                  qId = dp.id
+                  if (quiz && quiz[0]) {
+                    const dp = await courseService.addLessonQuiz({
+                      question: quiz[0].question,
+                      choices: quiz[0].options,
+                      correctAnswerContext: `${quiz[0].explanation}`,
+                      correctAnswerIndex: Number(quiz[0].correct_answer),
+                      hint: quiz[0].hint,
+                      block: block.id,
+                      revisitChunk: quiz[0].explanation,
+                      wrongAnswerContext: `${quiz[0].explanation}`
+                    }, payload.lessonId, payload.courseId)
+                    qId = dp.id
+                  }
+                } catch (error) {
+                  console.log(error)
                 }
-              } catch (error) {
-                console.log(error)
               }
-            }
-          })
-        ])
+            })
+          ])
 
-        let result: any = {
-          section: { ...section, sectionContent, id: block.id }
+          let result: any = {
+            section: { ...section, sectionContent, id: block.id }
+          }
+          if (followupQuiz[0]) {
+            result.followupQuiz = { ...followupQuiz[0], id: flqId }
+          }
+          if (quiz[0]) {
+            result.quiz = { ...quiz[0], id: qId }
+          }
+          await dbRef
+            .update({
+              status: "FINISHED",
+              result,
+              end: new Date().toISOString()
+            })
+        } catch (error) {
+          console.log(error)
         }
-        if (followupQuiz[0]) {
-          result.followupQuiz = { ...followupQuiz[0], id: flqId }
-        }
-        if (quiz[0]) {
-          result.quiz = { ...quiz[0], id: qId }
-        }
-        await dbRef
-          .update({
-            status: "FINISHED",
-            result,
-            end: new Date().toISOString()
-          })
-      } catch (error) {
-        console.log(error)
       }
     }
-  })
+  )
 }
 
 export const buildLessonSection = async function ({ courseId, lessonId, seedTitle }: { courseId: string, lessonId: string, seedTitle: string }) {
@@ -366,6 +370,264 @@ export const rewriteLessonSectionQuiz = async function ({ content, followup }: {
   } else {
     throw new Error("Failed to build this section. Try again")
   }
+}
+
+
+export const buildSectionFromFile = async function (payload: BuildSectionFromFilePayload) {
+  const dbRef = db.ref('ai-jobs').child(payload.jobId).child("progress").child(payload.lessonName.replace(/\./g, "")).child(payload.seedTitle.replace(/\./g, ""))
+
+  const makeAICall = async function (prompt: string, retries: number, callback: (data: string) => Promise<void>) {
+    try {
+      const thread = await openai.beta.threads.create({
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          },
+        ],
+      })
+
+      const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
+        assistant_id: payload.assistantId,
+      })
+
+      const messages = await openai.beta.threads.messages.list(thread.id, {
+        run_id: run.id,
+      })
+
+      const message = messages.data.pop()!
+
+
+      if (message.content && message.content[0] && message.content[0].type === "text") {
+        const { text } = message.content[0]
+        JSON.parse(text.value)
+        callback(text.value)
+      }
+    } catch (error) {
+      if (retries < 3) {
+        await dbRef
+          .update({
+            status: "RETRYING",
+            error: (error as any).message
+          })
+        makeAICall(prompt, retries + 1, callback)
+      } else {
+        await dbRef
+          .child(payload.courseId)
+          .update({
+            status: "FAILED",
+            error: (error as any).message,
+            end: new Date().toISOString()
+          })
+      }
+    }
+  }
+
+  const sectionPrompt = generateSectionFilePrompt(payload.title, payload.lessonName, payload.seedTitle, payload.seedContent)
+
+  makeAICall(sectionPrompt, 0, async (data: string) => {
+    let section: SectionResultAI
+    let followupQuiz: QuizAI[] = []
+    let quiz: QuizAI[] = []
+    let flqId = "", qId = ""
+    if (data) {
+      try {
+        section = JSON.parse(data.replace("```json", '').replace("```", ""))
+
+        // Replace each emoji with a newline followed by the emoji
+        let sectionContent = addCharacterAfterThirdFullStop(section.sectionContent, '<br/><br/>')
+        const block = await courseService.createBlock({
+          content: sectionContent,
+          title: section.sectionName,
+        }, payload.lessonId, payload.courseId)
+        await dbRef
+          .update({
+            blockId: block.id
+          })
+        let prompt2 = generateFollowupQuestionPrompt(section.sectionContent)
+        let prompt3 = generateQuizPrompt(section.sectionContent)
+        await Promise.all([
+          await makeAICall(prompt2, 0, async (data: string) => {
+            if (data) {
+              try {
+                followupQuiz = JSON.parse(data.replace("```json", '').replace("```", "")).questions
+                if (followupQuiz && followupQuiz[0]) {
+                  let answer = followupQuiz[0].correct_answer
+                  let index = followupQuiz[0].options.findIndex((e) => e.toLowerCase() === answer.toLowerCase())
+                  const q = await courseService.addBlockQuiz({
+                    question: followupQuiz[0].question,
+                    choices: followupQuiz[0].options.map(e => e.toLowerCase()),
+                    correctAnswerContext: `${followupQuiz[0].explanation}`,
+                    correctAnswerIndex: index,
+                    revisitChunk: "",
+                    wrongAnswerContext: `${followupQuiz[0].explanation}`
+                  }, payload.lessonId, payload.courseId, block.id)
+                  flqId = q.id
+                }
+              } catch (error) {
+                console.log(error)
+              }
+            }
+          }),
+          await makeAICall(prompt3, 0, async (data: string) => {
+            if (data) {
+              try {
+                quiz = JSON.parse(data.replace("```json", '').replace("```", "")).questions
+
+                if (quiz && quiz[0]) {
+                  const dp = await courseService.addLessonQuiz({
+                    question: quiz[0].question,
+                    choices: quiz[0].options,
+                    correctAnswerContext: `${quiz[0].explanation}`,
+                    correctAnswerIndex: Number(quiz[0].correct_answer),
+                    hint: quiz[0].hint,
+                    block: block.id,
+                    revisitChunk: quiz[0].explanation,
+                    wrongAnswerContext: `${quiz[0].explanation}`
+                  }, payload.lessonId, payload.courseId)
+                  qId = dp.id
+                }
+              } catch (error) {
+                console.log(error)
+              }
+            }
+          })
+        ])
+
+        let result: any = {
+          section: { ...section, sectionContent, id: block.id }
+        }
+        if (followupQuiz[0]) {
+          result.followupQuiz = { ...followupQuiz[0], id: flqId }
+        }
+        if (quiz[0]) {
+          result.quiz = { ...quiz[0], id: qId }
+        }
+        await dbRef
+          .update({
+            status: "FINISHED",
+            result,
+            end: new Date().toISOString()
+          })
+      } catch (error) {
+        console.log(error)
+      }
+    }
+  })
+}
+
+
+export const initiateDocumentQueryAssistant = async function ({ jobId, prompt, title, files: filePaths, teamId }: { jobId: string, prompt: string, title: string, files: string[], teamId: string }) {
+  const assistant = await openai.beta.assistants.create({
+    name: "Course creator assistant",
+    instructions: "You are an expert creating byte sized course contents. Use you knowledge base to answer questions about the course conflict resolution.",
+    model: "gpt-3.5-turbo",
+    tools: [{ type: "file_search" }],
+  })
+
+  const dbRef = db.ref("ai-jobs").child(jobId)
+  await dbRef
+    .set({
+      status: "RUNNING",
+      stage: "OUTLINE",
+      title,
+      lessonCount: 0,
+      result: null,
+      error: null
+    })
+
+  const fileStreams = filePaths.map((path) => fs.createReadStream(path))
+
+  // Create a vector store
+  const vectorStore = await openai.beta.vectorStores.create({
+    name: "Course content: " + title,
+  })
+
+  // Upload files to the vector store
+  const uploadPromises = fileStreams.map(async (stream) => {
+    const file = await openai.files.create({
+      file: stream,
+      purpose: "fine-tune",
+    })
+    return file
+  })
+  // Wait for all uploads to complete
+  const files = await Promise.all(uploadPromises)
+  await Promise.all([openai.beta.vectorStores.fileBatches.createAndPoll(vectorStore.id, {
+    file_ids: files.map(e => e.id)
+  }), openai.beta.assistants.update(assistant.id, {
+    tool_resources: { file_search: { vector_store_ids: [vectorStore.id] } },
+  })])
+
+  const thread = await openai.beta.threads.create({
+    messages: [
+      {
+        role: "user",
+        content: prompt
+      },
+    ],
+  })
+
+  const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
+    assistant_id: assistant.id,
+  })
+
+  const messages = await openai.beta.threads.messages.list(thread.id, {
+    run_id: run.id,
+  })
+
+  const message = messages.data.pop()!
+
+
+  if (message.content && message.content[0] && message.content[0].type === "text") {
+    const { text } = message.content[0]
+    const lessons: Curriculum = JSON.parse(text.value)
+
+    const course = await courseService.createCourse({
+      title,
+      headerMedia: {
+        mediaType: MediaType.IMAGE,
+        url: "https://picsum.photos/200/300.jpg",
+        awsFileKey: ""
+      },
+      source: Sources.AI,
+      bundle: false,
+      private: false,
+      free: true,
+      description: lessons.description
+    }, teamId)
+
+    await dbRef
+      .update({
+        status: "RUNNING",
+        stage: "BUILDER",
+        courseId: course.id,
+        lessonCount: Object.values(lessons).length
+      })
+
+    const progressRef = dbRef.child("progress")
+    for (let lesson of Object.values(lessons.lessons)) {
+      // create the lesson
+      const lessonDetail = await courseService.createLesson({
+        title: lesson.lesson_name
+      }, course.id)
+      for (let section of Object.values(lesson.sections)) {
+        await progressRef.child(lesson.lesson_name.replace(/\./g, "")).child(section[0].replace(/\./g, "")).set({ status: "RUNNING", courseId: course.id, lessonId: lessonDetail.id })
+        agenda.now<BuildSectionFromFilePayload>(GENERATE_SECTION_FILE, {
+          assistantId: assistant.id,
+          seedContent: section[1],
+          seedTitle: section[0],
+          lessonId: lessonDetail.id,
+          lessonName: lesson.lesson_name,
+          jobId,
+          title,
+          courseId: course.id
+        })
+      }
+    }
+  }
+
+  await Promise.all([...files.map(e => openai.files.del(e.id), openai.beta.vectorStores.del(vectorStore.id))])
 }
 
 
