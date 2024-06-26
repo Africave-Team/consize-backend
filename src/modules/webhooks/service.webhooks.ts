@@ -1194,15 +1194,17 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
             break
           case CourseFlowMessageType.ENDLESSON:
+            await delay(1000)
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
               type: "text",
               messaging_product: "whatsapp",
               recipient_type: "individual",
               text: {
-                body: `total lessons covered today ${data.dailyLessonsCount + 1} \n total lessons left for today ${ data.maxLessonsPerDay + data.owedLessonsCount - (data.dailyLessonsCount + 1)} \n Please do ensure you complete your daily lessons target for today`
+                body: `Total lessons covered today ${data.dailyLessonsCount + 1} \n total lessons left for today ${ data.maxLessonsPerDay + data.owedLessonsCount - (data.dailyLessonsCount + 1)} \n Please do ensure you complete your daily lessons target for today`
               }
             })
+            await delay(3000)
             if((data.maxLessonsPerDay + data.owedLessonsCount - data.dailyLessonsCount) > 0 ){
               let studentData: CourseEnrollment = { ...data, dailyLessonsCount: data.dailyLessonsCount + 1 }
               await redisClient.set(key, JSON.stringify({ ...studentData }))
