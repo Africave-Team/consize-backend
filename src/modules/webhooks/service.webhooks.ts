@@ -1194,24 +1194,8 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
             break
           case CourseFlowMessageType.ENDLESSON:
-              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              to: phoneNumber,
-              type: "text",
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              text: {
-                body: `total lessons covered today ${data.dailyLessonsCount + 1} \n total lessons left for today ${ data.maxLessonsPerDay + data.owedLessonsCount - (data.dailyLessonsCount + 1)} \n Please do ensure you complete your daily lessons target for today`
-              }
-            })
+            let studentData: CourseEnrollment = { ...data, dailyLessonsCount: data.dailyLessonsCount + 1 }
             if((data.maxLessonsPerDay + data.owedLessonsCount - data.dailyLessonsCount) > 0 ){
-              let studentData: CourseEnrollment = { ...data, dailyLessonsCount: data.dailyLessonsCount + 1 }
-              await redisClient.set(key, JSON.stringify({ ...studentData }))
-
-              handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
-            }else{
-              //update lessons count
-              //account for total lessons left
-
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: phoneNumber,
                 type: "interactive",
@@ -1219,7 +1203,34 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 recipient_type: "individual",
                 interactive: {
                   body: {
-                    text: item.content
+                    text: item.content + `\nTotal lessons covered today ${data.dailyLessonsCount + 1} \n total lessons left for today ${ data.maxLessonsPerDay + data.owedLessonsCount - (data.dailyLessonsCount + 1)} \n Please do ensure you complete your daily lessons target for today`.toString() 
+                  },
+                  type: "button",
+                  action: {
+                    buttons: [
+                      {
+                        type: "reply",
+                        reply: {
+                          id: CONTINUE + `|${messageId}`,
+                          title: "Continue Now"
+                        }
+                      },
+                                          
+                    ]
+                  }
+                }
+              })            
+            }else{
+              //update lessons count
+              //account for total lessons left
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: phoneNumber,
+                type: "interactive",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                interactive: {
+                  body: {
+                    text: item.content + `\nTotal lessons covered today ${data.dailyLessonsCount + 1} \n total lessons left for today ${ data.maxLessonsPerDay + data.owedLessonsCount - (data.dailyLessonsCount + 1)} \n`.toString()
                   },
                   type: "button",
                   action: {
@@ -1249,8 +1260,8 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                   }
                 }
               })
-
             }
+            await redisClient.set(key, JSON.stringify({ ...studentData }))
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.QUIZ:
