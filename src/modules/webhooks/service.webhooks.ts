@@ -811,12 +811,12 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
               type: CourseFlowMessageType.ENDCOURSE,
               mediaType: course?.headerMedia?.mediaType || "",
               mediaUrl: course?.headerMedia?.url || "",
-              content: 'Congratulations on completing this course,\nThis is the last course in the Bundle\nYou will recieve end of an end of bundle congratulatory message and certificate shortly'
+              content: 'Congratulations on completing this course,\nThis is the last course in the Bundle\nYou will receive an end of bundle congratulatory message and certificate shortly'
             }
           } else {
             // Return the regular message for all other 'end-of-course' items
             return {
-              type: 'end-of-course',
+              type: CourseFlowMessageType.ENDCOURSE,
               mediaType: course?.headerMedia?.mediaType || "",
               mediaUrl: course?.headerMedia?.url || "",
               content: 'Congratulations on completing this course,\nYou will receive the next course in the bundle shortly.\n'
