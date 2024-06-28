@@ -1327,7 +1327,7 @@ export const handleStudentWhatsapp = async ({ courseId, studentId, settingsId, l
             // update redis record
             enrollment.lastActivity = lastActivity.toISOString()
             enrollment.lastLessonCompleted = lastLessonCompleted.toISOString()
-            await redisClient.set(key, JSON.stringify({ ...enrollment, lastMessageId: msgId, owedLessonsCount: enrollment.owedLessonsCount + (enrollment.maxLessonsPerDay - enrollment.dailyLessonsCount), dailyLessonsCount: 0 }))
+            await redisClient.set(key, JSON.stringify({ ...enrollment, lastMessageId: msgId, owedLessonsCount: enrollment.owedLessonsCount + (enrollment.maxLessonsPerDay - enrollment.dailyLessonsCount), dailyLessonsCount: enrollment.dailyLessonsCount }))
           }
         }
       }
