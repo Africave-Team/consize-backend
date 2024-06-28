@@ -1195,6 +1195,11 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             break
           case CourseFlowMessageType.ENDLESSON:
             let studentData: CourseEnrollment = { ...data, dailyLessonsCount: data.dailyLessonsCount + 1 }
+            let message = item.content + `\nTotal lessons covered today ${data.dailyLessonsCount + 1} \nTotal lessons left for today ${ data.maxLessonsPerDay + data.owedLessonsCount - (data.dailyLessonsCount + 1)} \nPlease do ensure you complete your daily lessons target for today`.toString()
+            const stringToRemove = ["'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
+            stringToRemove.forEach(substring => {
+              message = message.replace(new RegExp(substring, 'g'), '');
+            });
             if((data.maxLessonsPerDay + data.owedLessonsCount - data.dailyLessonsCount) > 0 ){
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: phoneNumber,
@@ -1203,7 +1208,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 recipient_type: "individual",
                 interactive: {
                   body: {
-                    text: item.content + `\nTotal lessons covered today ${data.dailyLessonsCount + 1} \n total lessons left for today ${ data.maxLessonsPerDay + data.owedLessonsCount - (data.dailyLessonsCount + 1)} \n Please do ensure you complete your daily lessons target for today`.toString() 
+                    text: message 
                   },
                   type: "button",
                   action: {
