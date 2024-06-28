@@ -458,7 +458,7 @@ export const buildSectionFromFile = async function (payload: BuildSectionFromFil
                     question: followupQuiz[0].question,
                     choices: followupQuiz[0].options.map(e => e.toLowerCase()),
                     correctAnswerContext: `${followupQuiz[0].explanation}`,
-                    correctAnswerIndex: index,
+                    correctAnswerIndex: isNaN(Number(index)) ? 0 : Number(index),
                     revisitChunk: "",
                     wrongAnswerContext: `${followupQuiz[0].explanation}`
                   }, payload.lessonId, payload.courseId, block.id)
@@ -479,7 +479,7 @@ export const buildSectionFromFile = async function (payload: BuildSectionFromFil
                     question: quiz[0].question,
                     choices: quiz[0].options,
                     correctAnswerContext: `${quiz[0].explanation}`,
-                    correctAnswerIndex: Number(quiz[0].correct_answer),
+                    correctAnswerIndex: isNaN(Number(quiz[0].correct_answer)) ? 0 : Number(quiz[0].correct_answer),
                     hint: quiz[0].hint,
                     block: block.id,
                     revisitChunk: quiz[0].explanation,
