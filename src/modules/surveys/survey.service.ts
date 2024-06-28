@@ -12,6 +12,10 @@ export const createSurvey = async (surveyPayload: CreateSurveyPayload, teamId: s
   return survey
 }
 
+export const fetchSingleSurvey = async (id: string): Promise<SurveyInterface | null> => {
+  return Surveys.findById(id)
+}
+
 export const updateSurvey = async (surveyPayload: CreateSurveyPayload, id: string): Promise<SurveyInterface | null> => {
   const survey = await Surveys.findByIdAndUpdate(id, { $set: { ...surveyPayload } })
   return survey

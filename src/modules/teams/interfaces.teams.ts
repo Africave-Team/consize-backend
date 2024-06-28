@@ -10,6 +10,7 @@ export interface TeamsInterface extends Document {
     verified: boolean
     owner: string
     slackToken: string | null
+    facebookToken: string | null
     channels: DistributionChannel[]
     logo?: string
     createdAt?: Date

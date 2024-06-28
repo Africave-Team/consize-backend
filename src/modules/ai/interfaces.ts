@@ -22,13 +22,25 @@ interface Lessons {
   [lessonKey: string]: Lesson
 }
 
-interface Curriculum {
+export interface Curriculum {
   description: string
   lessons: Lessons
 }
 
 export interface BuildSectionPayload {
   jobId: string
+  seedTitle: string,
+  seedContent: string,
+  lessonId: string,
+  lessonName: string
+  title: string
+  courseId: string
+}
+
+
+export interface BuildSectionFromFilePayload {
+  jobId: string
+  assistantId: string
   seedTitle: string,
   seedContent: string,
   lessonId: string,

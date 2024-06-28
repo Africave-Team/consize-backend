@@ -347,7 +347,11 @@ export const startCourseSlack = async (channel: string, courseId: string, studen
           currentBlock: 0,
           nextBlock: 1,
           totalBlocks: courseFlowData.length,
-          slackToken: token
+          slackToken: token,
+          maxLessonsPerDay: settings?.metadata?.maxLessonsPerDay || 0,
+          minLessonsPerDay: settings?.metadata?.minLessonsPerDay || 4,
+          dailyLessonsCount: 0,
+          owedLessonsCount: 0
         }
         let enrollments: CourseEnrollment[] = await fetchEnrollmentsSlack(channel)
         let active: CourseEnrollment[] = enrollments.filter(e => e.active)
@@ -1199,7 +1203,7 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, u
       }
       await redisClient.set(key, JSON.stringify(updatedData))
       if (saveStats) {
-        saveQuizDuration(data.team, data.student, duration, score, retakes, item.lesson, item.quiz)
+        saveQuizDuration(data.team, data.student, updatedData.id, duration, score, retakes, item.lesson, item.quiz)
       }
       agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
         url,

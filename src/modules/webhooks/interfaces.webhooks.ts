@@ -103,6 +103,10 @@ export interface CourseEnrollment {
   currentBlock: number
   nextBlock: number
   totalBlocks: number
+  maxLessonsPerDay: number
+  minLessonsPerDay: number
+  dailyLessonsCount: number
+  owedLessonsCount: number
   quizAttempts: number
   lastActivity?: string
   lastLessonCompleted?: string

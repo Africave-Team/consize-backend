@@ -16,6 +16,7 @@ coverage
 
 # build folder
 dist
+files
 
 # docker volume
 data

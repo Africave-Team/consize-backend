@@ -5,7 +5,7 @@ import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { ENROLL_STUDENT_DEFAULT_DATE, RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow } from './interfaces.webhooks'
-import { convertToWhatsAppString, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement } from "./service.webhooks"
+import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
@@ -16,6 +16,7 @@ import { studentService } from '../students'
 import Students from '../students/model.students'
 import Courses from '../courses/model.courses'
 import { courseService } from '../courses'
+import { teamService } from '../teams'
 // import { logger } from '../logger'
 
 const timezones = [
@@ -101,9 +102,7 @@ export const whatsappWebhookSubscriber = catchAsync(async (req: Request, res: Re
 
 export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res: Response) => {
   const reqBody = req.body.entry[0].changes[0]
-  if (reqBody && reqBody.value && reqBody.value.statuses && reqBody.value.statuses[0] && reqBody.value.statuses[0].status && reqBody.value.statuses[0] === "failed") {
-    console.log(JSON.stringify(reqBody.value.statuses[0].errors), reqBody.value.statuses[0].recipient_id)
-  }
+  console.log(JSON.stringify(reqBody.value.statuses))
   if (reqBody.field !== "messages") {
     return res.status(400)
   }
@@ -825,8 +824,8 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         if (enrollment) {
           let msgId = v4()
           await handleContinue(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, enrollment)
-          const key = `${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`
-          redisClient.set(key, JSON.stringify({ ...enrollment, currentBlock: enrollment.currentBlock + 1, lastMessageId: msgId, nextBlock: enrollment.nextBlock + 1 }))
+          // const key = `${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`
+          // redisClient.set(key, JSON.stringify({ ...enrollment, currentBlock: enrollment.currentBlock + 1, lastMessageId: msgId, nextBlock: enrollment.nextBlock + 1 }))
         }
       }
 
@@ -846,4 +845,23 @@ export const convertBlockContentToWhatsapp = catchAsync(async (req: Request, res
     }
   }
 
+})
+
+
+
+export const FacebookTokenExchange = catchAsync(async (req: Request, res: Response) => {
+  const payload = req.body
+  await exchangeFacebookToken(payload.code, req.user.team)
+  const team = await teamService.fetchTeamById(req.user.team)
+  res.status(httpStatus.OK).send({ message: "Facebook access has been saved.", data: team })
+})
+
+
+export const FacebookUninstall = catchAsync(async (req: Request, res: Response) => {
+  let team = await teamService.fetchTeamById(req.user.team)
+  if (team && team.facebookToken) {
+    team.facebookToken = null
+    await team.save()
+  }
+  res.status(httpStatus.OK).send({ message: "Facebook access has been revoked.", data: team })
 })

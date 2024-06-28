@@ -384,6 +384,81 @@ export const generateCourseCertificate = async (course: CourseInterface, student
   return ''
 }
 
+
+export const generateCourseHeaderURL = async (course: CourseInterface, owner: TeamsInterface): Promise<string> => {
+  let payload: {
+    courseName: string
+    organizationName: string
+    description: string
+  } = {
+    courseName: course.title,
+    organizationName: owner.name,
+    description: course.description
+  }
+
+  const query = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
+
+  return `${config.clientUrl}/templates/course-header?data=${query}`
+}
+
+export const generateCourseHeaderImage = async (course: CourseInterface, owner: TeamsInterface): Promise<string> => {
+  // get existing data
+  let launchConfig: { args: any[], executablePath?: string } = {
+    args: ['--no-sandbox']
+  }
+  if (config.server !== "local") {
+    launchConfig['executablePath'] = '/usr/bin/chromium-browser'
+  }
+  const browser = await puppeteer.launch(launchConfig)
+  const timestamp = new Date().getTime()
+  const page = await browser.newPage()
+  const url = await generateCourseHeaderURL(course, owner)
+  await page.goto(url, { waitUntil: "networkidle0" })
+  await page.setViewport({
+    width: 1520, height: 980, deviceScaleFactor: 5
+  })
+  const divSelector = '.course-header' // Replace with your actual div selector
+  await page.waitForSelector(divSelector)
+  const divHandle = await page.$(divSelector)
+
+  const screenshotPromise = new Promise<Buffer>(async (resolve, reject) => {
+    try {
+      if (divHandle) {
+        const boundingBox = await divHandle.boundingBox()
+
+        if (boundingBox) {
+          const imageBuffer = await page.screenshot({
+            clip: {
+              x: boundingBox.x,
+              y: boundingBox.y,
+              width: boundingBox.width,
+              height: boundingBox.height,
+            },
+          })
+          console.log('Screenshot saved')
+          resolve(imageBuffer)
+        } else {
+          console.error('Div not found or not visible')
+          reject(new Error('Div not found or not visible'))
+        }
+      }
+    } catch (error) {
+      console.error('Error capturing screenshot:', error)
+      reject(error)
+    }
+  })
+
+  const imageBuffer = await screenshotPromise
+  let destination = `microlearn-certificate-images/${timestamp + '-header-image.png'}`
+  if (imageBuffer) {
+    console.log("attempting upload")
+    await page.close()
+    await browser.close()
+    return await uploadFileToCloudStorage(imageBuffer, destination)
+  }
+  return ''
+}
+
 async function downloadFile (url: string) {
   const options = {
     destination: localVideoPath + '/video.mp4',
@@ -401,6 +476,26 @@ async function downloadFile (url: string) {
   if (destination) {
     await storage.bucket(bucketName).file(destination).download(options)
     console.log(`Downloaded ${destination} to ${localVideoPath}`)
+  }
+}
+
+export async function downloadFileToDir (url: string, dir: string) {
+  const options = {
+    destination: dir + (url.replace('https://storage.googleapis.com/kippa-cdn-public/', '').split('/')[1]),
+  }
+  const storage = new Storage({
+    projectId: serviceAccount.project_id,
+    credentials: {
+      client_email: serviceAccount.client_email,
+      private_key: serviceAccount.private_key?.split(String.raw`\n`).join("\n"),
+    },
+  })
+
+  const bucketName = 'kippa-cdn-public'
+  let [_, destination] = decodeURI(url).split(`/${bucketName}/`)
+  if (destination) {
+    await storage.bucket(bucketName).file(destination).download(options)
+    console.log(`Downloaded ${destination} to ${options.destination}`)
   }
 }
 

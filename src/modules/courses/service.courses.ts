@@ -19,7 +19,7 @@ import { StudentCourseStats } from '../students/interface.students'
 import moment, { Moment } from 'moment-timezone'
 import { CourseStatistics } from '../rtdb/interfaces.rtdb'
 import { agenda } from '../scheduler'
-import { DAILY_REMINDER, GENERATE_COURSE_OUTLINE_AI, RESUME_TOMORROW, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { DAILY_REMINDER, GENERATE_COURSE_OUTLINE_AI, GENERATE_COURSE_OUTLINE_FILE, RESUME_TOMORROW, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { CourseEnrollment, DailyReminderNotificationPayload, Message } from '../webhooks/interfaces.webhooks'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -27,7 +27,7 @@ import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, Sl
 import { v4 } from 'uuid'
 import Teams from '../teams/model.teams'
 import randomstring from "randomstring"
-import { generateOutlinePrompt } from './prompts'
+import { generateOutlinePrompt, generateOutlinePromptDocument } from './prompts'
 import { buildCourse } from '../ai/services'
 import { sessionService } from '../sessions'
 
@@ -277,7 +277,26 @@ export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: stri
     populate: {
       path: 'quizzes' // Populating quizzes at the lesson level
     }
-  }).populate("courses").lean()
+  }).populate({
+    path: "courses",
+    populate: {
+      path: "lessons",
+      populate: {
+        path: "blocks",
+        populate: {
+          path: "quiz"
+        }
+      }
+    }
+  }).populate({
+    path: "courses",
+    populate: {
+      path: "lessons",
+      populate: {
+        path: "quizzes",
+      }
+    }
+  }).lean()
   if (course) {
     if (!course.shortCode) {
       let code = randomstring.generate({
@@ -1308,7 +1327,7 @@ export const handleStudentWhatsapp = async ({ courseId, studentId, settingsId, l
             // update redis record
             enrollment.lastActivity = lastActivity.toISOString()
             enrollment.lastLessonCompleted = lastLessonCompleted.toISOString()
-            await redisClient.set(key, JSON.stringify({ ...enrollment, lastMessageId: msgId }))
+            await redisClient.set(key, JSON.stringify({ ...enrollment, lastMessageId: msgId, owedLessonsCount: enrollment.owedLessonsCount + (enrollment.maxLessonsPerDay - enrollment.dailyLessonsCount), dailyLessonsCount: 0 }))
           }
         }
       }
@@ -1437,6 +1456,28 @@ export const generateCourseOutlineAI = async function ({ title, lessonCount, job
     id,
     title,
     lessonCount
+  }
+}
+
+export const generateCourseOutlineFile = async function ({ title, jobId, files, teamId }: { title: string, files: string[], teamId: string, jobId?: string }) {
+  // create the course, get the course id
+  let id
+  if (jobId) {
+    id = jobId
+  } else {
+    id = v4()
+  }
+  const prompt = generateOutlinePromptDocument(title)
+  agenda.now<{ jobId: string, prompt: string, title: string, files: string[], teamId: string }>(GENERATE_COURSE_OUTLINE_FILE, {
+    jobId: id,
+    prompt,
+    title,
+    files,
+    teamId
+  })
+  return {
+    id,
+    title
   }
 }
 

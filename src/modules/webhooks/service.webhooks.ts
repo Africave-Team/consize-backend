@@ -7,7 +7,7 @@ import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import Courses from '../courses/model.courses'
-import { Team } from '../teams'
+import { Team, teamService } from '../teams'
 import { CourseInterface, CourseStatus, MediaType } from '../courses/interfaces.courses'
 import he from "he"
 import db from "../rtdb"
@@ -108,6 +108,35 @@ export function convertToWhatsAppString (html: string, indent: number = 0): stri
   return formattedText.trim()
 }
 
+function splitStringIntoChunks (str: string, chunkSize = 700) {
+  const chunks = []
+  let start = 0
+  while (start < str.length) {
+    let end = start + chunkSize
+    if (end < str.length) {
+      // Ensure we don't split in the middle of a line
+      const nextNewline = str.indexOf('\n', end)
+      const prevNewline = str.lastIndexOf('\n', end)
+      if (nextNewline === -1 && prevNewline === -1) {
+        // No newline found, just use the chunk size
+        end = str.length
+      } else if (nextNewline !== -1 && (prevNewline === -1 || (nextNewline - end) < (end - prevNewline))) {
+        // Next newline is closer than the previous one
+        end = nextNewline + 1
+      } else {
+        // Previous newline is closer or there is no next newline
+        end = prevNewline + 1
+      }
+    } else {
+      // We're at the end of the string
+      end = str.length
+    }
+    chunks.push(str.slice(start, end))
+    start = end
+  }
+  return chunks
+}
+
 export const generateCourseFlow = async function (courseId: string) {
   const flow: CourseFlowItem[] = []
   const courseKey = `${config.redisBaseKey}courses:${courseId}`
@@ -167,23 +196,27 @@ export const generateCourseFlow = async function (courseId: string) {
                   }
                 }
                 if (content.length > 1024) {
-                  let actualLength = content.length
-                  let halfLength = Math.ceil(actualLength / 2) + 100
-                  let halfString = content.slice(halfLength)
-                  halfLength = halfLength + halfString.indexOf('\n')
-                  const first = content.slice(0, halfLength)
-                  const second = content.slice(halfLength)
-                  let copy = { ...flo }
-                  copy.type = CourseFlowMessageType.BLOCK
-                  copy.content = first
-                  delete copy.quiz
-                  flow.push(copy)
-                  copy = { ...flo }
-                  copy.content = second
-                  delete copy.mediaType
-                  delete copy.mediaUrl
-                  delete copy.thumbnailUrl
-                  flow.push(copy)
+                  let chunks = splitStringIntoChunks(content)
+                  for (let index = 0; index < chunks.length; index++) {
+                    let copy = { ...flo }
+                    const element = chunks[index]
+                    if (element) {
+                      if (index === 0) {
+                        copy.type = CourseFlowMessageType.BLOCK
+                        copy.content = element
+                        delete copy.quiz
+                        flow.push(copy)
+                      } else {
+                        copy = { ...flo }
+                        copy.content = element
+                        delete copy.mediaType
+                        delete copy.mediaUrl
+                        delete copy.thumbnailUrl
+                        flow.push(copy)
+                      }
+                    }
+
+                  }
                 } else {
                   flow.push(flo)
                 }
@@ -205,22 +238,27 @@ export const generateCourseFlow = async function (courseId: string) {
               }
 
               if (content.length > 1024) {
-                let actualLength = content.length
-                let halfLength = Math.ceil(actualLength / 2) + 100
-                let halfString = content.slice(halfLength)
-                halfLength = halfLength + halfString.indexOf('\n')
-                const first = content.slice(0, halfLength)
-                const second = content.slice(halfLength)
-                let copy = { ...flo }
-                copy.content = first
-                delete copy.quiz
-                flow.push(copy)
-                copy = { ...flo }
-                copy.content = second
-                delete copy.mediaType
-                delete copy.mediaUrl
-                delete copy.thumbnailUrl
-                flow.push(copy)
+                let chunks = splitStringIntoChunks(content)
+                for (let index = 0; index < chunks.length; index++) {
+                  let copy = { ...flo }
+                  const element = chunks[index]
+                  if (element) {
+                    if (index === 0) {
+                      copy.type = CourseFlowMessageType.BLOCK
+                      copy.content = element
+                      delete copy.quiz
+                      flow.push(copy)
+                    } else {
+                      copy = { ...flo }
+                      copy.content = element
+                      delete copy.mediaType
+                      delete copy.mediaUrl
+                      delete copy.thumbnailUrl
+                      flow.push(copy)
+                    }
+                  }
+
+                }
               } else {
                 flow.push(flo)
               }
@@ -676,7 +714,7 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
     if (redisClient.isReady) {
       const courseKey = `${config.redisBaseKey}courses:${courseId}`
       const courseFlow = await redisClient.get(courseKey)
-      if (courseFlow) {
+      if (courseFlow && settings?.metadata) {
         const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
         const redisData: CourseEnrollment = {
           team: course.owner,
@@ -694,7 +732,11 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
           progress: 0,
           currentBlock: 0,
           nextBlock: 1,
-          totalBlocks: courseFlowData.length
+          totalBlocks: courseFlowData.length,
+          maxLessonsPerDay: settings?.metadata?.maxLessonsPerDay,
+          minLessonsPerDay: settings?.metadata?.minLessonsPerDay,
+          dailyLessonsCount: 0,
+          owedLessonsCount: 0
         }
         let enrollments: CourseEnrollment[] = await fetchEnrollments(phoneNumber)
         let active: CourseEnrollment[] = enrollments.filter(e => e.active)
@@ -749,15 +791,29 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
         type: CourseFlowMessageType.END_OF_BUNDLE,
         mediaType: course.headerMedia?.mediaType || "",
         mediaUrl: course.headerMedia?.url || "",
-        content: `Congratulations on completing. *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n\n\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \n\nHappy learning.`
+        content: `Congratulations on completing.\n *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}.`
       }
+
 
       flows.push(endOfBundleMessage)
 
       flows = flows.filter(e => !e.surveyId)
       flows = flows.filter(e => e.type !== CourseFlowMessageType.WELCOME)
-      totalBlocks = flows.length
-      redisClient.set(`${config.redisBaseKey}courses:${courseId}`, JSON.stringify(flows))
+
+      const updatedFlows = flows.map(item => {
+        if (item.type === 'end-of-course') {
+          return {
+            type: 'end-of-course',
+            mediaType: course?.headerMedia?.mediaType || "",
+            mediaUrl: course?.headerMedia?.url || "",
+            content: 'Congratulations on completing this course,\nYou will receive the next course in the bundle, shortly \n'
+          }
+        }
+        return item
+      })
+
+      totalBlocks = updatedFlows.length
+      redisClient.set(`${config.redisBaseKey}courses:${courseId}`, JSON.stringify(updatedFlows))
 
       if (totalBlocks > 0) {
         const redisData: CourseEnrollment = {
@@ -778,6 +834,10 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
           nextBlock: 0,
           totalBlocks,
           bundle: true,
+          maxLessonsPerDay: settings?.metadata?.maxLessonsPerDay || 1,
+          minLessonsPerDay: settings?.metadata?.minLessonsPerDay || 1,
+          dailyLessonsCount: 0,
+          owedLessonsCount: 0
         }
         let enrollments: CourseEnrollment[] = await fetchEnrollments(phoneNumber)
         let active: CourseEnrollment[] = enrollments.filter(e => e.active)
@@ -1098,7 +1158,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             })
             await delay(5000)
             let next = flowData[nextIndex + 1]
-            if (next) {
+            if ((next?.surveyId && next.surveyQuestion) || data.bundle) {
               updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
               handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
             } else {
@@ -1119,45 +1179,94 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 body: item.content.replace('{survey}', '')
               }
             })
+
+            await delay(5000)
+            let nextFlow = flowData[nextIndex + 1]
+            if (nextFlow?.surveyId && nextFlow.surveyQuestion) {
+              updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
+              handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
+            } else {
+              // if no survey for this course, then send the certificate
+              agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
+                ...updatedData
+              })
+            }
+
             break
           case CourseFlowMessageType.ENDLESSON:
-            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              to: phoneNumber,
-              type: "interactive",
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              interactive: {
-                body: {
-                  text: item.content
-                },
-                type: "button",
-                action: {
-                  buttons: [
-                    {
-                      type: "reply",
-                      reply: {
-                        id: CONTINUE + `|${messageId}`,
-                        title: "Continue Now"
-                      }
-                    },
-                    {
-                      type: "reply",
-                      reply: {
-                        id: TOMORROW + `|${messageId}`,
-                        title: "Continue Tomorrow"
-                      }
-                    },
-                    {
-                      type: "reply",
-                      reply: {
-                        id: SCHEDULE_RESUMPTION + `|${messageId}`,
-                        title: "Set Resumption Time"
-                      }
-                    }
-                  ]
+            let studentData: CourseEnrollment = { ...data, dailyLessonsCount: data.dailyLessonsCount + 1 }
+            let message = item.content + `\nTotal lessons covered today ${data.dailyLessonsCount + 1} \nTotal lessons left for today ${ data.maxLessonsPerDay + data.owedLessonsCount - (data.dailyLessonsCount + 1)} \nPlease do ensure you complete your daily lessons target for today`.toString()
+            const stringToRemove = ["'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
+            stringToRemove.forEach(substring => {
+              message = message.replace(new RegExp(substring, 'g'), '');
+            });
+            if((data.maxLessonsPerDay + data.owedLessonsCount - data.dailyLessonsCount) > 0 ){
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: phoneNumber,
+                type: "interactive",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                interactive: {
+                  body: {
+                    text: message 
+                  },
+                  type: "button",
+                  action: {
+                    buttons: [
+                      {
+                        type: "reply",
+                        reply: {
+                          id: CONTINUE + `|${messageId}`,
+                          title: "Continue Now"
+                        }
+                      },
+                                          
+                    ]
+                  }
                 }
-              }
-            })
+              })            
+            }else{
+              //update lessons count
+              //account for total lessons left
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: phoneNumber,
+                type: "interactive",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                interactive: {
+                  body: {
+                    text: item.content + `\nTotal lessons covered today ${data.dailyLessonsCount + 1} \n total lessons left for today ${ data.maxLessonsPerDay + data.owedLessonsCount - (data.dailyLessonsCount + 1)} \n`.toString()
+                  },
+                  type: "button",
+                  action: {
+                    buttons: [
+                      // {
+                      //   type: "reply",
+                      //   reply: {
+                      //     id: CONTINUE + `|${messageId}`,
+                      //     title: "Continue Now"
+                      //   }
+                      // },
+                      {
+                        type: "reply",
+                        reply: {
+                          id: TOMORROW + `|${messageId}`,
+                          title: "Continue Tomorrow"
+                        }
+                      },
+                      {
+                        type: "reply",
+                        reply: {
+                          id: SCHEDULE_RESUMPTION + `|${messageId}`,
+                          title: "Set Resumption Time"
+                        }
+                      }
+                    ]
+                  }
+                }
+              })
+            }
+            await redisClient.set(key, JSON.stringify({ ...studentData }))
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.QUIZ:
@@ -1234,7 +1343,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           default:
             break
         }
-        console.log(updatedData)
+        
         await redisClient.set(key, JSON.stringify({ ...updatedData }))
       }
     } else {
@@ -1431,7 +1540,7 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
       }
       await redisClient.set(key, JSON.stringify(updatedData))
       if (saveStats) {
-        saveQuizDuration(data.team, data.student, duration, score, retakes, item.lesson, item.quiz)
+        saveQuizDuration(data.team, data.student, updatedData.id, duration, score, retakes, item.lesson, item.quiz)
       }
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
     }
@@ -1668,4 +1777,30 @@ export const sendScheduleAcknowledgement = async (phoneNumber: string, time: str
   }
 }
 
+
+
+export const exchangeFacebookToken = async function (code: string, team: string) {
+  try {
+    console.log({
+      'client_id': config.facebook.id,
+      'client_secret': config.facebook.secret,
+      'code': code,
+      'redirect_uri': config.facebook.redirectUrl
+    })
+    const result: AxiosResponse = await axios.get(`https://graph.facebook.com/v12.0/oauth/access_token`, {
+      params: {
+        'client_id': config.facebook.id,
+        'client_secret': config.facebook.secret,
+        'code': code
+      }
+    })
+
+    await teamService.updateTeamInfo(team, {
+      facebookToken: result.data.access_token
+    })
+  } catch (error) {
+    // @ts-ignore
+    console.log((error as AxiosError).response.data)
+  }
+}
 
