@@ -1280,7 +1280,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 }
               })
             }
-            await redisClient.set(key, JSON.stringify({ ...studentData }))
+            await redisClient.set(key, JSON.stringify({ ...studentData, dailyLessonsCount: data.dailyLessonsCount + 1 }))
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.QUIZ:
