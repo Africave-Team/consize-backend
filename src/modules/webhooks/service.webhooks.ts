@@ -800,17 +800,31 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
       flows = flows.filter(e => !e.surveyId)
       flows = flows.filter(e => e.type !== CourseFlowMessageType.WELCOME)
 
-      const updatedFlows = flows.map(item => {
-        if (item.type === 'end-of-course') {
-          return {
-            type: 'end-of-course',
-            mediaType: course?.headerMedia?.mediaType || "",
-            mediaUrl: course?.headerMedia?.url || "",
-            content: 'Congratulations on completing this course,\nYou will receive the next course in the bundle, shortly \n'
+            // Find the index of the last 'end-of-course' item
+      const lastEndOfCourseIndex = flows.map(item => item.type).lastIndexOf(CourseFlowMessageType.ENDCOURSE);
+
+      const updatedFlows = flows.map((item, index) => {
+        if (item.type === CourseFlowMessageType.ENDCOURSE) {
+          if (index === lastEndOfCourseIndex) {
+            // Return a different message for the last 'end-of-course' item
+            return {
+              type: CourseFlowMessageType.ENDCOURSE,
+              mediaType: course?.headerMedia?.mediaType || "",
+              mediaUrl: course?.headerMedia?.url || "",
+              content: 'Congratulations on completing this course,\nThis is the last course in the Bundle\nYou will recieve end of an end of bundle congratulatory message and certificate shortly'
+            }
+          } else {
+            // Return the regular message for all other 'end-of-course' items
+            return {
+              type: 'end-of-course',
+              mediaType: course?.headerMedia?.mediaType || "",
+              mediaUrl: course?.headerMedia?.url || "",
+              content: 'Congratulations on completing this course,\nYou will receive the next course in the bundle shortly.\n'
+            }
           }
         }
-        return item
-      })
+        return item;
+      });
 
       totalBlocks = updatedFlows.length
       redisClient.set(`${config.redisBaseKey}courses:${courseId}`, JSON.stringify(updatedFlows))
@@ -1196,7 +1210,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           case CourseFlowMessageType.ENDLESSON:
             let studentData: CourseEnrollment = { ...data, dailyLessonsCount: data.dailyLessonsCount + 1 }
             let message = item.content + `\nTotal lessons covered today ${data.dailyLessonsCount + 1} \nTotal lessons left for today ${ data.maxLessonsPerDay + data.owedLessonsCount - (data.dailyLessonsCount + 1)} \nPlease do ensure you complete your daily lessons target for today`.toString()
-            const stringToRemove = ["'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
+            const stringToRemove = ["\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
             stringToRemove.forEach(substring => {
               message = message.replace(new RegExp(substring, 'g'), '');
             });
