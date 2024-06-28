@@ -1,6 +1,7 @@
 import express, { Router } from 'express'
 import { validate } from '../../modules/validate'
 import { auth } from '../../modules/auth'
+import downloadMiddleware from '../../modules/courses/middlewares'
 import { courseControllers, courseValidators } from "../../modules/courses"
 
 const router: Router = express.Router()
@@ -11,6 +12,10 @@ router.get('/', courseControllers.fetchTeamCourses)
 router.get('/search', courseControllers.searchTeamCourses)
 router.post('/ai', validate(courseValidators.createCourseAi), courseControllers.createCourseAI)
 router.post('/ai/generate-outline', validate(courseValidators.generateCourseOutlineAI), courseControllers.generateCourseOutline)
+
+router.post('/file', validate(courseValidators.createCourseAi), courseControllers.createCourseFile)
+router.post('/ai/generate-outline-from-file', validate(courseValidators.generateCourseOutlineFile), downloadMiddleware(), courseControllers.generateCourseOutlineFile)
+
 router.post('/', validate(courseValidators.createCourse), courseControllers.createCourseManually)
 router.route('/:course')
   .get(courseControllers.fetchTeamSingleCourse)
