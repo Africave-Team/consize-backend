@@ -1209,13 +1209,16 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             break
           case CourseFlowMessageType.ENDLESSON:
             let studentData: CourseEnrollment = { ...data, dailyLessonsCount: data.dailyLessonsCount + 1 }
-            let message = item.content + `\nTotal lessons covered today ${data.dailyLessonsCount + 1} \nTotal lessons left for today ${ data.maxLessonsPerDay + data.owedLessonsCount - (data.dailyLessonsCount + 1)} \nPlease do ensure you complete your daily lessons target for today`.toString()
-            const stringToRemove = ["\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.","\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
-            stringToRemove.forEach(substring => {
-              message = message.replace(new RegExp(substring, 'g'), '');
-            });
-            if((data.maxLessonsPerDay + data.owedLessonsCount - data.dailyLessonsCount) > 0 ){
-              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+            let message = item.content + `\nTotal lessons covered today ${studentData.dailyLessonsCount} \nYou are required to cover at least ${studentData.minLessonsPerDay}\nLessons left to reach daily minimum requirement ${ studentData.minLessonsPerDay - studentData.dailyLessonsCount}`.toString()
+            
+            if(studentData.maxLessonsPerDay - studentData.dailyLessonsCount >= 0){
+              if (studentData.minLessonsPerDay - studentData.dailyLessonsCount > 0) {
+                const stringToRemove = ["\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.","\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
+                stringToRemove.forEach(substring => {
+                  message = message.replace(new RegExp(substring, 'g'), '');
+                });
+
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: phoneNumber,
                 type: "interactive",
                 messaging_product: "whatsapp",
@@ -1238,10 +1241,50 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                     ]
                   }
                 }
-              })            
-            }else{
-              //update lessons count
-              //account for total lessons left
+              }) 
+
+              }else{
+                message = item.content + `\nCongratulations on meeting the minimum daily Lessons target for this course.\nTotal lessons covered today ${studentData.dailyLessonsCount} \nYou are encouraged to also meet the maximum daily Lessons requirement of${studentData.maxLessonsPerDay}\nLessons left to reach daily maximum lessons requirement is ${ studentData.maxLessonsPerDay - studentData.dailyLessonsCount}`.toString()
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: phoneNumber,
+                  type: "interactive",
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  interactive: {
+                    body: {
+                      text: message
+                    },
+                    type: "button",
+                    action: {
+                      buttons: [
+                        {
+                          type: "reply",
+                          reply: {
+                            id: CONTINUE + `|${messageId}`,
+                            title: "Continue Now"
+                          }
+                        },
+                        {
+                          type: "reply",
+                          reply: {
+                            id: TOMORROW + `|${messageId}`,
+                            title: "Continue Tomorrow"
+                          }
+                        },
+                        {
+                          type: "reply",
+                          reply: {
+                            id: SCHEDULE_RESUMPTION + `|${messageId}`,
+                            title: "Set Resumption Time"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                })
+              }
+            } else {
+              message = item.content + `\nCongratulations on meeting the maximum daily Lessons target for this course`.toString()
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: phoneNumber,
                 type: "interactive",
@@ -1249,18 +1292,11 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 recipient_type: "individual",
                 interactive: {
                   body: {
-                    text: item.content + `\nTotal lessons covered today ${data.dailyLessonsCount + 1} \n total lessons left for today ${ data.maxLessonsPerDay + data.owedLessonsCount - (data.dailyLessonsCount + 1)} \n`.toString()
+                    text: message
                   },
                   type: "button",
                   action: {
                     buttons: [
-                      // {
-                      //   type: "reply",
-                      //   reply: {
-                      //     id: CONTINUE + `|${messageId}`,
-                      //     title: "Continue Now"
-                      //   }
-                      // },
                       {
                         type: "reply",
                         reply: {
@@ -1280,7 +1316,8 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 }
               })
             }
-            await redisClient.set(key, JSON.stringify({ ...studentData, dailyLessonsCount: data.dailyLessonsCount + 1 }))
+         
+            await redisClient.set(key, JSON.stringify({ ...studentData, dailyLessonsCount: studentData.dailyLessonsCount}))
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.QUIZ:
