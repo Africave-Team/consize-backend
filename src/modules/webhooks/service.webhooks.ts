@@ -714,7 +714,7 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
     if (redisClient.isReady) {
       const courseKey = `${config.redisBaseKey}courses:${courseId}`
       const courseFlow = await redisClient.get(courseKey)
-      if (courseFlow && settings?.metadata) {
+      if (courseFlow ) {
         const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
         const redisData: CourseEnrollment = {
           team: course.owner,
@@ -733,8 +733,8 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
           currentBlock: 0,
           nextBlock: 1,
           totalBlocks: courseFlowData.length,
-          maxLessonsPerDay: settings?.metadata?.maxLessonsPerDay,
-          minLessonsPerDay: settings?.metadata?.minLessonsPerDay,
+          maxLessonsPerDay: settings?.metadata?.maxLessonsPerDay || 2,
+          minLessonsPerDay: settings?.metadata?.minLessonsPerDay || 1,
           dailyLessonsCount: 0,
           owedLessonsCount: 0
         }
@@ -848,7 +848,7 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
           nextBlock: 0,
           totalBlocks,
           bundle: true,
-          maxLessonsPerDay: settings?.metadata?.maxLessonsPerDay || 1,
+          maxLessonsPerDay: settings?.metadata?.maxLessonsPerDay || 2,
           minLessonsPerDay: settings?.metadata?.minLessonsPerDay || 1,
           dailyLessonsCount: 0,
           owedLessonsCount: 0
