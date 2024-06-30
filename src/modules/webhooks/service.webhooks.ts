@@ -1209,6 +1209,8 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             break
           case CourseFlowMessageType.ENDLESSON:
             let studentData: CourseEnrollment = { ...data, dailyLessonsCount: data.dailyLessonsCount + 1 }
+            await redisClient.set(key, JSON.stringify({ ...studentData}))
+
             let message = item.content + `\nTotal lessons covered today ${studentData.dailyLessonsCount} \nYou are required to cover at least ${studentData.minLessonsPerDay}\nLessons left to reach daily minimum requirement ${ studentData.minLessonsPerDay - studentData.dailyLessonsCount}`.toString()
             
             if(studentData.maxLessonsPerDay - studentData.dailyLessonsCount >= 0){
@@ -1317,7 +1319,6 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               })
             }
          
-            await redisClient.set(key, JSON.stringify({ ...studentData, dailyLessonsCount: studentData.dailyLessonsCount}))
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.QUIZ:
