@@ -1069,6 +1069,9 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
       }
       if (data) {
         let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: nextIndex, nextBlock: nextIndex + 1 }
+        if(!moment(updatedData.lastActivity).isSame(moment(), 'day')){
+            updatedData = {...updatedData, dailyLessonsCount: 0}
+        }
         let currentItem = flowData[data.currentBlock]
         if (currentItem && (currentItem.type === CourseFlowMessageType.BLOCK || currentItem.type === CourseFlowMessageType.BLOCKWITHQUIZ)) {
           // calculate the elapsed time and update stats service
@@ -1184,6 +1187,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
             break
           case CourseFlowMessageType.END_OF_BUNDLE:
+            updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
               type: "text",
