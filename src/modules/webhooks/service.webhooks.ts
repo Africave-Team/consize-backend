@@ -1213,7 +1213,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
             let message = item.content + `\nTotal lessons covered today ${studentData.dailyLessonsCount} \nYou are required to cover at least ${studentData.minLessonsPerDay}\nLessons left to reach daily minimum requirement ${ studentData.minLessonsPerDay - studentData.dailyLessonsCount}`.toString()
             
-            if(studentData.maxLessonsPerDay - studentData.dailyLessonsCount >= 0){
+            if(studentData.maxLessonsPerDay - studentData.dailyLessonsCount <= 0){
               if (studentData.minLessonsPerDay - studentData.dailyLessonsCount > 0) {
                 const stringToRemove = ["\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.","\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
                 stringToRemove.forEach(substring => {
@@ -1246,7 +1246,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               }) 
 
               }else{
-                message = item.content + `\nCongratulations on meeting the minimum daily Lessons target for this course.\nTotal lessons covered today ${studentData.dailyLessonsCount} \nYou are encouraged to also meet the maximum daily Lessons requirement of${studentData.maxLessonsPerDay}\nLessons left to reach daily maximum lessons requirement is ${ studentData.maxLessonsPerDay - studentData.dailyLessonsCount}`.toString()
+                message = item.content + `\nCongratulations on meeting the minimum daily Lessons target for this course.\nTotal lessons covered today ${studentData.dailyLessonsCount} \nYou are encouraged to also meet the maximum daily Lessons requirement of ${studentData.maxLessonsPerDay}\nLessons left to reach daily maximum lessons requirement is ${ studentData.maxLessonsPerDay - studentData.dailyLessonsCount}`.toString()
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                   to: phoneNumber,
                   type: "interactive",
