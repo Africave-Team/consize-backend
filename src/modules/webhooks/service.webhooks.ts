@@ -1069,9 +1069,6 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
       }
       if (data) {
         let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: nextIndex, nextBlock: nextIndex + 1 }
-        if(!moment(updatedData.lastActivity).isSame(moment(), 'day')){
-            updatedData = {...updatedData, dailyLessonsCount: 0}
-        }
         let currentItem = flowData[data.currentBlock]
         if (currentItem && (currentItem.type === CourseFlowMessageType.BLOCK || currentItem.type === CourseFlowMessageType.BLOCKWITHQUIZ)) {
           // calculate the elapsed time and update stats service
@@ -1212,8 +1209,12 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
             break
           case CourseFlowMessageType.ENDLESSON:
-            updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
-           
+            if(!moment(updatedData.lastActivity).isSame(moment(), 'day')){
+              updatedData = {...updatedData, dailyLessonsCount: 0}
+            }else{
+              updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
+            }
+                       
             let message = item.content + `\nTotal lessons covered today ${updatedData.dailyLessonsCount} \nYou are required to cover at least ${updatedData.minLessonsPerDay}\nLessons left to reach daily minimum requirement ${ updatedData.minLessonsPerDay - updatedData.dailyLessonsCount}`.toString()
             
             if(updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount >= 0){
