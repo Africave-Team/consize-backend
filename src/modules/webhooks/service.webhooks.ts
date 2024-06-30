@@ -1213,7 +1213,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
             let message = item.content + `\nTotal lessons covered today ${studentData.dailyLessonsCount} \nYou are required to cover at least ${studentData.minLessonsPerDay}\nLessons left to reach daily minimum requirement ${ studentData.minLessonsPerDay - studentData.dailyLessonsCount}`.toString()
             
-            if(studentData.maxLessonsPerDay - studentData.dailyLessonsCount <= 0){
+            if(studentData.maxLessonsPerDay - studentData.dailyLessonsCount >= 0){
               if (studentData.minLessonsPerDay - studentData.dailyLessonsCount > 0) {
                 const stringToRemove = ["\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.","\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
                 stringToRemove.forEach(substring => {
@@ -1287,6 +1287,10 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               }
             } else {
               message = item.content + `\nCongratulations on meeting the maximum daily Lessons target for this course`.toString()
+              const stringToRemove = ["\n\n➡️ Tap 'Continue Now' when you're ready to start.\n"]
+                stringToRemove.forEach(substring => {
+                  message = message.replace(new RegExp(substring, 'g'), '');
+                });
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: phoneNumber,
                 type: "interactive",
