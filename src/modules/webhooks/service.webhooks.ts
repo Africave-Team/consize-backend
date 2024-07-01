@@ -1184,6 +1184,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
             break
           case CourseFlowMessageType.END_OF_BUNDLE:
+            updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
               type: "text",
@@ -1208,13 +1209,16 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
             break
           case CourseFlowMessageType.ENDLESSON:
-            let studentData: CourseEnrollment = { ...data, dailyLessonsCount: data.dailyLessonsCount + 1 }
-            await redisClient.set(key, JSON.stringify({ ...studentData}))
-
-            let message = item.content + `\nTotal lessons covered today ${studentData.dailyLessonsCount} \nYou are required to cover at least ${studentData.minLessonsPerDay}\nLessons left to reach daily minimum requirement ${ studentData.minLessonsPerDay - studentData.dailyLessonsCount}`.toString()
+            if(!moment(updatedData.lastActivity).isSame(moment(), 'day')){
+              updatedData = {...updatedData, dailyLessonsCount: 1}
+            }else{
+              updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
+            }
+                       
+            let message = item.content + `\nTotal lessons covered today ${updatedData.dailyLessonsCount} \nYou are required to cover at least ${updatedData.minLessonsPerDay}\nLessons left to reach daily minimum requirement ${ updatedData.minLessonsPerDay - updatedData.dailyLessonsCount}`.toString()
             
-            if(studentData.maxLessonsPerDay - studentData.dailyLessonsCount >= 0){
-              if (studentData.minLessonsPerDay - studentData.dailyLessonsCount > 0) {
+            if(updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount >= 0){
+              if (updatedData.minLessonsPerDay - updatedData.dailyLessonsCount > 0) {
                 const stringToRemove = ["\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.","\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
                 stringToRemove.forEach(substring => {
                   message = message.replace(new RegExp(substring, 'g'), '');
@@ -1246,7 +1250,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               }) 
 
               }else{
-                message = item.content + `\nCongratulations on meeting the minimum daily Lessons target for this course.\nTotal lessons covered today ${studentData.dailyLessonsCount} \nYou are encouraged to also meet the maximum daily Lessons requirement of ${studentData.maxLessonsPerDay}\nLessons left to reach daily maximum lessons requirement is ${ studentData.maxLessonsPerDay - studentData.dailyLessonsCount}`.toString()
+                message = item.content + `\nCongratulations on meeting the minimum daily Lessons target for this course.\nTotal lessons covered today ${updatedData.dailyLessonsCount} \nYou are encouraged to also meet the maximum daily Lessons requirement of ${updatedData.maxLessonsPerDay}\nLessons left to reach daily maximum lessons requirement is ${ updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount}`.toString()
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                   to: phoneNumber,
                   type: "interactive",
@@ -1322,7 +1326,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 }
               })
             }
-         
+             await redisClient.set(key, JSON.stringify({ ...updatedData}))
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.QUIZ:
