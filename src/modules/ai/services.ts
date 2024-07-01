@@ -425,95 +425,115 @@ export const buildSectionFromFile = async function (payload: BuildSectionFromFil
 
   const sectionPrompt = generateSectionFilePrompt(payload.title, payload.lessonName, payload.seedTitle, payload.seedContent)
 
-  makeAICall(sectionPrompt, 0, async (data: string) => {
-    let section: SectionResultAI
-    let followupQuiz: QuizAI[] = []
-    let quiz: QuizAI[] = []
-    let flqId = "", qId = ""
-    if (data) {
-      try {
-        section = JSON.parse(data.replace("```json", '').replace("```", ""))
+  try {
+    makeAICall(sectionPrompt, 0, async (data: string) => {
+      let section: SectionResultAI
+      let followupQuiz: QuizAI[] = []
+      let quiz: QuizAI[] = []
+      let flqId = "", qId = ""
+      if (data) {
+        try {
+          section = JSON.parse(data.replace("```json", '').replace("```", ""))
 
-        // Replace each emoji with a newline followed by the emoji
-        let sectionContent = addCharacterAfterThirdFullStop(section.sectionContent, '<br/><br/>')
-        const block = await courseService.createBlock({
-          content: sectionContent,
-          title: section.sectionName,
-        }, payload.lessonId, payload.courseId)
-        await dbRef
-          .update({
-            blockId: block.id
-          })
-        let prompt2 = generateFollowupQuestionPrompt(section.sectionContent)
-        let prompt3 = generateQuizPrompt(section.sectionContent)
-        await Promise.all([
-          await makeAICall(prompt2, 0, async (data: string) => {
-            if (data) {
-              try {
-                followupQuiz = JSON.parse(data.replace("```json", '').replace("```", "")).questions
-                if (followupQuiz && followupQuiz[0]) {
-                  let answer = followupQuiz[0].correct_answer
-                  let index = followupQuiz[0].options.findIndex((e) => e.toLowerCase() === answer.toLowerCase())
-                  const q = await courseService.addBlockQuiz({
-                    question: followupQuiz[0].question,
-                    choices: followupQuiz[0].options.map(e => e.toLowerCase()),
-                    correctAnswerContext: `${followupQuiz[0].explanation}`,
-                    correctAnswerIndex: isNaN(Number(index)) ? 0 : Number(index),
-                    revisitChunk: "",
-                    wrongAnswerContext: `${followupQuiz[0].explanation}`
-                  }, payload.lessonId, payload.courseId, block.id)
-                  flqId = q.id
+          // Replace each emoji with a newline followed by the emoji
+          let sectionContent = addCharacterAfterThirdFullStop(section.sectionContent, '<br/><br/>')
+          const block = await courseService.createBlock({
+            content: sectionContent,
+            title: section.sectionName,
+          }, payload.lessonId, payload.courseId)
+          await dbRef
+            .update({
+              blockId: block.id
+            })
+          let prompt2 = generateFollowupQuestionPrompt(section.sectionContent)
+          let prompt3 = generateQuizPrompt(section.sectionContent)
+          await Promise.all([
+            makeAICall(prompt2, 0, async (data: string) => {
+              if (data) {
+                try {
+                  followupQuiz = JSON.parse(data.replace("```json", '').replace("```", "")).questions
+                  if (followupQuiz && followupQuiz[0]) {
+                    let answer = followupQuiz[0].correct_answer
+                    let index = followupQuiz[0].options.findIndex((e) => e.toLowerCase() === answer.toLowerCase())
+                    const q = await courseService.addBlockQuiz({
+                      question: followupQuiz[0].question,
+                      choices: followupQuiz[0].options.map(e => e.toLowerCase()),
+                      correctAnswerContext: `${followupQuiz[0].explanation}`,
+                      correctAnswerIndex: isNaN(Number(index)) ? 0 : Number(index),
+                      revisitChunk: "",
+                      wrongAnswerContext: `${followupQuiz[0].explanation}`
+                    }, payload.lessonId, payload.courseId, block.id)
+                    flqId = q.id
+                  }
+                } catch (error) {
+                  console.log(error)
                 }
-              } catch (error) {
-                console.log(error)
               }
-            }
-          }),
-          await makeAICall(prompt3, 0, async (data: string) => {
-            if (data) {
-              try {
-                quiz = JSON.parse(data.replace("```json", '').replace("```", "")).questions
+            }),
+            makeAICall(prompt3, 0, async (data: string) => {
+              if (data) {
+                try {
+                  quiz = JSON.parse(data.replace("```json", '').replace("```", "")).questions
 
-                if (quiz && quiz[0]) {
-                  const dp = await courseService.addLessonQuiz({
-                    question: quiz[0].question,
-                    choices: quiz[0].options,
-                    correctAnswerContext: `${quiz[0].explanation}`,
-                    correctAnswerIndex: isNaN(Number(quiz[0].correct_answer)) ? 0 : Number(quiz[0].correct_answer),
-                    hint: quiz[0].hint,
-                    block: block.id,
-                    revisitChunk: quiz[0].explanation,
-                    wrongAnswerContext: `${quiz[0].explanation}`
-                  }, payload.lessonId, payload.courseId)
-                  qId = dp.id
+                  if (quiz && quiz[0]) {
+                    const dp = await courseService.addLessonQuiz({
+                      question: quiz[0].question,
+                      choices: quiz[0].options,
+                      correctAnswerContext: `${quiz[0].explanation}`,
+                      correctAnswerIndex: isNaN(Number(quiz[0].correct_answer)) ? 0 : Number(quiz[0].correct_answer),
+                      hint: quiz[0].hint,
+                      block: block.id,
+                      revisitChunk: quiz[0].explanation,
+                      wrongAnswerContext: `${quiz[0].explanation}`
+                    }, payload.lessonId, payload.courseId)
+                    qId = dp.id
+                  }
+                } catch (error) {
+                  console.log(error)
                 }
-              } catch (error) {
-                console.log(error)
               }
-            }
-          })
-        ])
+            })
+          ])
 
-        let result: any = {
-          section: { ...section, sectionContent, id: block.id }
+          let result: any = {
+            section: { ...section, sectionContent, id: block.id }
+          }
+          if (followupQuiz[0]) {
+            result.followupQuiz = { ...followupQuiz[0], id: flqId }
+          }
+          if (quiz[0]) {
+            result.quiz = { ...quiz[0], id: qId }
+          }
+          await dbRef
+            .update({
+              status: "FINISHED",
+              result,
+              end: new Date().toISOString()
+            })
+        } catch (error) {
+          await dbRef
+            .update({
+              status: "FAILED",
+              error: (error as any).message,
+              end: new Date().toISOString()
+            })
         }
-        if (followupQuiz[0]) {
-          result.followupQuiz = { ...followupQuiz[0], id: flqId }
-        }
-        if (quiz[0]) {
-          result.quiz = { ...quiz[0], id: qId }
-        }
-        await dbRef
-          .update({
-            status: "FINISHED",
-            result,
-            end: new Date().toISOString()
-          })
-      } catch (error) {
-        console.log(error)
       }
-    }
-  })
+    })
+
+    await db.ref('ai-jobs').child(payload.jobId)
+      .update({
+        status: "FINISHED",
+        end: new Date().toISOString()
+      })
+  } catch (error) {
+    await db.ref('ai-jobs').child(payload.jobId)
+      .update({
+        status: "FAILED",
+        error: (error as any).message,
+        end: new Date().toISOString()
+      })
+  }
 }
 
 
