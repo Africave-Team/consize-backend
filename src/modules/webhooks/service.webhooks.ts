@@ -1210,7 +1210,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             break
           case CourseFlowMessageType.ENDLESSON:
             if(!moment(updatedData.lastActivity).isSame(moment(), 'day')){
-              updatedData = {...updatedData, dailyLessonsCount: 0}
+              updatedData = {...updatedData, dailyLessonsCount: 1}
             }else{
               updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
             }
