@@ -1219,7 +1219,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
             }            
             
-            let message = item.content + `\nWell done on completing the last lesson! :raised_hands::skin-tone-6: \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${ updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nWe're rooting for you!`.toString()
+            let message = item.content + `\nWell done on completing the last lesson! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${ updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nWe're rooting for you!`.toString()
 
             if(updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount > 0){
               if (updatedData.minLessonsPerDay - updatedData.dailyLessonsCount > 0) {
@@ -1254,7 +1254,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               }) 
 
               }else{
-                message = item.content + `\nCongratulations! :tada: You've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${ updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today`.toString()
+                message = item.content + `\nCongratulations! 🎉 You've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${ updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today`.toString()
 
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                   to: phoneNumber,
@@ -1295,7 +1295,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 })
               }
             } else {
-              message = item.content + `\nGreat job! :partying_face: You've reached the maximum lesson target for today.\nGo over what you've learnt today and come back tomorrow for more :wink:`.toString()
+              message = item.content + `\nGreat job! 🥳 You've reached the maximum lesson target for today.\nGo over what you've learnt today and come back tomorrow for more 😉`.toString()
               const stringToRemove = ["\n\n➡️ Tap 'Continue Now' when you're ready to start.\n"]
                 stringToRemove.forEach(substring => {
                   message = message.replace(new RegExp(substring, 'g'), '');
