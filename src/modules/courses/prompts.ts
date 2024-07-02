@@ -31,8 +31,8 @@ export const generateOutlinePrompt = (title: string, count: number = 5): string 
 
 export const generateOutlinePromptDocument = (title: string): string => {
   // let random = Number((Math.random() * (7 - 4) + 4).toFixed(0))
-  let prompt = `Based on your file attached to this assistant, I want you to do the following. Ignore adding citations and annotations.
-  I want you to create a course on ${title}. Based on the documents provided, create a minimum of 5 lessons (increase this number if the size of the document requires it), I want you to provide the lesson names and a course description for the course in JSON format. Provide the course description in 3 - 5 sentences. Also provide a list of 5 sections for each lesson, and the overview of the section in 2 - 4 sentences
+  let prompt = `Based on the file attached to this assistant, I want you to do the following. Ignore adding citations and annotations.
+  I want you to create a course on ${title}. Based on the documents provided, create 5 lessons, I want you to provide the lesson names and a course description for the course in JSON format. Provide the course description in 3 - 5 sentences. Also provide a list of 5 sections for each lesson, and an overview of the section in 2 - 4 sentences
 
   Use the following format - 
   
