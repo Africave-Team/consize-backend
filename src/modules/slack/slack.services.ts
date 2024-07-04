@@ -339,6 +339,7 @@ export const startCourseSlack = async (channel: string, courseId: string, studen
           inactivityPeriod: settings?.inactivityPeriod,
           lastActivity: new Date().toISOString(),
           lastLessonCompleted: new Date().toISOString(),
+          finishedLastLessonAt: null,
           title: course.title,
           description: convertToWhatsAppString(he.decode(course.description)),
           active: true,
@@ -934,7 +935,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
         console.log(updatedData)
         const result: any = await redisClient.set(key, JSON.stringify({ ...updatedData }))
         console.log(result)
-        delay(10000)
+        await delay(12000)
         const storedData = await redisClient.get(key)
         if (storedData) {
           console.log('Stored Data:', JSON.parse(storedData))
