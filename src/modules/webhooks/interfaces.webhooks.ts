@@ -110,6 +110,7 @@ export interface CourseEnrollment {
   quizAttempts: number
   lastActivity?: string
   lastLessonCompleted?: string
+  finishedLastLessonAt?: Date | null
   inactivityPeriod?: Period | undefined
   slackResponseUrl?: string
   slackToken?: string
