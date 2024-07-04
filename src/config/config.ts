@@ -4,6 +4,9 @@ import 'dotenv/config'
 const envVarsSchema = Joi.object()
   .keys({
     ENV: Joi.string().required(),
+    FACEBOOK_APP_ID: Joi.string().required(),
+    FACEBOOK_APP_SECRET: Joi.string().required(),
+    FACEBOOK_REDIRECT_URI: Joi.string().required(),
     OPENAI_API_KEY: Joi.string().required(),
     NODE_ENV: Joi.string().valid('production', 'development', 'test').required(),
     REDIS_HOST: Joi.string().required().description('REDIS Host url'),
@@ -100,6 +103,11 @@ const config = {
     id: envVars.SLACK_CLIENT_ID,
     secret: envVars.SLACK_APP_SECRET,
     redirectUrl: envVars.SLACK_REDIRECT_URI
+  },
+  facebook: {
+    id: envVars.FACEBOOK_APP_ID,
+    secret: envVars.FACEBOOK_APP_SECRET,
+    redirectUrl: envVars.FACEBOOK_REDIRECT_URI
   }
 }
 

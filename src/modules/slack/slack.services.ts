@@ -849,6 +849,9 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                 ]
               }
             })
+            console.log(new Date().toISOString())
+            updatedData = { ...updatedData, finishedLastLessonAt: new Date() }
+            console.log(updatedData)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.QUIZ:
@@ -927,7 +930,8 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
           default:
             break
         }
-        redisClient.set(key, JSON.stringify({ ...updatedData }))
+        console.log(updatedData)
+        await redisClient.set(key, JSON.stringify({ ...updatedData }))
       }
     }
   }

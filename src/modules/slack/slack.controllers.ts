@@ -45,7 +45,6 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
           //     }
           //   }
           // }
-          console.log(btnId)
           switch (btnId) {
             case START:
             case RESUME_COURSE:

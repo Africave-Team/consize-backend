@@ -327,6 +327,19 @@ export const generateCourseOutline = catchAsync(async (req: Request, res: Respon
 })
 
 
+
+export const createCourseFile = catchAsync(async (req: Request, res: Response) => {
+  const createdCourse = await courseService.generateCourseOutlineFile({ ...req.body, teamId: req.user.team })
+  res.status(httpStatus.OK).send({ data: createdCourse, message: "Your course has been created successfully" })
+})
+
+
+export const generateCourseOutlineFile = catchAsync(async (req: Request, res: Response) => {
+  const data = await courseService.generateCourseOutlineFile({ ...req.body, teamId: req.user.team })
+  res.status(200).send({ message: "Job has been queued", data })
+})
+
+
 export const deleteCourse = catchAsync(async (req: Request, res: Response) => {
   const { course } = req.params
   if (course) {
