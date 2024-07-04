@@ -850,13 +850,13 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
               }
             })
             console.log(new Date().toISOString())
-            updatedData = { ...updatedData, finishedLastLessonAt: new Date() }
+            updatedData = { ...updatedData, finishedLastLessonAt: new Date().toDateString() }
             console.log(updatedData)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.QUIZ:
             await sendQuiz(item, url, messageId)
-            updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date() }
+            updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date().toDateString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.INTRO:
@@ -901,7 +901,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
             if (data.slackToken) {
               await sendBlockContent(item, url, messageId, data.slackToken, channel)
             }
-            updatedData = { ...updatedData, blockStartTime: new Date() }
+            updatedData = { ...updatedData, blockStartTime: new Date().toDateString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
 
