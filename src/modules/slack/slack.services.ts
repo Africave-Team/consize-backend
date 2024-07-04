@@ -546,6 +546,7 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
     })
 
     if (videoPresent) {
+      console.log(blocks)
       agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
         channel,
         accessToken: token,
