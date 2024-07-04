@@ -47,6 +47,8 @@ export interface BuildSectionFromFilePayload {
   lessonName: string
   title: string
   courseId: string
+  last: boolean
+  storeId: string
 }
 
 export interface SectionResultAI {

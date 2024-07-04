@@ -526,6 +526,7 @@ export const buildSectionFromFile = async function (payload: BuildSectionFromFil
         status: "FINISHED",
         end: new Date().toISOString()
       })
+    // openai.beta.vectorStores.del(payload.storeId)
   } catch (error) {
     await db.ref('ai-jobs').child(payload.jobId)
       .update({
@@ -661,6 +662,8 @@ export const initiateDocumentQueryAssistant = async function ({ jobId, prompt, t
           const lessonDetail = await courseService.createLesson({
             title: lesson.lesson_name
           }, course.id)
+          let total = Object.values(lesson.sections).length
+          let curr = 1
           for (let section of Object.values(lesson.sections)) {
             await progressRef.child(lesson.lesson_name.replace(/\./g, "")).child(section[0].replace(/\./g, "")).set({ status: "RUNNING", courseId: course.id, lessonId: lessonDetail.id })
             agenda.now<BuildSectionFromFilePayload>(GENERATE_SECTION_FILE, {
@@ -671,13 +674,17 @@ export const initiateDocumentQueryAssistant = async function ({ jobId, prompt, t
               lessonName: lesson.lesson_name,
               jobId,
               title,
-              courseId: course.id
+              courseId: course.id,
+              last: curr === total,
+              storeId: vectorStore.id
             })
+
+            curr++
           }
         }
       }
 
-      await Promise.all([...files.map(e => openai.files.del(e.id), openai.beta.vectorStores.del(vectorStore.id))])
+      await Promise.all([...files.map(e => openai.files.del(e.id))])
     })
   } catch (error) {
     console.log(error)
