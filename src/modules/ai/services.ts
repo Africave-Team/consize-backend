@@ -579,75 +579,106 @@ export const initiateDocumentQueryAssistant = async function ({ jobId, prompt, t
     }), openai.beta.assistants.update(assistant.id, {
       tool_resources: { file_search: { vector_store_ids: [vectorStore.id] } },
     })])
-    const thread = await openai.beta.threads.create({
-      messages: [
-        {
-          role: "user",
-          content: prompt
-        },
-      ],
-    })
 
-    const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
-      assistant_id: assistant.id,
-    })
-
-    const messages = await openai.beta.threads.messages.list(thread.id, {
-      run_id: run.id,
-    })
-
-    const message = messages.data.pop()!
-
-
-    if (message.content && message.content[0] && message.content[0].type === "text") {
-      const { text } = message.content[0]
-      const lessons: Curriculum = JSON.parse(text.value)
-
-      const course = await courseService.createCourse({
-        title,
-        headerMedia: {
-          mediaType: MediaType.IMAGE,
-          url: "https://picsum.photos/200/300.jpg",
-          awsFileKey: ""
-        },
-        source: Sources.AI,
-        bundle: false,
-        private: false,
-        free: true,
-        description: lessons.description
-      }, teamId)
-
-      await dbRef
-        .update({
-          status: "RUNNING",
-          stage: "BUILDER",
-          courseId: course.id,
-          lessonCount: Object.values(lessons).length
+    const makeAICall = async function (prompt: string, retries: number, callback: (data: string) => Promise<void>) {
+      try {
+        const thread = await openai.beta.threads.create({
+          messages: [
+            {
+              role: "user",
+              content: prompt
+            },
+          ],
         })
 
-      const progressRef = dbRef.child("progress")
-      for (let lesson of Object.values(lessons.lessons)) {
-        // create the lesson
-        const lessonDetail = await courseService.createLesson({
-          title: lesson.lesson_name
-        }, course.id)
-        for (let section of Object.values(lesson.sections)) {
-          await progressRef.child(lesson.lesson_name.replace(/\./g, "")).child(section[0].replace(/\./g, "")).set({ status: "RUNNING", courseId: course.id, lessonId: lessonDetail.id })
-          agenda.now<BuildSectionFromFilePayload>(GENERATE_SECTION_FILE, {
-            assistantId: assistant.id,
-            seedContent: section[1],
-            seedTitle: section[0],
-            lessonId: lessonDetail.id,
-            lessonName: lesson.lesson_name,
-            jobId,
-            title,
-            courseId: course.id
-          })
+        const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
+          assistant_id: assistant.id,
+        })
+
+        const messages = await openai.beta.threads.messages.list(thread.id, {
+          run_id: run.id,
+        })
+
+        const message = messages.data.pop()!
+
+
+        if (message.content && message.content[0] && message.content[0].type === "text") {
+          const { text } = message.content[0]
+          JSON.parse(text.value)
+          callback(text.value)
+        }
+      } catch (error) {
+        if (retries < 3) {
+          await dbRef
+            .update({
+              status: "RETRYING",
+              error: (error as any).message
+            })
+          makeAICall(prompt, retries + 1, callback)
+        } else {
+          await dbRef
+            .child(jobId)
+            .update({
+              status: "FAILED",
+              error: (error as any).message,
+              end: new Date().toISOString()
+            })
         }
       }
     }
 
-    await Promise.all([...files.map(e => openai.files.del(e.id), openai.beta.vectorStores.del(vectorStore.id))])
+
+    makeAICall(prompt, 0, async (resultText: string) => {
+      const message = resultText
+      if (message) {
+        const lessons: Curriculum = JSON.parse(message)
+
+        const course = await courseService.createCourse({
+          title,
+          headerMedia: {
+            mediaType: MediaType.IMAGE,
+            url: "https://picsum.photos/200/300.jpg",
+            awsFileKey: ""
+          },
+          source: Sources.AI,
+          bundle: false,
+          private: false,
+          free: true,
+          description: lessons.description
+        }, teamId)
+
+        await dbRef
+          .update({
+            status: "RUNNING",
+            stage: "BUILDER",
+            courseId: course.id,
+            lessonCount: Object.values(lessons.lessons).length
+          })
+
+        const progressRef = dbRef.child("progress")
+        for (let lesson of Object.values(lessons.lessons)) {
+          // create the lesson
+          const lessonDetail = await courseService.createLesson({
+            title: lesson.lesson_name
+          }, course.id)
+          for (let section of Object.values(lesson.sections)) {
+            await progressRef.child(lesson.lesson_name.replace(/\./g, "")).child(section[0].replace(/\./g, "")).set({ status: "RUNNING", courseId: course.id, lessonId: lessonDetail.id })
+            agenda.now<BuildSectionFromFilePayload>(GENERATE_SECTION_FILE, {
+              assistantId: assistant.id,
+              seedContent: section[1],
+              seedTitle: section[0],
+              lessonId: lessonDetail.id,
+              lessonName: lesson.lesson_name,
+              jobId,
+              title,
+              courseId: course.id
+            })
+          }
+        }
+      }
+
+      await Promise.all([...files.map(e => openai.files.del(e.id), openai.beta.vectorStores.del(vectorStore.id))])
+    })
   } catch (error) {
     console.log(error)
   }
