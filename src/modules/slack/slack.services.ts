@@ -501,7 +501,6 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
     let blocks: SlackMessageBlock[] = []
     let content = data.content
     if (data.mediaUrl) {
-      console.log(data.mediaUrlEmbed)
       if (data.mediaType === "image") {
         blocks.push({
           type: MessageBlockType.IMAGE,
@@ -850,6 +849,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                 ]
               }
             })
+            updatedData = { ...updatedData, lastLessonCompleted: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.QUIZ:
