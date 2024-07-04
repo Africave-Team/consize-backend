@@ -931,7 +931,13 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
             break
         }
         console.log(updatedData)
-        await redisClient.set(key, JSON.stringify({ ...updatedData }))
+        const result: any = await redisClient.set(key, JSON.stringify({ ...updatedData }))
+        console.log(result)
+        const storedData = await redisClient.get(key)
+        if (storedData) {
+          console.log('Stored Data:', JSON.parse(storedData))
+          console.log('Stored Data:', updatedData)
+        }
       }
     }
   }

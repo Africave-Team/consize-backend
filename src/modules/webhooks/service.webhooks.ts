@@ -1461,7 +1461,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             break
           case CourseFlowMessageType.QUIZ:
             await sendQuiz(item, phoneNumber, messageId)
-            updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date() }
+            updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date().toDateString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.INTRO:
@@ -1503,7 +1503,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           case CourseFlowMessageType.BLOCK:
           case CourseFlowMessageType.BLOCKWITHQUIZ:
             await sendBlockContent(item, phoneNumber, messageId)
-            updatedData = { ...updatedData, blockStartTime: new Date() }
+            updatedData = { ...updatedData, blockStartTime: new Date().toDateString() }
             console.log(updatedData)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
