@@ -635,6 +635,7 @@ export const sendQuiz = async (item: CourseFlowItem, url: string, messageId: str
 
 export const handleContinueSlack = async (nextIndex: number, courseKey: string, channel: string, url: string, messageId: string, data: CourseEnrollment): Promise<void> => {
   const flow = await redisClient.get(courseKey)
+  console.log(data, 'incoming')
   if (flow) {
     const flowData: CourseFlowItem[] = JSON.parse(flow)
     const currentItem = flowData[nextIndex - 1]
