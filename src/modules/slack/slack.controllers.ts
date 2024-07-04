@@ -54,6 +54,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 await handleContinueSlack(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, channel.id, response_url, msgId, enrollment)
                 scheduleInactivityMessage(enrollment, undefined, channel.id)
                 // jwihrtuiojwer
+                // exhnage
               }
               break
             case QUIZ_NO:
