@@ -850,7 +850,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
               }
             })
             console.log(new Date().toISOString())
-            updatedData = { ...updatedData, finishedLastLessonAt: new Date().toDateString() }
+            updatedData = { ...updatedData, finishedLastLessonAt: new Date().getTime() }
             console.log(updatedData)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
