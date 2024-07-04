@@ -1161,33 +1161,159 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             break
 
           case CourseFlowMessageType.ENDCOURSE:
-            if(!moment(updatedData.lastLessonCompleted).isSame(moment(), 'day')){
-              updatedData = {...updatedData, dailyLessonsCount: 1}
-            }else{
-              updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
-            } 
-            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              to: phoneNumber,
-              type: "text",
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              text: {
-                body: item.content.replace('{survey}', '')
+            if (data.bundle) {
+              if (!moment(updatedData.lastLessonCompleted).isSame(moment(), 'day')) {
+                updatedData = { ...updatedData, dailyLessonsCount: 1 };
+              } else {
+                updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 };
               }
-            })
-            await delay(5000)
-            let next = flowData[nextIndex + 1]
+
+              let message =
+                item.content.replace('{survey}', '') +
+                `\nWell done on completing the last lesson! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nWe're rooting for you!`.toString();
+
+              if (updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount > 0) {
+                if (updatedData.minLessonsPerDay - updatedData.dailyLessonsCount > 0) {
+                  const stringToRemove = [
+                    "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.",
+                    "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap",
+                    "'Set Resumption Time' to choose the time to continue tomorrow",
+                  ];
+                  stringToRemove.forEach((substring) => {
+                    message = message.replace(new RegExp(substring, 'g'), '');
+                  });
+
+                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                    to: phoneNumber,
+                    type: 'interactive',
+                    messaging_product: 'whatsapp',
+                    recipient_type: 'individual',
+                    interactive: {
+                      body: {
+                        text: message,
+                      },
+                      type: 'button',
+                      action: {
+                        buttons: [
+                          {
+                            type: 'reply',
+                            reply: {
+                              id: CONTINUE + `|${messageId}`,
+                              title: 'Continue Now',
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  });
+                } else {
+                  message =
+                    item.content.replace('{survey}', '') +
+                    `\nCongratulations! 🎉 You've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today`.toString();
+
+                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                    to: phoneNumber,
+                    type: 'interactive',
+                    messaging_product: 'whatsapp',
+                    recipient_type: 'individual',
+                    interactive: {
+                      body: {
+                        text: message,
+                      },
+                      type: 'button',
+                      action: {
+                        buttons: [
+                          {
+                            type: 'reply',
+                            reply: {
+                              id: CONTINUE + `|${messageId}`,
+                              title: 'Continue Now',
+                            },
+                          },
+                          {
+                            type: 'reply',
+                            reply: {
+                              id: TOMORROW + `|${messageId}`,
+                              title: 'Continue Tomorrow',
+                            },
+                          },
+                          {
+                            type: 'reply',
+                            reply: {
+                              id: SCHEDULE_RESUMPTION + `|${messageId}`,
+                              title: 'Set Resumption Time',
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  });
+                }
+              } else {
+                message =
+                  item.content.replace('{survey}', '') +
+                  `\nGreat job! 🥳 You've reached the maximum lesson target for today.\nGo over what you've learnt today and come back tomorrow for more 😉`.toString();
+                const stringToRemove = ["\n\n➡️ Tap 'Continue Now' when you're ready to start.\n"];
+                stringToRemove.forEach((substring) => {
+                  message = message.replace(new RegExp(substring, 'g'), '');
+                });
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: phoneNumber,
+                  type: 'interactive',
+                  messaging_product: 'whatsapp',
+                  recipient_type: 'individual',
+                  interactive: {
+                    body: {
+                      text: message,
+                    },
+                    type: 'button',
+                    action: {
+                      buttons: [
+                        {
+                          type: 'reply',
+                          reply: {
+                            id: TOMORROW + `|${messageId}`,
+                            title: 'Continue Tomorrow',
+                          },
+                        },
+                        {
+                          type: 'reply',
+                          reply: {
+                            id: SCHEDULE_RESUMPTION + `|${messageId}`,
+                            title: 'Set Resumption Time',
+                          },
+                        },
+                      ],
+                    },
+                  },
+                });
+              }
+              await redisClient.set(key, JSON.stringify({ ...updatedData }));
+            } else {
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: phoneNumber,
+                type: 'text',
+                messaging_product: 'whatsapp',
+                recipient_type: 'individual',
+                text: {
+                  body: item.content.replace('{survey}', ''),
+                },
+              });
+            }
+
+            await delay(5000);
+            let next = flowData[nextIndex + 1];
             if ((next?.surveyId && next.surveyQuestion) || data.bundle) {
-              updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
-              handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
+              updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 };
+              handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData);
             } else {
               // if no survey for this course, then send the certificate
               agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
-                ...updatedData
-              })
+                ...updatedData,
+              });
             }
 
-            break
+            break;
           case CourseFlowMessageType.END_OF_BUNDLE:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
