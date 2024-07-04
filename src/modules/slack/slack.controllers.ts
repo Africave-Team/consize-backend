@@ -176,7 +176,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
             case ACCEPT_INVITATION:
             case REJECT_INVITATION:
               if (student.rejected || student.verified) {
-                return
+                break
               }
               if (btnId === ACCEPT_INVITATION) {
                 student.verified = true

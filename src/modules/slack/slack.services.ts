@@ -851,7 +851,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
               }
             })
             console.log(new Date().toISOString())
-            updatedData = { ...updatedData, finishedLastLessonAt: new Date().getTime() }
+            updatedData.finishedLastLessonAt = new Date().getTime()
             console.log(updatedData)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
@@ -937,7 +937,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
         const storedData = await redisClient.get(key)
         if (storedData) {
           console.log('Stored Data:', JSON.parse(storedData))
-          console.log('Stored Data:', updatedData)
+          console.log('Prior Data:', updatedData)
         }
       }
     }
