@@ -350,6 +350,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
     }
   })
   const { payload: ld } = req.body
+  console.log(ld)
   if (ld) {
     const response: SlackResponse = JSON.parse(ld)
     agenda.now<SlackResponse>("process-slack-webhook", response)
