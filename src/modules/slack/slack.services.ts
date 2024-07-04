@@ -857,7 +857,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
             break
           case CourseFlowMessageType.QUIZ:
             await sendQuiz(item, url, messageId)
-            updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date().toDateString() }
+            updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.INTRO:
@@ -902,7 +902,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
             if (data.slackToken) {
               await sendBlockContent(item, url, messageId, data.slackToken, channel)
             }
-            updatedData = { ...updatedData, blockStartTime: new Date().toDateString() }
+            updatedData = { ...updatedData, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
 
@@ -934,6 +934,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
         console.log(updatedData)
         const result: any = await redisClient.set(key, JSON.stringify({ ...updatedData }))
         console.log(result)
+        delay(10000)
         const storedData = await redisClient.get(key)
         if (storedData) {
           console.log('Stored Data:', JSON.parse(storedData))
