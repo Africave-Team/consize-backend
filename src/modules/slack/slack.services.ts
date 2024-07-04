@@ -501,6 +501,7 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
     let blocks: SlackMessageBlock[] = []
     let content = data.content
     if (data.mediaUrl) {
+      console.log(data.mediaUrlEmbed)
       if (data.mediaType === "image") {
         blocks.push({
           type: MessageBlockType.IMAGE,
