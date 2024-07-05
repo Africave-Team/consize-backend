@@ -138,7 +138,6 @@ function splitStringIntoChunks (str: string, chunkSize = 700) {
 }
 
 export const generateCourseFlow = async function (courseId: string) {
-  console.log("Generating course flow")
   const flow: CourseFlowItem[] = []
   const courseKey = `${config.redisBaseKey}courses:${courseId}`
   // get the course with all its lessons
@@ -1169,7 +1168,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
               }
 
-              let message = `Congratulations! 🎉 on completing the last lesson in this course! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nTap continue now to get the next course in the Bundle.\nWe're rooting for you!`.toString();
+              let message = `Congratulations! 🎉 on completing the last lesson in this course! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nTap continue now to get the next course in the Bundle.\nWe're rooting for you!`.toString()
 
               if (updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount > 0) {
                 if (updatedData.minLessonsPerDay - updatedData.dailyLessonsCount > 0) {
@@ -1206,7 +1205,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                     },
                   })
                 } else {
-                  message =  `Congratulations! 🎉 on completing this course.\nYou've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today.`.toString();
+                  message = `Congratulations! 🎉 on completing this course.\nYou've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today.`.toString()
 
                   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                     to: phoneNumber,
@@ -1247,7 +1246,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                   })
                 }
               } else {
-                message =`\nGreat job! 🥳 on completing this course.\nYou've reached the maximum lesson target for today.\nGo over what you've learnt today and come back tomorrow to continue with the next course in the bundle 😉`.toString();
+                message = `\nGreat job! 🥳 on completing this course.\nYou've reached the maximum lesson target for today.\nGo over what you've learnt today and come back tomorrow to continue with the next course in the bundle 😉`.toString()
                 // const stringToRemove = ["\n\n➡️ Tap 'Continue Now' when you're ready to start.\n", "Congratulations on completing this course,\nThis is the last course in the Bundle\nYou will receive an end of bundle congratulatory message and certificate shortly"];
                 // stringToRemove.forEach((substring) => {
                 //   message = message.replace(new RegExp(substring, 'g'), '');
