@@ -67,6 +67,10 @@ enum PageType {
 
 
 export const createCourse = async (coursePayload: CreateCoursePayload, teamId: string): Promise<CourseInterface> => {
+  const team = await Teams.findById(teamId, 'name'); 
+  if (team && (/consize/i.test(team.name))) {
+      coursePayload.library = true 
+  }
   const course = new Course({
     ...coursePayload, owner: teamId, shortCode: randomstring.generate({
       length: 5,

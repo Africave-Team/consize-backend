@@ -7,7 +7,6 @@ import { CourseInterface } from './interfaces.courses'
 import { QueryResult } from '../paginate/paginate'
 // import { agenda } from '../scheduler'
 
-
 export const createCourseManually = catchAsync(async (req: Request, res: Response) => {
   const createdCourse = await courseService.createCourse(req.body, req.user.team)
   res.status(httpStatus.CREATED).send({ data: createdCourse, message: "Your course has been created successfully" })
