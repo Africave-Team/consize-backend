@@ -758,14 +758,9 @@ export const initiateDocumentQueryAssistant = async function ({ jobId, prompt, t
           courseId: course.id,
           lessonCount: Object.values(lessons).length
         })
-
-      const progressRef = dbRef.child("progress")
-      for (let lesson of Object.values(lessons)) {
-        for (let section of Object.values(lesson.sections)) {
-          await progressRef.child(lesson.lesson_name.replace(/\./g, "")).child(section[0].replace(/\./g, "")).set({ status: "RUNNING", courseId: course.id })
-        }
-      }
       let lists = Object.values(lessons)
+      const progressRef = dbRef.child("progress")
+
       for (let lesson of lists) {
         console.log("lesson starts", lesson.lesson_name)
         const lessonDetail = await courseService.createLesson({
@@ -775,6 +770,9 @@ export const initiateDocumentQueryAssistant = async function ({ jobId, prompt, t
         let total = sections.length
         let curr = 1
         if (total > 0) {
+          for (let section of sections) {
+            await progressRef.child(lesson.lesson_name.replace(/\./g, "")).child(section[0].replace(/\./g, "")).set({ status: "RUNNING", courseId: course.id })
+          }
           await buildSectionsFromFile({
             assistantId: assistant.id,
             sections: sections.map((val) => ({
