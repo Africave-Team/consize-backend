@@ -74,6 +74,10 @@ const CourseSchema = new Schema<CourseInterface, CourseInterfaceModel>(
             type: Boolean,
             default: false
         },
+        library: {
+            type: Boolean,
+            default: false
+        },
         survey: {
             type: String
         }
