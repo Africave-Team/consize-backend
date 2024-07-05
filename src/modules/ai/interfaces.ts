@@ -60,6 +60,7 @@ export interface BuildSectionsFromFilePayload {
     seedTitle: string,
     seedContent: string,
   }[]
+  lessonIndex: string
   lessonId: string,
   lessonName: string
   title: string

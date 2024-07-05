@@ -433,8 +433,9 @@ export const buildSectionsFromFile = async function (payload: BuildSectionsFromF
   try {
     await makeAICall(sectionPrompt, 0, payload.sections.map(({ seedTitle, seedContent }) => [seedTitle, seedContent]), async (sections: { [name: string]: SectionResultAI }) => {
       const lists = Object.values(sections)
+      let sectionIndex = 0
       for (let section of lists) {
-        const dbRef = db.ref('ai-jobs').child(payload.jobId).child("progress").child(payload.lessonName.replace(/\./g, "")).child(section.sectionName.replace(/\./g, ""))
+        const dbRef = db.ref('ai-jobs').child(payload.jobId).child("progress").child(payload.lessonIndex).child(payload.lessonName.replace(/\./g, "")).child(sectionIndex + '').child(section.sectionName.replace(/\./g, ""))
         let followupQuiz: QuizAI[] = []
         let quiz: QuizAI[] = []
         let flqId = "", qId = ""
@@ -489,6 +490,7 @@ export const buildSectionsFromFile = async function (payload: BuildSectionsFromF
               result,
               end: new Date().toISOString()
             })
+          sectionIndex++
         } catch (error) {
           console.log(error)
           await dbRef
@@ -775,12 +777,17 @@ export const initiateDocumentQueryAssistant = async function ({ jobId, prompt, t
         })
       let lists = Object.values(lessons)
       const progressRef = dbRef.child("progress")
+      let index = 0
       for (let lesson of lists) {
         let sections = Object.values(lesson.sections)
+        let sectionIndex = 0
         for (let section of sections) {
-          await progressRef.child(lesson.lesson_name.replace(/\./g, "")).child(section[0].replace(/\./g, "")).set({ status: "RUNNING", courseId: course.id })
+          await progressRef.child(index + '').child(lesson.lesson_name.replace(/\./g, "")).child(sectionIndex + '').child(section[0].replace(/\./g, "")).set({ status: "RUNNING", courseId: course.id })
+          sectionIndex++
         }
+        index++
       }
+      let lessonIndex = 0
       for (let lesson of lists) {
         console.log("lesson starts", lesson.lesson_name)
         const lessonDetail = await courseService.createLesson({
@@ -796,6 +803,7 @@ export const initiateDocumentQueryAssistant = async function ({ jobId, prompt, t
               seedTitle: val[0],
               seedContent: val[1]
             })),
+            lessonIndex: lessonIndex + '',
             lessonId: lessonDetail.id,
             lessonName: lesson.lesson_name,
             jobId,
@@ -806,6 +814,7 @@ export const initiateDocumentQueryAssistant = async function ({ jobId, prompt, t
           })
         }
         console.log("lesson done", lesson.lesson_name)
+        lessonIndex++
       }
       await dbRef
         .update({
