@@ -380,8 +380,8 @@ export const buildSectionsFromFile = async function (payload: BuildSectionsFromF
     const maxRetries = 5
     if (retries <= maxRetries) {
 
-      await Promise.all(sections.map(async ([title]) => {
-        const dbRef = db.ref('ai-jobs').child(payload.jobId).child("progress").child(payload.lessonName.replace(/\./g, "")).child(title.replace(/\./g, ""))
+      await Promise.all(sections.map(async ([title], index) => {
+        const dbRef = db.ref('ai-jobs').child(payload.jobId).child("progress").child(payload.lessonIndex).child(payload.lessonName.replace(/\./g, "")).child(index + '').child(title.replace(/\./g, ""))
         await dbRef.update({
           retryCount: retries + 1,
           status: "RETRYING",
@@ -391,8 +391,8 @@ export const buildSectionsFromFile = async function (payload: BuildSectionsFromF
       await delay(3000)
       await makeAICall(prompt, retries + 1, sections, callback)
     } else {
-      await Promise.all(sections.map(async ([title]) => {
-        const dbRef = db.ref('ai-jobs').child(payload.jobId).child("progress").child(payload.lessonName.replace(/\./g, "")).child(title.replace(/\./g, ""))
+      await Promise.all(sections.map(async ([title], index) => {
+        const dbRef = db.ref('ai-jobs').child(payload.jobId).child("progress").child(payload.lessonIndex).child(payload.lessonName.replace(/\./g, "")).child(index + '').child(title.replace(/\./g, ""))
         await dbRef.update({
           status: "FAILED",
           error: error.message,
@@ -818,7 +818,7 @@ export const initiateDocumentQueryAssistant = async function ({ jobId, prompt, t
       }
       await dbRef
         .update({
-          status: "RUNNING",
+          status: "FINISHED",
           stage: "BUILDER",
           courseId: course.id,
           lessonCount: Object.values(lessons).length

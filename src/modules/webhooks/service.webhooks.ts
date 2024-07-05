@@ -138,7 +138,6 @@ function splitStringIntoChunks (str: string, chunkSize = 700) {
 }
 
 export const generateCourseFlow = async function (courseId: string) {
-  console.log("Generating course flow")
   const flow: CourseFlowItem[] = []
   const courseKey = `${config.redisBaseKey}courses:${courseId}`
   // get the course with all its lessons

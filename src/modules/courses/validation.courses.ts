@@ -7,6 +7,7 @@ import { CreateQuizPayload } from './interfaces.quizzes'
 const createCourseRequest: Record<keyof CreateCoursePayload, any> = {
   free: Joi.boolean(),
   bundle: Joi.boolean(),
+  library: Joi.boolean(),
   private: Joi.boolean(),
   headerMedia: Joi.object<Media>().keys({
     awsFileKey: Joi.string().optional().allow(''),

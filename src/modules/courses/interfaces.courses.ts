@@ -47,6 +47,7 @@ interface Course {
     price?: number
     currentCohort?: string
     survey?: string
+    library?: boolean
 }
 
 export interface CreateCoursePayload {
@@ -62,6 +63,7 @@ export interface CreateCoursePayload {
     currentCohort?: string
     survey?: string
     courses?: string[]
+    library?: boolean
 }
 
 export interface CourseInterface extends Course, Document {
