@@ -1169,7 +1169,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               }
 
               let message =
-                // item.content.replace('{survey}', '') +
+                item.content.replace('{survey}', '') +
                 `\nWell done on completing the last lesson in this course! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nWe're rooting for you!`.toString();
 
               if (updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount > 0) {
