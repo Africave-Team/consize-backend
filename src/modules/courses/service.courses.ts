@@ -227,9 +227,12 @@ export const maxEnrollmentReached = async (settingsId: string, courseId: string,
 }
 
 
-export const fetchPublishedCourses = async ({ page, pageSize }: { page: number, pageSize: number }): Promise<QueryResult<CourseInterface>> => {
-  return Course.paginate({ status: CourseStatus.PUBLISHED }, { page, limit: pageSize, populate: 'lessons,courses' })
-
+export const fetchPublishedCourses = async ({ page, pageSize, library }: { page: number, pageSize: number, library: boolean }): Promise<QueryResult<CourseInterface>> => {
+  let q:any = { status: CourseStatus.PUBLISHED}
+  if (library) {
+    q['library'] = true
+  }
+  return Course.paginate(q, { page, limit: pageSize, populate: 'lessons,courses' })
 }
 
 export const searchTeamCourses = async ({ teamId, search, filter }: { teamId: string, search: string, filter?: PageType }): Promise<CourseInterface[]> => {
