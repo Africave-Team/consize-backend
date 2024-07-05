@@ -751,6 +751,21 @@ export const initiateDocumentQueryAssistant = async function ({ jobId, prompt, t
         description
       }, teamId)
 
+      const updateHeaderImage = async function () {
+        const team = await Teams.findById(teamId)
+        if (team) {
+          const headerMedia = await generateCourseHeaderImage(course, team)
+          await courseService.updateCourse({
+            headerMedia: {
+              url: headerMedia,
+              mediaType: MediaType.IMAGE
+            }
+          }, course.id, teamId)
+        }
+      }
+
+      updateHeaderImage()
+
       await dbRef
         .update({
           status: "RUNNING",
