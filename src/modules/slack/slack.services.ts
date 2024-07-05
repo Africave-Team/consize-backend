@@ -339,6 +339,7 @@ export const startCourseSlack = async (channel: string, courseId: string, studen
           inactivityPeriod: settings?.inactivityPeriod,
           lastActivity: new Date().toISOString(),
           lastLessonCompleted: new Date().toISOString(),
+          finishedLastLessonAt: null,
           title: course.title,
           description: convertToWhatsAppString(he.decode(course.description)),
           active: true,
@@ -545,6 +546,7 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
     })
 
     if (videoPresent) {
+      console.log(blocks, token, channel)
       agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
         channel,
         accessToken: token,
@@ -635,6 +637,7 @@ export const sendQuiz = async (item: CourseFlowItem, url: string, messageId: str
 
 export const handleContinueSlack = async (nextIndex: number, courseKey: string, channel: string, url: string, messageId: string, data: CourseEnrollment): Promise<void> => {
   const flow = await redisClient.get(courseKey)
+  console.log(data, 'incoming')
   if (flow) {
     const flowData: CourseFlowItem[] = JSON.parse(flow)
     const currentItem = flowData[nextIndex - 1]
@@ -849,11 +852,13 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                 ]
               }
             })
+            console.log(new Date().toISOString())
+            updatedData.finishedLastLessonAt = new Date().getTime()
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.QUIZ:
             await sendQuiz(item, url, messageId)
-            updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date() }
+            updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.INTRO:
@@ -898,7 +903,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
             if (data.slackToken) {
               await sendBlockContent(item, url, messageId, data.slackToken, channel)
             }
-            updatedData = { ...updatedData, blockStartTime: new Date() }
+            updatedData = { ...updatedData, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
 
@@ -927,7 +932,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
           default:
             break
         }
-        redisClient.set(key, JSON.stringify({ ...updatedData }))
+        await redisClient.set(key, JSON.stringify({ ...updatedData }))
       }
     }
   }
@@ -1242,7 +1247,7 @@ export const handleSurvey = async (answer: number, data: CourseEnrollment, surve
   }
 }
 
-export const sendResumptionOptions = async (url: string, key: string, data: CourseEnrollment): Promise<void> => {
+export const sendResumptionOptions = async (url: string, _: string, __: CourseEnrollment): Promise<void> => {
   try {
     let msgId = v4()
     agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
@@ -1294,16 +1299,16 @@ export const sendResumptionOptions = async (url: string, key: string, data: Cour
         ]
       }
     })
-    await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
+    // await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
 }
 
 
-export const sendResumptionMessageSlack = async (channelId: string, key: string, data: CourseEnrollment): Promise<void> => {
+export const sendResumptionMessageSlack = async (channelId: string, _: string, data: CourseEnrollment): Promise<void> => {
   try {
-    let msgId = v4()
+    // let msgId = v4()
     agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
       channel: channelId,
       accessToken: data.slackToken || "",
@@ -1334,7 +1339,7 @@ export const sendResumptionMessageSlack = async (channelId: string, key: string,
         ]
       }
     })
-    await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
+    // await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }

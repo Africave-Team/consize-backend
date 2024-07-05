@@ -47,12 +47,34 @@ export interface BuildSectionFromFilePayload {
   lessonName: string
   title: string
   courseId: string
+  last: boolean
+  storeId: string
+}
+
+
+
+export interface BuildSectionsFromFilePayload {
+  jobId: string
+  assistantId: string
+  sections: {
+    seedTitle: string,
+    seedContent: string,
+  }[]
+  lessonIndex: string
+  lessonId: string,
+  lessonName: string
+  title: string
+  courseId: string
+  last: boolean
+  storeId: string
 }
 
 export interface SectionResultAI {
   id: string
   sectionName: string
   sectionContent: string
+  followupQuiz: QuizAI
+  sectionQuiz: QuizAI
 }
 
 export interface QuizAI {

@@ -483,6 +483,7 @@ export async function downloadFileToDir (url: string, dir: string) {
   const options = {
     destination: dir + (url.replace('https://storage.googleapis.com/kippa-cdn-public/', '').split('/')[1]),
   }
+  console.log(options)
   const storage = new Storage({
     projectId: serviceAccount.project_id,
     credentials: {
