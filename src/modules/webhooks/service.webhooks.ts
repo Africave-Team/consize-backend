@@ -7,7 +7,7 @@ import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import Courses from '../courses/model.courses'
-import { Team } from '../teams'
+import { Team, teamService } from '../teams'
 import { CourseInterface, CourseStatus, MediaType } from '../courses/interfaces.courses'
 import he from "he"
 import db from "../rtdb"
