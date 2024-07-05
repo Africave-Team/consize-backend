@@ -138,6 +138,7 @@ function splitStringIntoChunks (str: string, chunkSize = 700) {
 }
 
 export const generateCourseFlow = async function (courseId: string) {
+  console.log("Generating course flow")
   const flow: CourseFlowItem[] = []
   const courseKey = `${config.redisBaseKey}courses:${courseId}`
   // get the course with all its lessons
@@ -190,7 +191,7 @@ export const generateCourseFlow = async function (courseId: string) {
                 if (blockData.bodyMedia && blockData.bodyMedia.url && blockData.bodyMedia.url.length > 10) {
                   flo.mediaType = blockData.bodyMedia.mediaType
                   flo.mediaUrl = blockData.bodyMedia.url
-                  if (blockData.bodyMedia.mediaType === MediaType.VIDEO && blockData.bodyMedia.embedUrl) {
+                  if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
                     flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
                     flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
                   }
@@ -228,10 +229,10 @@ export const generateCourseFlow = async function (courseId: string) {
                 block: blockData,
                 lesson: lessonData
               }
-              if (blockData.bodyMedia && blockData.bodyMedia.url && blockData.bodyMedia.url.length > 10) {
+              if (blockData.bodyMedia && blockData.bodyMedia.url) {
                 flo.mediaType = blockData.bodyMedia.mediaType
                 flo.mediaUrl = blockData.bodyMedia.url
-                if (blockData.bodyMedia.mediaType === MediaType.VIDEO && blockData.bodyMedia.embedUrl) {
+                if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
                   flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
                   flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
                 }
@@ -714,7 +715,7 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
     if (redisClient.isReady) {
       const courseKey = `${config.redisBaseKey}courses:${courseId}`
       const courseFlow = await redisClient.get(courseKey)
-      if (courseFlow ) {
+      if (courseFlow) {
         const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
         const redisData: CourseEnrollment = {
           team: course.owner,
@@ -800,8 +801,8 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
       flows = flows.filter(e => !e.surveyId)
       flows = flows.filter(e => e.type !== CourseFlowMessageType.WELCOME)
 
-            // Find the index of the last 'end-of-course' item
-      const lastEndOfCourseIndex = flows.map(item => item.type).lastIndexOf(CourseFlowMessageType.ENDCOURSE);
+      // Find the index of the last 'end-of-course' item
+      const lastEndOfCourseIndex = flows.map(item => item.type).lastIndexOf(CourseFlowMessageType.ENDCOURSE)
 
       const updatedFlows = flows.map((item, index) => {
         if (item.type === CourseFlowMessageType.ENDCOURSE) {
@@ -823,8 +824,8 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
             }
           }
         }
-        return item;
-      });
+        return item
+      })
 
       totalBlocks = updatedFlows.length
       redisClient.set(`${config.redisBaseKey}courses:${courseId}`, JSON.stringify(updatedFlows))
@@ -1163,9 +1164,9 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           case CourseFlowMessageType.ENDCOURSE:
             if (data.bundle) {
               if (!moment(updatedData.lastLessonCompleted).isSame(moment(), 'day')) {
-                updatedData = { ...updatedData, dailyLessonsCount: 1 };
+                updatedData = { ...updatedData, dailyLessonsCount: 1 }
               } else {
-                updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 };
+                updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
               }
 
               let message = `Congratulations! 🎉 on completing the last lesson in this course! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nTap continue now to get the next course in the Bundle.\nWe're rooting for you!`.toString();
@@ -1176,10 +1177,10 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                     "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.",
                     "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap",
                     "'Set Resumption Time' to choose the time to continue tomorrow",
-                  ];
+                  ]
                   stringToRemove.forEach((substring) => {
-                    message = message.replace(new RegExp(substring, 'g'), '');
-                  });
+                    message = message.replace(new RegExp(substring, 'g'), '')
+                  })
 
                   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                     to: phoneNumber,
@@ -1203,7 +1204,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                         ],
                       },
                     },
-                  });
+                  })
                 } else {
                   message =  `Congratulations! 🎉 on completing this course.\nYou've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today.`.toString();
 
@@ -1243,7 +1244,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                         ],
                       },
                     },
-                  });
+                  })
                 }
               } else {
                 message =`\nGreat job! 🥳 on completing this course.\nYou've reached the maximum lesson target for today.\nGo over what you've learnt today and come back tomorrow to continue with the next course in the bundle 😉`.toString();
@@ -1280,9 +1281,9 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                       ],
                     },
                   },
-                });
+                })
               }
-              await redisClient.set(key, JSON.stringify({ ...updatedData }));
+              await redisClient.set(key, JSON.stringify({ ...updatedData }))
             } else {
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: phoneNumber,
@@ -1292,23 +1293,23 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 text: {
                   body: item.content.replace('{survey}', ''),
                 },
-              });
-              await delay(5000);
-              let next = flowData[nextIndex + 1];
+              })
+              await delay(5000)
+              let next = flowData[nextIndex + 1]
               if ((next?.surveyId && next.surveyQuestion) || data.bundle) {
-                updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 };
-                handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData);
+                updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
+                handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
               } else {
                 // if no survey for this course, then send the certificate
                 agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
                   ...updatedData,
-                });
+                })
               }
 
             }
 
 
-            break;
+            break
           case CourseFlowMessageType.END_OF_BUNDLE:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
@@ -1320,7 +1321,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               }
             })
 
-             await delay(5000)
+            await delay(5000)
             let nextFlow = flowData[nextIndex + 1]
             if (nextFlow?.surveyId && nextFlow.surveyQuestion) {
               updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
@@ -1334,48 +1335,48 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
             break
           case CourseFlowMessageType.ENDLESSON:
-            if(!moment(updatedData.lastLessonCompleted).isSame(moment(), 'day')){
-              updatedData = {...updatedData, dailyLessonsCount: 1}
-            }else{
+            if (!moment(updatedData.lastLessonCompleted).isSame(moment(), 'day')) {
+              updatedData = { ...updatedData, dailyLessonsCount: 1 }
+            } else {
               updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
-            }            
-            
-            let message = item.content + `\nWell done on completing the last lesson! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${ updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nWe're rooting for you!`.toString()
+            }
 
-            if(updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount > 0){
+            let message = item.content + `\nWell done on completing the last lesson! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nWe're rooting for you!`.toString()
+
+            if (updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount > 0) {
               if (updatedData.minLessonsPerDay - updatedData.dailyLessonsCount > 0) {
-                const stringToRemove = ["\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.","\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
+                const stringToRemove = ["\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.", "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
                 stringToRemove.forEach(substring => {
-                  message = message.replace(new RegExp(substring, 'g'), '');
-                });
+                  message = message.replace(new RegExp(substring, 'g'), '')
+                })
 
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                to: phoneNumber,
-                type: "interactive",
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                interactive: {
-                  body: {
-                    text: message 
-                  },
-                  type: "button",
-                  action: {
-                    buttons: [
-                      {
-                        type: "reply",
-                        reply: {
-                          id: CONTINUE + `|${messageId}`,
-                          title: "Continue Now"
-                        }
-                      },
-                                          
-                    ]
-                  }
-                }
-              }) 
+                  to: phoneNumber,
+                  type: "interactive",
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  interactive: {
+                    body: {
+                      text: message
+                    },
+                    type: "button",
+                    action: {
+                      buttons: [
+                        {
+                          type: "reply",
+                          reply: {
+                            id: CONTINUE + `|${messageId}`,
+                            title: "Continue Now"
+                          }
+                        },
 
-              }else{
-                message = item.content + `\nCongratulations! 🎉 You've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${ updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today`.toString()
+                      ]
+                    }
+                  }
+                })
+
+              } else {
+                message = item.content + `\nCongratulations! 🎉 You've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today`.toString()
 
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                   to: phoneNumber,
@@ -1418,9 +1419,9 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             } else {
               message = item.content + `\nGreat job! 🥳 You've reached the maximum lesson target for today.\nGo over what you've learnt today and come back tomorrow for more 😉`.toString()
               const stringToRemove = ["\n\n➡️ Tap 'Continue Now' when you're ready to start.\n"]
-                stringToRemove.forEach(substring => {
-                  message = message.replace(new RegExp(substring, 'g'), '');
-                });
+              stringToRemove.forEach(substring => {
+                message = message.replace(new RegExp(substring, 'g'), '')
+              })
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: phoneNumber,
                 type: "interactive",
@@ -1452,7 +1453,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 }
               })
             }
-             await redisClient.set(key, JSON.stringify({ ...updatedData}))
+            await redisClient.set(key, JSON.stringify({ ...updatedData }))
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.QUIZ:
@@ -1530,7 +1531,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           default:
             break
         }
-        
+
         await redisClient.set(key, JSON.stringify({ ...updatedData }))
       }
     } else {
