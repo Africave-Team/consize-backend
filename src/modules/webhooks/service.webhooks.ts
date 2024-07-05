@@ -1970,4 +1970,27 @@ export const sendScheduleAcknowledgement = async (phoneNumber: string, time: str
   }
 }
 
+export const exchangeFacebookToken = async function (code: string, team: string) {
+  try {
+    console.log({
+      'client_id': config.facebook.id,
+      'client_secret': config.facebook.secret,
+      'code': code,
+      'redirect_uri': config.facebook.redirectUrl
+    })
+    const result: AxiosResponse = await axios.get(`https://graph.facebook.com/v12.0/oauth/access_token`, {
+      params: {
+        'client_id': config.facebook.id,
+        'client_secret': config.facebook.secret,
+        'code': code
+      }
+    })
 
+    await teamService.updateTeamInfo(team, {
+      facebookToken: result.data.access_token
+    })
+  } catch (error) {
+    // @ts-ignore
+    console.log((error as AxiosError).response.data)
+  }
+}
