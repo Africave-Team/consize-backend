@@ -787,15 +787,15 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
           flows.push(...courseFlowData)
         }
       }
-      const endOfBundleMessage = {
-        type: CourseFlowMessageType.END_OF_BUNDLE,
-        mediaType: course.headerMedia?.mediaType || "",
-        mediaUrl: course.headerMedia?.url || "",
-        content: `Congratulations on completing.\n *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}.`
-      }
+      // const endOfBundleMessage = {
+      //   type: CourseFlowMessageType.END_OF_BUNDLE,
+      //   mediaType: course.headerMedia?.mediaType || "",
+      //   mediaUrl: course.headerMedia?.url || "",
+      //   content: `Congratulations on completing.\n *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}.`
+      // }
 
 
-      flows.push(endOfBundleMessage)
+      // flows.push(endOfBundleMessage)
 
       flows = flows.filter(e => !e.surveyId)
       flows = flows.filter(e => e.type !== CourseFlowMessageType.WELCOME)
@@ -811,7 +811,7 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
               type: CourseFlowMessageType.ENDCOURSE,
               mediaType: course?.headerMedia?.mediaType || "",
               mediaUrl: course?.headerMedia?.url || "",
-              content: 'Congratulations on completing this course,\nThis is the last course in the Bundle\nYou will receive an end of bundle congratulatory message and certificate shortly'
+              content: 'Congratulations on completing this course,\nThis is the last course in the Bundle\nYou will receive your certificate shortly.'
             }
           } else {
             // Return the regular message for all other 'end-of-course' items
