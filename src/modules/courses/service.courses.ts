@@ -236,7 +236,7 @@ export const fetchPublishedCourses = async ({ page, pageSize, library, search }:
     const regex = new RegExp(search, "i")
     q.$and.push({ $or: [{ title: { $regex: regex } }, { description: { $regex: regex } }] })
   }
-  return Course.paginate(q, { page, limit: pageSize, populate: 'lessons,courses' })
+  return Course.paginate(q, { page, limit: pageSize, populate: 'lessons,lessons.blocks,lessons.blocks.quiz,lessons.quizzes,courses,courses.lessons.blocks,courses.lessons.blocks.quiz,courses.lessons.quizzes' })
 }
 
 export const searchTeamCourses = async ({ teamId, search, filter }: { teamId: string, search: string, filter?: PageType }): Promise<CourseInterface[]> => {
