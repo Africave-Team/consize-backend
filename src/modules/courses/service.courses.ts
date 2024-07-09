@@ -67,9 +67,9 @@ enum PageType {
 
 
 export const createCourse = async (coursePayload: CreateCoursePayload, teamId: string): Promise<CourseInterface> => {
-  const team = await Teams.findById(teamId, 'name'); 
+  const team = await Teams.findById(teamId, 'name')
   if (team && (/consize/i.test(team.name))) {
-      coursePayload.library = true 
+    coursePayload.library = true
   }
   const course = new Course({
     ...coursePayload, owner: teamId, shortCode: randomstring.generate({
@@ -227,10 +227,14 @@ export const maxEnrollmentReached = async (settingsId: string, courseId: string,
 }
 
 
-export const fetchPublishedCourses = async ({ page, pageSize, library }: { page: number, pageSize: number, library: boolean }): Promise<QueryResult<CourseInterface>> => {
-  let q:any = { status: CourseStatus.PUBLISHED}
+export const fetchPublishedCourses = async ({ page, pageSize, library, search }: { page: number, pageSize: number, library?: boolean, search?: string }): Promise<QueryResult<CourseInterface>> => {
+  let q: any = { $and: [{ status: CourseStatus.PUBLISHED }] }
   if (library) {
-    q['library'] = true
+    q.$and.push({ $or: [{ library: true }] })
+  }
+  if (search) {
+    const regex = new RegExp(search, "i")
+    q.$and.push({ $or: [{ title: { $regex: regex } }, { description: { $regex: regex } }] })
   }
   return Course.paginate(q, { page, limit: pageSize, populate: 'lessons,courses' })
 }
