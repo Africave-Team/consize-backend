@@ -1184,7 +1184,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                         });
                     }
                 } else {
-                    if (!moment(updatedData.lastLessonCompleted).isSame(moment(), 'day')) {
+                    if (!moment(updatedData.finishedLastLessonAt).isSame(moment(), 'day')) {
                         updatedData = { ...updatedData, dailyLessonsCount: 1 };
                     } else {
                         updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 };
@@ -1350,7 +1350,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
             break
           case CourseFlowMessageType.ENDLESSON:
-            if (!moment(updatedData.lastLessonCompleted).isSame(moment(), 'day')) {
+            if (!moment(updatedData.finishedLastLessonAt).isSame(moment(), 'day')) {
               updatedData = { ...updatedData, dailyLessonsCount: 1 }
             } else {
               updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
@@ -1468,6 +1468,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 }
               })
             }
+            updatedData.finishedLastLessonAt = new Date().getTime()
             await redisClient.set(key, JSON.stringify({ ...updatedData }))
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
