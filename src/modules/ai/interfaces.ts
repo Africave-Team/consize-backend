@@ -35,6 +35,8 @@ export interface BuildSectionPayload {
   lessonName: string
   title: string
   courseId: string
+  lessonIndex: number
+  sectionIndex: number
 }
 
 
