@@ -1162,169 +1162,169 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
           case CourseFlowMessageType.ENDCOURSE:
             if (data.bundle) {
-                if (updatedData.totalBlocks - updatedData.nextBlock < 4) {
-                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                        to: phoneNumber,
-                        type: 'text',
-                        messaging_product: 'whatsapp',
-                        recipient_type: 'individual',
-                        text: {
-                            body: item.content.replace('{survey}', ''),
-                        },
-                    });
-                    await delay(5000);
-                    let next = flowData[nextIndex + 1];
-                    if ((next?.surveyId && next.surveyQuestion) || data.bundle) {
-                        updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 };
-                        handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData);
-                    } else {
-                        // if no survey for this course, then send the certificate
-                        agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
-                            ...updatedData,
-                        });
-                    }
-                } else {
-                    if (!moment(updatedData.finishedLastLessonAt).isSame(moment(), 'day')) {
-                        updatedData = { ...updatedData, dailyLessonsCount: 1 };
-                    } else {
-                        updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 };
-                    }
-
-                    let message = `Congratulations! 🎉 on completing the last lesson in this course! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nTap continue now to get the next course in the Bundle.\nWe're rooting for you!`.toString();
-
-                    if (updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount > 0) {
-                        if (updatedData.minLessonsPerDay - updatedData.dailyLessonsCount > 0) {
-                            const stringToRemove = [
-                                "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.",
-                                "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap",
-                                "'Set Resumption Time' to choose the time to continue tomorrow",
-                            ];
-                            stringToRemove.forEach((substring) => {
-                                message = message.replace(new RegExp(substring, 'g'), '');
-                            });
-
-                            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                                to: phoneNumber,
-                                type: 'interactive',
-                                messaging_product: 'whatsapp',
-                                recipient_type: 'individual',
-                                interactive: {
-                                    body: {
-                                        text: message,
-                                    },
-                                    type: 'button',
-                                    action: {
-                                        buttons: [
-                                            {
-                                                type: 'reply',
-                                                reply: {
-                                                    id: CONTINUE + `|${messageId}`,
-                                                    title: 'Continue Now',
-                                                },
-                                            },
-                                        ],
-                                    },
-                                },
-                            });
-                        } else {
-                            message = `Congratulations! 🎉 on completing this course.\nYou've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today.`.toString();
-
-                            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                                to: phoneNumber,
-                                type: 'interactive',
-                                messaging_product: 'whatsapp',
-                                recipient_type: 'individual',
-                                interactive: {
-                                    body: {
-                                        text: message,
-                                    },
-                                    type: 'button',
-                                    action: {
-                                        buttons: [
-                                            {
-                                                type: 'reply',
-                                                reply: {
-                                                    id: CONTINUE + `|${messageId}`,
-                                                    title: 'Continue Now',
-                                                },
-                                            },
-                                            {
-                                                type: 'reply',
-                                                reply: {
-                                                    id: TOMORROW + `|${messageId}`,
-                                                    title: 'Continue Tomorrow',
-                                                },
-                                            },
-                                            {
-                                                type: 'reply',
-                                                reply: {
-                                                    id: SCHEDULE_RESUMPTION + `|${messageId}`,
-                                                    title: 'Set Resumption Time',
-                                                },
-                                            },
-                                        ],
-                                    },
-                                },
-                            });
-                        }
-                    } else {
-                        message = `\nGreat job! 🥳 on completing this course.\nYou've reached the maximum lesson target for today.\nGo over what you've learnt today and come back tomorrow to continue with the next course in the bundle 😉`.toString();
-                        agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                            to: phoneNumber,
-                            type: 'interactive',
-                            messaging_product: 'whatsapp',
-                            recipient_type: 'individual',
-                            interactive: {
-                                body: {
-                                    text: message,
-                                },
-                                type: 'button',
-                                action: {
-                                    buttons: [
-                                        {
-                                            type: 'reply',
-                                            reply: {
-                                                id: TOMORROW + `|${messageId}`,
-                                                title: 'Continue Tomorrow',
-                                            },
-                                        },
-                                        {
-                                            type: 'reply',
-                                            reply: {
-                                                id: SCHEDULE_RESUMPTION + `|${messageId}`,
-                                                title: 'Set Resumption Time',
-                                            },
-                                        },
-                                    ],
-                                },
-                            },
-                        });
-                    }
-                    await redisClient.set(key, JSON.stringify({ ...updatedData }));
-                }
-            } else {
+              if (updatedData.totalBlocks - updatedData.nextBlock < 4) {
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: phoneNumber,
+                  type: 'text',
+                  messaging_product: 'whatsapp',
+                  recipient_type: 'individual',
+                  text: {
+                    body: item.content.replace('{survey}', ''),
+                  },
+                })
+                await delay(5000)
+                let next = flowData[nextIndex + 1]
+                if ((next?.surveyId && next.surveyQuestion) || data.bundle) {
+                  updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
+                  handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
+                } else {
+                  // if no survey for this course, then send the certificate
+                  agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
+                    ...updatedData,
+                  })
+                }
+              } else {
+                if (!moment(updatedData.finishedLastLessonAt).isSame(moment(), 'day')) {
+                  updatedData = { ...updatedData, dailyLessonsCount: 1 }
+                } else {
+                  updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
+                }
+
+                let message = `Congratulations! 🎉 on completing the last lesson in this course! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nTap continue now to get the next course in the Bundle.\nWe're rooting for you!`.toString()
+
+                if (updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount > 0) {
+                  if (updatedData.minLessonsPerDay - updatedData.dailyLessonsCount > 0) {
+                    const stringToRemove = [
+                      "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.",
+                      "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap",
+                      "'Set Resumption Time' to choose the time to continue tomorrow",
+                    ]
+                    stringToRemove.forEach((substring) => {
+                      message = message.replace(new RegExp(substring, 'g'), '')
+                    })
+
+                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                      to: phoneNumber,
+                      type: 'interactive',
+                      messaging_product: 'whatsapp',
+                      recipient_type: 'individual',
+                      interactive: {
+                        body: {
+                          text: message,
+                        },
+                        type: 'button',
+                        action: {
+                          buttons: [
+                            {
+                              type: 'reply',
+                              reply: {
+                                id: CONTINUE + `|${messageId}`,
+                                title: 'Continue Now',
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    })
+                  } else {
+                    message = `Congratulations! 🎉 on completing this course.\nYou've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today.`.toString()
+
+                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                      to: phoneNumber,
+                      type: 'interactive',
+                      messaging_product: 'whatsapp',
+                      recipient_type: 'individual',
+                      interactive: {
+                        body: {
+                          text: message,
+                        },
+                        type: 'button',
+                        action: {
+                          buttons: [
+                            {
+                              type: 'reply',
+                              reply: {
+                                id: CONTINUE + `|${messageId}`,
+                                title: 'Continue Now',
+                              },
+                            },
+                            {
+                              type: 'reply',
+                              reply: {
+                                id: TOMORROW + `|${messageId}`,
+                                title: 'Continue Tomorrow',
+                              },
+                            },
+                            {
+                              type: 'reply',
+                              reply: {
+                                id: SCHEDULE_RESUMPTION + `|${messageId}`,
+                                title: 'Set Resumption Time',
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    })
+                  }
+                } else {
+                  message = `\nGreat job! 🥳 on completing this course.\nYou've reached the maximum lesson target for today.\nGo over what you've learnt today and come back tomorrow to continue with the next course in the bundle 😉`.toString()
+                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                     to: phoneNumber,
-                    type: 'text',
+                    type: 'interactive',
                     messaging_product: 'whatsapp',
                     recipient_type: 'individual',
-                    text: {
-                        body: item.content.replace('{survey}', ''),
+                    interactive: {
+                      body: {
+                        text: message,
+                      },
+                      type: 'button',
+                      action: {
+                        buttons: [
+                          {
+                            type: 'reply',
+                            reply: {
+                              id: TOMORROW + `|${messageId}`,
+                              title: 'Continue Tomorrow',
+                            },
+                          },
+                          {
+                            type: 'reply',
+                            reply: {
+                              id: SCHEDULE_RESUMPTION + `|${messageId}`,
+                              title: 'Set Resumption Time',
+                            },
+                          },
+                        ],
+                      },
                     },
-                });
-                await delay(5000);
-                let next = flowData[nextIndex + 1];
-                if ((next?.surveyId && next.surveyQuestion) || data.bundle) {
-                    updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 };
-                    handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData);
-                } else {
-                    // if no survey for this course, then send the certificate
-                    agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
-                        ...updatedData,
-                    });
+                  })
                 }
+                await redisClient.set(key, JSON.stringify({ ...updatedData }))
+              }
+            } else {
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: phoneNumber,
+                type: 'text',
+                messaging_product: 'whatsapp',
+                recipient_type: 'individual',
+                text: {
+                  body: item.content.replace('{survey}', ''),
+                },
+              })
+              await delay(5000)
+              let next = flowData[nextIndex + 1]
+              if ((next?.surveyId && next.surveyQuestion) || data.bundle) {
+                updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
+                handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
+              } else {
+                // if no survey for this course, then send the certificate
+                agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
+                  ...updatedData,
+                })
+              }
             }
-            break;
+            break
           case CourseFlowMessageType.END_OF_BUNDLE:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
@@ -1474,7 +1474,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             break
           case CourseFlowMessageType.QUIZ:
             await sendQuiz(item, phoneNumber, messageId)
-            updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date().toDateString() }
+            updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.INTRO:
@@ -1516,7 +1516,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           case CourseFlowMessageType.BLOCK:
           case CourseFlowMessageType.BLOCKWITHQUIZ:
             await sendBlockContent(item, phoneNumber, messageId)
-            updatedData = { ...updatedData, blockStartTime: new Date().toDateString() }
+            updatedData = { ...updatedData, blockStartTime: new Date().toISOString() }
             console.log(updatedData)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break

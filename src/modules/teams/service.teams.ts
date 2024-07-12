@@ -54,6 +54,13 @@ export const fetchTeamById = async (teamId: string): Promise<TeamsInterface | nu
   return team
 }
 
+
+export const resolveTeamWithShortcode = async (code: string): Promise<TeamInterfaceWithOwner | null> => {
+  const team = await Team.findOne({ shortCode: code }).populate('owner')
+  // @ts-ignore
+  return team
+}
+
 export const fetchTeamByIdWithOwner = async (teamId: string): Promise<TeamInterfaceWithOwner | null> => {
   const team = await Team.findById(teamId).populate('owner')
   // @ts-ignore
