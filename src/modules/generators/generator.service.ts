@@ -428,7 +428,7 @@ export const generateCourseHeaderImage = async (course: CourseInterface, owner: 
     const url = await generateCourseHeaderURL(course, owner)
     await page.goto(url, { waitUntil: "networkidle0" })
     await page.setViewport({
-      width: 720, height: 350
+      width: 720, height: 350, deviceScaleFactor: 5
     })
     const divSelector = '.course-header' // Replace with your actual div selector
     await page.waitForSelector(divSelector)
