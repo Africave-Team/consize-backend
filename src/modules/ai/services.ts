@@ -4,7 +4,7 @@ import fs from "fs"
 import config from '../../config/config'
 import { BuildSectionPayload, QuizAI, JobData, SectionResultAI, Curriculum, BuildSectionFromFilePayload, BuildSectionsFromFilePayload } from './interfaces'
 import { courseService } from '../courses'
-import { MediaType, Sources } from '../courses/interfaces.courses'
+import { CourseInterface, MediaType, Sources } from '../courses/interfaces.courses'
 import { agenda } from '../scheduler'
 import { GENERATE_SECTION_AI } from '../scheduler/MessageTypes'
 import { generateFollowupQuestionPrompt, generateQuizPrompt, generateSectionFilePrompt, generateSectionNoSeedPrompt, generateSectionPrompt, generateSectionsFilePrompt } from '../courses/prompts'
@@ -96,6 +96,23 @@ export const buildCourseOutline = async function (payload: { courseId: string, p
   }
 }
 
+const updateCourseHeader = async function (teamId: string, course: CourseInterface) {
+  try {
+    const team = await Teams.findById(teamId)
+    if (team) {
+      const headerMedia = await generateCourseHeaderImage(course, team)
+      await courseService.updateCourse({
+        headerMedia: {
+          url: headerMedia,
+          mediaType: MediaType.IMAGE
+        }
+      }, course.id, teamId)
+    }
+  } catch (error) {
+    console.error("Unable to generate header image")
+  }
+}
+
 export const buildCourse = async function (jobId: string, teamId: string) {
   const dbRef = db.ref('ai-jobs').child(jobId)
   const snapshot = await dbRef.once('value')
@@ -118,27 +135,19 @@ export const buildCourse = async function (jobId: string, teamId: string) {
       description: jobData.result.description
     }, teamId)
 
-    const team = await Teams.findById(teamId)
-    if (team) {
-      const headerMedia = await generateCourseHeaderImage(course, team)
-      console.log(headerMedia)
-      await courseService.updateCourse({
-        headerMedia: {
-          url: headerMedia,
-          mediaType: MediaType.IMAGE
-        }
-      }, course.id, teamId)
-    }
+    updateCourseHeader(teamId, course)
     await dbRef.update({ courseId: course.id })
     let lessons = jobData.result.lessons
     const progressRef = dbRef.child("progress")
+    let index = 0
     for (let lesson of Object.values(lessons)) {
       // create the lesson
       const lessonDetail = await courseService.createLesson({
         title: lesson.lesson_name
       }, course.id)
+      let sectionIndex = 0
       for (let section of Object.values(lesson.sections)) {
-        await progressRef.child(lesson.lesson_name.replace(/\./g, "")).child(section[0].replace(/\./g, "")).set({ status: "RUNNING", courseId: course.id, lessonId: lessonDetail.id })
+        await progressRef.child(index + '').child(lesson.lesson_name.replace(/\./g, "")).child(sectionIndex + '').child(section[0].replace(/\./g, "")).set({ status: "RUNNING", courseId: course.id })
         agenda.now<BuildSectionPayload>(GENERATE_SECTION_AI, {
           seedContent: section[1],
           seedTitle: section[0],
@@ -146,9 +155,14 @@ export const buildCourse = async function (jobId: string, teamId: string) {
           lessonName: lesson.lesson_name,
           jobId,
           title: jobData.title,
-          courseId: course.id
+          courseId: course.id,
+          sectionIndex,
+          lessonIndex: index
         })
+        sectionIndex++
       }
+
+      index++
     }
     return course
   }
@@ -174,10 +188,27 @@ function addCharacterAfterThirdFullStop (input: string, character: string) {
 }
 
 export const buildSection = async function (payload: BuildSectionPayload) {
-  const dbRef = db.ref('ai-jobs').child(payload.jobId).child("progress").child(payload.lessonName.replace(/\./g, "")).child(payload.seedTitle.replace(/\./g, ""))
+  const dbRef = db.ref('ai-jobs').child(payload.jobId).child("progress").child(payload.lessonIndex + '').child(payload.lessonName.replace(/\./g, "")).child(payload.sectionIndex + '').child(payload.seedTitle.replace(/\./g, ""))
   // make the open ai call here
 
-  const MAX_RETRIES = 3
+  const handleRetry = async function (retries: number, prompt: string, callback: (data: OpenAI.Chat.Completions.ChatCompletion) => void, error: Error) {
+    const maxRetries = 5
+    if (retries <= maxRetries) {
+      await dbRef.update({
+        retryCount: retries + 1,
+        status: "RETRYING",
+        error: error.message,
+      })
+      await delay(3000)
+      await openAICall(retries + 1, prompt, callback)
+    } else {
+      await dbRef.update({
+        status: "FAILED",
+        error: error.message,
+        end: new Date().toISOString(),
+      })
+    }
+  }
 
   const openAICall = async (retries: number, prompt: string, cb: (data: OpenAI.Chat.Completions.ChatCompletion) => void) => {
     try {
@@ -186,23 +217,14 @@ export const buildSection = async function (payload: BuildSectionPayload) {
         { "role": "user", "content": prompt }],
         model: "gpt-3.5-turbo",
       })
+      if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+        JSON.parse(data.choices[0].message.content.replace("```json", '').replace("```", ''))
+      } else {
+        throw new Error("no result")
+      }
       cb(data)
     } catch (error) {
-      if (retries < MAX_RETRIES) {
-        await dbRef
-          .update({
-            status: "RETRYING",
-            error: (error as any).error.message
-          })
-        openAICall(retries + 1, prompt, cb)
-      } else {
-        await dbRef
-          .update({
-            status: "FAILED",
-            error: (error as any).error.message,
-            end: new Date().toISOString()
-          })
-      }
+      handleRetry(retries, prompt, cb, (error as any).message)
     }
   }
 
@@ -754,15 +776,19 @@ export const initiateDocumentQueryAssistant = async function ({ jobId, prompt, t
       }, teamId)
 
       const updateHeaderImage = async function () {
-        const team = await Teams.findById(teamId)
-        if (team) {
-          const headerMedia = await generateCourseHeaderImage(course, team)
-          await courseService.updateCourse({
-            headerMedia: {
-              url: headerMedia,
-              mediaType: MediaType.IMAGE
-            }
-          }, course.id, teamId)
+        try {
+          const team = await Teams.findById(teamId)
+          if (team) {
+            const headerMedia = await generateCourseHeaderImage(course, team)
+            await courseService.updateCourse({
+              headerMedia: {
+                url: headerMedia,
+                mediaType: MediaType.IMAGE
+              }
+            }, course.id, teamId)
+          }
+        } catch (error) {
+          console.log("failed to generate header")
         }
       }
 

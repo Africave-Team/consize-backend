@@ -404,7 +404,7 @@ export const generateCourseHeaderURL = async (course: CourseInterface, owner: Te
 export const generateCourseHeaderImage = async (course: CourseInterface, owner: TeamsInterface): Promise<string> => {
   // get existing data
   let launchConfig: { args: any[], executablePath?: string } = {
-    args: ['--no-sandbox']
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
   }
   if (config.server !== "local") {
     launchConfig['executablePath'] = '/usr/bin/chromium-browser'
