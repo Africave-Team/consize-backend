@@ -367,3 +367,13 @@ export const duplicateCourse = catchAsync(async (req: Request, res: Response) =>
   }
   res.status(200).send({ message: "Course duplicated", data })
 })
+
+
+export const generateCourseHeader = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+  let data
+  if (course) {
+    data = await courseService.generateCourseHeader({ courseId: course })
+  }
+  res.status(200).send({ message: "Course duplicated", data })
+})
