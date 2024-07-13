@@ -197,14 +197,14 @@ export const buildSection = async function (payload: BuildSectionPayload) {
       await dbRef.update({
         retryCount: retries + 1,
         status: "RETRYING",
-        error: error.message,
+        error: error.message || "Failed to generate this block",
       })
       await delay(3000)
       await openAICall(retries + 1, prompt, callback)
     } else {
       await dbRef.update({
         status: "FAILED",
-        error: error.message,
+        error: error.message || "Failed to generate this block",
         end: new Date().toISOString(),
       })
     }

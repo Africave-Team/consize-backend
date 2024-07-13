@@ -134,60 +134,67 @@ export const sendCourseLeaderboardSlack = async (courseId: string, studentId: st
 
 export const generateCourseLeaderboard = async (course: CourseInterface, student: StudentInterface, owner: TeamsInterface): Promise<string> => {
 
-  let launchConfig: { args: any[], executablePath?: string } = {
-    args: ['--no-sandbox']
-  }
-  if (config.server !== "local") {
-    launchConfig['executablePath'] = '/usr/bin/chromium-browser'
-  }
-  const browser = await puppeteer.launch(launchConfig)
-  const timestamp = new Date().getTime()
-  const page = await browser.newPage()
-  const url = await generateCourseLeaderboardURL(course, student, owner)
-  await page.goto(url, { waitUntil: "networkidle0" })
-  await page.setViewport({
-    width: 1920, height: 1080, deviceScaleFactor: 2
-  })
-  const divSelector = '.leaderboard' // Replace with your actual div selector
-  await page.waitForSelector(divSelector)
-  const divHandle = await page.$(divSelector)
-
-  const screenshotPromise = new Promise<Buffer>(async (resolve, reject) => {
-    try {
-      if (divHandle) {
-        const boundingBox = await divHandle.boundingBox()
-
-        if (boundingBox) {
-          const imageBuffer = await page.screenshot({
-            clip: {
-              x: boundingBox.x,
-              y: boundingBox.y,
-              width: boundingBox.width,
-              height: boundingBox.height,
-            },
-          })
-          console.log('Screenshot saved')
-          resolve(imageBuffer)
-        } else {
-          console.error('Div not found or not visible')
-          reject(new Error('Div not found or not visible'))
-        }
-      }
-    } catch (error) {
-      console.error('Error capturing screenshot:', error)
-      reject(error)
+  try {
+    let launchConfig: { args: any[], executablePath?: string } = {
+      args: ['--no-sandbox']
     }
-  })
+    if (config.server !== "local") {
+      launchConfig['executablePath'] = '/usr/bin/chromium-browser'
+    }
+    console.log("Launching Browser ")
+    const browser = await puppeteer.launch(launchConfig)
+    console.log("Browser launched")
+    const timestamp = new Date().getTime()
+    const page = await browser.newPage()
+    const url = await generateCourseLeaderboardURL(course, student, owner)
+    await page.goto(url, { waitUntil: "networkidle0" })
+    await page.setViewport({
+      width: 1920, height: 1080, deviceScaleFactor: 2
+    })
+    const divSelector = '.leaderboard' // Replace with your actual div selector
+    await page.waitForSelector(divSelector)
+    const divHandle = await page.$(divSelector)
 
-  const imageBuffer = await screenshotPromise
-  let destination = `microlearn-leaderboard-images/${course.id}-${student.id}-${timestamp}.png`
-  if (imageBuffer) {
-    console.log("attempting upload")
-    await page.close()
-    await browser.close()
-    return await uploadFileToCloudStorage(imageBuffer, destination)
+    const screenshotPromise = new Promise<Buffer>(async (resolve, reject) => {
+      try {
+        if (divHandle) {
+          const boundingBox = await divHandle.boundingBox()
+
+          if (boundingBox) {
+            const imageBuffer = await page.screenshot({
+              clip: {
+                x: boundingBox.x,
+                y: boundingBox.y,
+                width: boundingBox.width,
+                height: boundingBox.height,
+              },
+            })
+            console.log('Screenshot saved')
+            resolve(imageBuffer)
+          } else {
+            console.error('Div not found or not visible')
+            reject(new Error('Div not found or not visible'))
+          }
+        }
+      } catch (error) {
+        console.error('Error capturing screenshot:', error)
+        reject(error)
+      }
+    })
+
+    const imageBuffer = await screenshotPromise
+    let destination = `microlearn-leaderboard-images/${course.id}-${student.id}-${timestamp}.png`
+    if (imageBuffer) {
+      console.log("attempting upload")
+      await page.close()
+      await browser.close()
+      return await uploadFileToCloudStorage(imageBuffer, destination)
+    }
+    return ''
+  } catch (error) {
+    console.log(error)
+    return ''
   }
-  return ''
 }
 
 
@@ -327,61 +334,66 @@ export const sendCourseCertificateSlack = async (courseId: string, studentId: st
 }
 
 export const generateCourseCertificate = async (course: CourseInterface, student: StudentInterface, owner: TeamsInterface): Promise<string> => {
-  // get existing data
-  let launchConfig: { args: any[], executablePath?: string } = {
-    args: ['--no-sandbox']
-  }
-  if (config.server !== "local") {
-    launchConfig['executablePath'] = '/usr/bin/chromium-browser'
-  }
-  const browser = await puppeteer.launch(launchConfig)
-  const timestamp = new Date().getTime()
-  const page = await browser.newPage()
-  const url = await generateCourseCertificateURL(course, student, owner)
-  await page.goto(url, { waitUntil: "networkidle0" })
-  await page.setViewport({
-    width: 1520, height: 980, deviceScaleFactor: 5
-  })
-  const divSelector = '.template' // Replace with your actual div selector
-  await page.waitForSelector(divSelector)
-  const divHandle = await page.$(divSelector)
-
-  const screenshotPromise = new Promise<Buffer>(async (resolve, reject) => {
-    try {
-      if (divHandle) {
-        const boundingBox = await divHandle.boundingBox()
-
-        if (boundingBox) {
-          const imageBuffer = await page.screenshot({
-            clip: {
-              x: boundingBox.x,
-              y: boundingBox.y,
-              width: boundingBox.width,
-              height: boundingBox.height,
-            },
-          })
-          console.log('Screenshot saved')
-          resolve(imageBuffer)
-        } else {
-          console.error('Div not found or not visible')
-          reject(new Error('Div not found or not visible'))
-        }
-      }
-    } catch (error) {
-      console.error('Error capturing screenshot:', error)
-      reject(error)
+  try {
+    // get existing data
+    let launchConfig: { args: any[], executablePath?: string } = {
+      args: ['--no-sandbox']
     }
-  })
+    if (config.server !== "local") {
+      launchConfig['executablePath'] = '/usr/bin/chromium-browser'
+    }
+    const browser = await puppeteer.launch(launchConfig)
+    const timestamp = new Date().getTime()
+    const page = await browser.newPage()
+    const url = await generateCourseCertificateURL(course, student, owner)
+    await page.goto(url, { waitUntil: "networkidle0" })
+    await page.setViewport({
+      width: 1520, height: 980, deviceScaleFactor: 5
+    })
+    const divSelector = '.template' // Replace with your actual div selector
+    await page.waitForSelector(divSelector)
+    const divHandle = await page.$(divSelector)
 
-  const imageBuffer = await screenshotPromise
-  let destination = `microlearn-certificate-images/${course.id}-${student.id}-${timestamp}.png`
-  if (imageBuffer) {
-    console.log("attempting upload")
-    await page.close()
-    await browser.close()
-    return await uploadFileToCloudStorage(imageBuffer, destination)
+    const screenshotPromise = new Promise<Buffer>(async (resolve, reject) => {
+      try {
+        if (divHandle) {
+          const boundingBox = await divHandle.boundingBox()
+
+          if (boundingBox) {
+            const imageBuffer = await page.screenshot({
+              clip: {
+                x: boundingBox.x,
+                y: boundingBox.y,
+                width: boundingBox.width,
+                height: boundingBox.height,
+              },
+            })
+            console.log('Screenshot saved')
+            resolve(imageBuffer)
+          } else {
+            console.error('Div not found or not visible')
+            reject(new Error('Div not found or not visible'))
+          }
+        }
+      } catch (error) {
+        console.error('Error capturing screenshot:', error)
+        reject(error)
+      }
+    })
+
+    const imageBuffer = await screenshotPromise
+    let destination = `microlearn-certificate-images/${course.id}-${student.id}-${timestamp}.png`
+    if (imageBuffer) {
+      console.log("attempting upload")
+      await page.close()
+      await browser.close()
+      return await uploadFileToCloudStorage(imageBuffer, destination)
+    }
+    return ''
+  } catch (error) {
+    console.log(error)
+    return ''
   }
-  return ''
 }
 
 
@@ -402,61 +414,68 @@ export const generateCourseHeaderURL = async (course: CourseInterface, owner: Te
 }
 
 export const generateCourseHeaderImage = async (course: CourseInterface, owner: TeamsInterface): Promise<string> => {
-  // get existing data
-  let launchConfig: { args: any[], executablePath?: string } = {
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  }
-  if (config.server !== "local") {
-    launchConfig['executablePath'] = '/usr/bin/chromium-browser'
-  }
-  const browser = await puppeteer.launch(launchConfig)
-  const timestamp = new Date().getTime()
-  const page = await browser.newPage()
-  const url = await generateCourseHeaderURL(course, owner)
-  await page.goto(url, { waitUntil: "networkidle0" })
-  await page.setViewport({
-    width: 1520, height: 980, deviceScaleFactor: 5
-  })
-  const divSelector = '.course-header' // Replace with your actual div selector
-  await page.waitForSelector(divSelector)
-  const divHandle = await page.$(divSelector)
-
-  const screenshotPromise = new Promise<Buffer>(async (resolve, reject) => {
-    try {
-      if (divHandle) {
-        const boundingBox = await divHandle.boundingBox()
-
-        if (boundingBox) {
-          const imageBuffer = await page.screenshot({
-            clip: {
-              x: boundingBox.x,
-              y: boundingBox.y,
-              width: boundingBox.width,
-              height: boundingBox.height,
-            },
-          })
-          console.log('Screenshot saved')
-          resolve(imageBuffer)
-        } else {
-          console.error('Div not found or not visible')
-          reject(new Error('Div not found or not visible'))
-        }
-      }
-    } catch (error) {
-      console.error('Error capturing screenshot:', error)
-      reject(error)
+  try {
+    // get existing data
+    let launchConfig: { args: any[], executablePath?: string } = {
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     }
-  })
+    if (config.server !== "local") {
+      launchConfig['executablePath'] = '/usr/bin/chromium-browser'
+    }
+    const browser = await puppeteer.launch(launchConfig)
+    const timestamp = new Date().getTime()
+    const page = await browser.newPage()
+    const url = await generateCourseHeaderURL(course, owner)
+    await page.goto(url, { waitUntil: "networkidle0" })
+    await page.setViewport({
+      width: 1440,
+      height: 700,
+      deviceScaleFactor: 1
+    })
+    const divSelector = '.course-header' // Replace with your actual div selector
+    await page.waitForSelector(divSelector)
+    const divHandle = await page.$(divSelector)
 
-  const imageBuffer = await screenshotPromise
-  let destination = `microlearn-certificate-images/${timestamp + '-header-image.png'}`
-  if (imageBuffer) {
-    console.log("attempting upload")
-    await page.close()
-    await browser.close()
-    return await uploadFileToCloudStorage(imageBuffer, destination)
+    const screenshotPromise = new Promise<Buffer>(async (resolve, reject) => {
+      try {
+        if (divHandle) {
+          const boundingBox = await divHandle.boundingBox()
+
+          if (boundingBox) {
+            const imageBuffer = await page.screenshot({
+              clip: {
+                x: boundingBox.x,
+                y: boundingBox.y,
+                width: boundingBox.width,
+                height: boundingBox.height,
+              },
+            })
+            console.log('Screenshot saved')
+            resolve(imageBuffer)
+          } else {
+            console.error('Div not found or not visible')
+            reject(new Error('Div not found or not visible'))
+          }
+        }
+      } catch (error) {
+        console.error('Error capturing screenshot:', error)
+        reject(error)
+      }
+    })
+
+    const imageBuffer = await screenshotPromise
+    let destination = `microlearn-certificate-images/${timestamp + '-header-image.png'}`
+    if (imageBuffer) {
+      console.log("attempting upload")
+      await page.close()
+      await browser.close()
+      return await uploadFileToCloudStorage(imageBuffer, destination)
+    }
+    return ''
+  } catch (error) {
+    console.log(error)
+    return ''
   }
-  return ''
 }
 
 async function downloadFile (url: string) {
