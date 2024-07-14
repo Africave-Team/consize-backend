@@ -12,8 +12,29 @@ import randomstring from "randomstring"
 import { Distribution } from '../courses/interfaces.courses'
 
 export const createTeam = async (name: string, ownerId: string): Promise<TeamsInterface> => {
+  let code = name.toLowerCase().replace(/[&. ]/g, (match) => {
+    switch (match) {
+      case '&':
+        return 'and'
+      case '.':
+        return '-'
+      case ' ':
+        return '-'
+      default:
+        return match
+    }
+  })
+
+  let exists = await Team.findOne({ shortCode: code })
+  if (exists) {
+    let extra = randomstring.generate({
+      charset: 'numeric',
+      length: 3
+    })
+    code += '-' + extra
+  }
   const team = await Team.create({
-    name, owner: ownerId, shortCode: randomstring.generate({ length: 5, charset: 'alphanumeric' }).toLowerCase(),
+    name, owner: ownerId, shortCode: code,
     channels: [
       {
         channel: Distribution.WHATSAPP,
@@ -54,6 +75,13 @@ export const fetchTeamById = async (teamId: string): Promise<TeamsInterface | nu
   return team
 }
 
+
+export const resolveTeamWithShortcode = async (code: string): Promise<TeamInterfaceWithOwner | null> => {
+  const team = await Team.findOne({ shortCode: code }).populate('owner')
+  // @ts-ignore
+  return team
+}
+
 export const fetchTeamByIdWithOwner = async (teamId: string): Promise<TeamInterfaceWithOwner | null> => {
   const team = await Team.findById(teamId).populate('owner')
   // @ts-ignore
@@ -88,5 +116,34 @@ export const createInvitedMember = async (teamId: string, payload: NewTeamUser):
     }
   })
   return payload
+}
+
+export const updateTeamShortCode = async function () {
+  let teams = await Team.find({})
+
+  for (let team of teams) {
+    let code = team.name.toLowerCase().replace(/[&. ]/g, (match) => {
+      switch (match) {
+        case '&':
+          return 'and'
+        case '.':
+          return '-'
+        case ' ':
+          return '-'
+        default:
+          return match
+      }
+    })
+
+    let exists = await Team.findOne({ shortCode: code, _id: { $ne: team.id } })
+    if (exists) {
+      let extra = randomstring.generate({
+        charset: 'numeric',
+        length: 3
+      })
+      code += '-' + extra
+    }
+    await Team.updateOne({ _id: team.id }, { shortCode: code })
+  }
 }
 

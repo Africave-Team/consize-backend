@@ -10,6 +10,7 @@ import { IUserDoc } from '../user/user.interfaces'
 import { agenda } from '../scheduler'
 import { SEND_FORGOT_PASSWORD_EMAIL, SEND_VERIFICATION_EMAIL } from '../scheduler/MessageTypes'
 import { SEND_VERIFICATION_MESSAGE } from '../scheduler/jobs/sendMessage'
+import { ApiError } from '../errors'
 
 export const register = catchAsync(async (req: Request, res: Response) => {
   let user: IUserDoc | null = await userService.registerUser(req.body)
@@ -22,10 +23,13 @@ export const register = catchAsync(async (req: Request, res: Response) => {
 })
 
 export const login = catchAsync(async (req: Request, res: Response) => {
-  const { email, password } = req.body
+  const { email, password, shortCode } = req.body
   const user = await authService.loginUserWithEmailAndPassword(email, password)
   const tokens = await tokenService.generateAuthTokens(user)
   const team = await teamService.fetchTeamById(user.team)
+  if (shortCode && team && team.shortCode !== shortCode) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "You are not a member of this workspace")
+  }
   res.send({ user, tokens, team })
 })
 

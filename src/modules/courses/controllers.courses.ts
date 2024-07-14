@@ -51,16 +51,20 @@ export const fetchTeamCourses = catchAsync(async (req: Request, res: Response) =
 })
 
 export const fetchPublishedCourses = catchAsync(async (req: Request, res: Response) => {
-  const { page, pageSize, library, search } = req.query
+  const { page, pageSize, library, search, team } = req.query
   const isLibrary = parseInt(library as string, 10) || 0
   const parsedPage = parseInt(page as string, 10) || 1
   const parsedPageSize = parseInt(pageSize as string, 10) || 20
   const searchKey = search as string
+  const teamId = team as string
 
 
   const query: any = { page: parsedPage, pageSize: parsedPageSize, library: isLibrary === 1 }
   if (search) {
     query['search'] = searchKey
+  }
+  if (team) {
+    query['owner'] = teamId
   }
   let results: QueryResult<CourseInterface>
 
@@ -360,6 +364,16 @@ export const duplicateCourse = catchAsync(async (req: Request, res: Response) =>
   let data
   if (course) {
     data = await courseService.duplicateCourse({ courseId: course, title, headerMediaUrl, description })
+  }
+  res.status(200).send({ message: "Course duplicated", data })
+})
+
+
+export const generateCourseHeader = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+  let data
+  if (course) {
+    data = await courseService.generateCourseHeader({ courseId: course })
   }
   res.status(200).send({ message: "Course duplicated", data })
 })
