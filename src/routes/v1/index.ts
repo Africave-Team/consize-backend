@@ -19,6 +19,7 @@ import subscriptionRoute from "./subscriptions.routes"
 import aiRoute from "./ai.routes"
 import adminRoute from "./admin"
 import config from '../../config/config'
+import certificateRoute from './certificates'
 
 const router = express.Router()
 
@@ -103,6 +104,10 @@ const defaultIRoute: IRoute[] = [
   {
     path: "/slack",
     route: slackRoute
+  },
+  {
+    path: "/certificates",
+    route: certificateRoute
   }
 ]
 
