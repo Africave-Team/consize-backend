@@ -38,6 +38,6 @@ const CertificatesSchema = new Schema<CertificatesInterface, CertificatesInterfa
 CertificatesSchema.plugin(toJSON)
 CertificatesSchema.plugin(paginate)
 
-const Cohorts = mongoose.model<CertificatesInterface, CertificatesInterfaceModel>('Cohorts', CertificatesSchema)
+const Certificates = mongoose.model<CertificatesInterface, CertificatesInterfaceModel>('Certificates', CertificatesSchema)
 
-export default Cohorts
+export default Certificates
