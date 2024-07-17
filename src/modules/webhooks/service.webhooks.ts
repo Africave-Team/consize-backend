@@ -804,6 +804,7 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
       // flows.push(endOfBundleMessage)
 
       flows = flows.filter(e => !e.surveyId)
+      flows = flows.filter(e => e.type !== CourseFlowMessageType.END_SURVEY)
       flows = flows.filter(e => e.type !== CourseFlowMessageType.WELCOME)
 
       // Find the index of the last 'end-of-course' item
