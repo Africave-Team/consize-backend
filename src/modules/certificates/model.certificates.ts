@@ -27,7 +27,7 @@ const CertificatesSchema = new Schema<CertificatesInterface, CertificatesInterfa
         signatories: {
             type: [String],
         },
-        
+
     },
     {
         collection: 'certificates',

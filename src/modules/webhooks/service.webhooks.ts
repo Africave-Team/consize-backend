@@ -762,7 +762,13 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
   const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${courseId}`
   const initialMessageId = v4()
   if (course && student) {
-    let courses = await Courses.find({ _id: { $in: course.courses } })
+    let titles: string[] = []
+    for (let id of course.courses) {
+      let course = await Courses.findById(id).select("title")
+      if (course) {
+        titles.push(course.title)
+      }
+    }
     const settings = await Settings.findById(course.settings)
     if (redisClient.isReady) {
       let totalBlocks = 0
@@ -770,7 +776,7 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
       const courseOwner = await Team.findById(course.owner)
       let payload: CourseFlowItem = {
         type: CourseFlowMessageType.INTRO,
-        content: `This is a bundle of courses. \n*Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nYou will receive the following courses in this order;\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \nHappy learning.`
+        content: `This is a bundle of courses. \n*Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nYou will receive the following courses in this order;\n${titles.map((title, index) => `${index + 1}. *${title}*`).join('\n')}. \nHappy learning.`
       }
       if (course.headerMedia && course.headerMedia.url && course.headerMedia.url.startsWith('https://')) {
         payload.mediaType = course.headerMedia.mediaType
