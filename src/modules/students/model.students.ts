@@ -13,6 +13,10 @@ const StudentSchema = new Schema<StudentInterface>({
     type: Boolean,
     default: false
   },
+  anonymous: {
+    type: Boolean,
+    default: false
+  },
   rejected: {
     type: Boolean,
     default: false

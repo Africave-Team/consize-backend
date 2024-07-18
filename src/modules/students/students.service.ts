@@ -391,6 +391,7 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
 
   await sessionService.createEnrollment({
     courseId,
+    anonymous: student.anonymous,
     teamId: course.owner,
     name: student.firstName + ' ' + student.otherNames,
     phoneNumber: student.phoneNumber,
@@ -430,6 +431,7 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
         phoneNumber: student.phoneNumber,
         completed: false,
         studentId: student.id,
+        anonymous: student.anonymous,
         progress: 0,
         droppedOut: false,
         scores: [],
@@ -553,6 +555,7 @@ export const saveQuizDuration = async function (teamId: string, studentId: strin
       data = {
         name: `${student.firstName} ${student.otherNames}`,
         phoneNumber: student.phoneNumber,
+        anonymous: student.anonymous,
         studentId,
         completed: false,
         droppedOut: false,
@@ -640,7 +643,7 @@ export const testCourseSlack = async (slackId: string, courseId: string): Promis
 
 }
 
-export const testCourseWhatsapp = async (phoneNumber: string, courseId: string): Promise<void> => {
+export const testCourseWhatsapp = async (phoneNumber: string, courseId: string, tz: string): Promise<void> => {
   // enroll course
   const course = await Courses.findById(courseId)
   if (!course) {
@@ -650,8 +653,20 @@ export const testCourseWhatsapp = async (phoneNumber: string, courseId: string):
   if (!owner) {
     throw new ApiError(httpStatus.NOT_FOUND, "No team found.")
   }
+  // check if the student exists
+  let student = await Students.findOne({ phoneNumber })
+  if (!student) {
+    student = await Students.create({
+      firstName: "Anonymous",
+      otherNames: "Student",
+      anonymous: true,
+      verified: true,
+      tz,
+      phoneNumber
+    })
+  }
   await generateCourseFlow(courseId)
-  await startCourse(phoneNumber, courseId, phoneNumber)
+  await startCourse(phoneNumber, courseId, student.id)
   await sendWelcome(phoneNumber)
 
 }

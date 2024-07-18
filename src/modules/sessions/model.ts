@@ -11,6 +11,7 @@ const enrollmentSchema = new Schema<EnrollmentSessionInterface, EnrollmentSessio
   teamId: String,
   name: String,
   phoneNumber: String,
+  anonymous: Boolean,
   progress: Number,
   completed: Boolean,
   droppedOut: Boolean,

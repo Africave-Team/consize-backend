@@ -432,6 +432,7 @@ export const startEnrollmentSlack = async (studentId: string, courseId: string):
       lessons: {}
     })
     await sessionService.createEnrollment({
+      anonymous: student.anonymous,
       courseId,
       teamId: course.owner,
       name: student.firstName + ' ' + student.otherNames,
