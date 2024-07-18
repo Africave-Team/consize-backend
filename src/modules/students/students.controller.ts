@@ -54,9 +54,9 @@ export const enrollStudentToCourse = catchAsync(async (req: Request, res: Respon
 
 
 export const testCourseWhatsapp = catchAsync(async (req: Request, res: Response) => {
-  const { course, phoneNumber } = req.body
-  if (course && phoneNumber) {
-    await studentService.testCourseWhatsapp(phoneNumber, course)
+  const { course, phoneNumber, tz } = req.body
+  if (course && phoneNumber && tz) {
+    await studentService.testCourseWhatsapp(phoneNumber, course, tz)
   }
   res.status(200).send({ message: "Enrollment created" })
 })

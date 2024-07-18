@@ -1518,6 +1518,7 @@ export const synStudentCourseEnrollment = async function (courseId: string, team
       await sessionService.createEnrollment({
         courseId,
         lessons: studentRecord.lessons,
+        anonymous: studentRecord.anonymous,
         name: studentRecord.name,
         phoneNumber: studentRecord.phoneNumber,
         progress: studentRecord.progress,
