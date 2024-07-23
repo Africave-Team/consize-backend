@@ -32,7 +32,7 @@ import Students from '../students/model.students'
 // import Teams from '../teams/model.teams'
 // import { convertTo24Hour } from '../utils'
 // import { convertTo24Hour } from '../utils'
-const INACTIVITY_TIME = 5
+// const INACTIVITY_TIME = 5
 // import randomstring from "randomstring"
 
 export enum CourseFlowMessageType {
@@ -1607,11 +1607,8 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ph
       // calculate the elapsed time and update stats service
       if (data.blockStartTime) {
         let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
-        if (data.lastActivity) {
-          let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
-          if (timeBetweenActivities > INACTIVITY_TIME) {
-            diffInSeconds = INACTIVITY_TIME * 60
-          }
+        if (diffInSeconds > 250) {
+          diffInSeconds = 200
         }
         saveBlockDuration(data.team, data.student, diffInSeconds, item.lesson, item.block)
         updatedData = { ...updatedData, blockStartTime: null }
@@ -1666,11 +1663,8 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
           saveStats = true
           if (data.blockStartTime) {
             let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
-            if (data.lastActivity) {
-              let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
-              if (timeBetweenActivities > INACTIVITY_TIME) {
-                diffInSeconds = INACTIVITY_TIME * 60
-              }
+            if (diffInSeconds > 250) {
+              diffInSeconds = 250
             }
             duration = diffInSeconds
             updatedData = { ...updatedData, blockStartTime: null }
@@ -1714,11 +1708,8 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
             saveStats = true
             if (data.blockStartTime) {
               let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
-              if (data.lastActivity) {
-                let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
-                if (timeBetweenActivities > INACTIVITY_TIME) {
-                  diffInSeconds = INACTIVITY_TIME * 60
-                }
+              if (diffInSeconds > 250) {
+                diffInSeconds = 200
               }
               duration = diffInSeconds
               updatedData = { ...updatedData, blockStartTime: null }
