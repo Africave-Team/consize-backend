@@ -6,6 +6,7 @@ import { courseControllers, courseValidators } from "../../modules/courses"
 
 const router: Router = express.Router()
 router.route('/public/all').get(courseControllers.fetchPublishedCourses)
+router.route('/generate-header/:course').get(courseControllers.generateCourseHeader)
 router.route('/public/single/:course').get(courseControllers.fetchSingleCourse)
 router.use(auth())
 router.get('/', courseControllers.fetchTeamCourses)

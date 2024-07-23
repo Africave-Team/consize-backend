@@ -30,6 +30,8 @@ import randomstring from "randomstring"
 import { generateOutlinePrompt, generateOutlinePromptDocument } from './prompts'
 import { buildCourse } from '../ai/services'
 import { sessionService } from '../sessions'
+import { generatorService } from '../generators'
+import { teamService } from '../teams'
 
 interface SessionStudent extends StudentCourseStats {
   id: string
@@ -67,6 +69,10 @@ enum PageType {
 
 
 export const createCourse = async (coursePayload: CreateCoursePayload, teamId: string): Promise<CourseInterface> => {
+  const team = await Teams.findById(teamId, 'name')
+  if (team && (/consize/i.test(team.name))) {
+    coursePayload.library = true
+  }
   const course = new Course({
     ...coursePayload, owner: teamId, shortCode: randomstring.generate({
       length: 5,
@@ -223,9 +229,19 @@ export const maxEnrollmentReached = async (settingsId: string, courseId: string,
 }
 
 
-export const fetchPublishedCourses = async ({ page, pageSize }: { page: number, pageSize: number }): Promise<QueryResult<CourseInterface>> => {
-  return Course.paginate({ status: CourseStatus.PUBLISHED }, { page, limit: pageSize, populate: 'lessons,courses' })
-
+export const fetchPublishedCourses = async ({ page, pageSize, library, search, owner }: { page: number, pageSize: number, library?: boolean, search?: string, owner?: string }): Promise<QueryResult<CourseInterface>> => {
+  let q: any = { $and: [{ status: CourseStatus.PUBLISHED }] }
+  if (library) {
+    q.$and.push({ $or: [{ library: true }] })
+  }
+  if (owner) {
+    q.$and.push({ owner })
+  }
+  if (search) {
+    const regex = new RegExp(search, "i")
+    q.$and.push({ $or: [{ title: { $regex: regex } }, { description: { $regex: regex } }] })
+  }
+  return Course.paginate(q, { page, limit: pageSize, sortBy: 'createdAt:desc', populate: 'lessons,lessons.blocks,lessons.blocks.quiz,lessons.quizzes,courses,courses.lessons.blocks,courses.lessons.blocks.quiz,courses.lessons.quizzes' })
 }
 
 export const searchTeamCourses = async ({ teamId, search, filter }: { teamId: string, search: string, filter?: PageType }): Promise<CourseInterface[]> => {
@@ -318,6 +334,18 @@ export const fetchSingleCourse = async ({ courseId }: { courseId: string }): Pro
 
 export const deleteCourse = async ({ courseId }: { courseId: string }): Promise<void> => {
   await Course.findByIdAndDelete(courseId)
+}
+
+export const generateCourseHeader = async ({ courseId }: { courseId: string }): Promise<string | null> => {
+  const course = await Course.findById(courseId)
+  if (course) {
+    let owner = await teamService.fetchTeamById(course.owner)
+    if (owner) {
+      const url = await generatorService.generateCourseHeaderImage(course, owner)
+      return url
+    }
+  }
+  return null
 }
 
 export const duplicateCourse = async ({ courseId, title, headerMediaUrl, description }: { courseId: string, title: string, headerMediaUrl: string, description: string }): Promise<CourseInterface | null> => {
@@ -1327,7 +1355,7 @@ export const handleStudentWhatsapp = async ({ courseId, studentId, settingsId, l
             // update redis record
             enrollment.lastActivity = lastActivity.toISOString()
             enrollment.lastLessonCompleted = lastLessonCompleted.toISOString()
-            await redisClient.set(key, JSON.stringify({ ...enrollment, lastMessageId: msgId, owedLessonsCount: enrollment.owedLessonsCount + (enrollment.maxLessonsPerDay - enrollment.dailyLessonsCount), dailyLessonsCount: 0 }))
+            await redisClient.set(key, JSON.stringify({ ...enrollment, lastMessageId: msgId, owedLessonsCount: enrollment.owedLessonsCount + (enrollment.maxLessonsPerDay - enrollment.dailyLessonsCount), dailyLessonsCount: enrollment.dailyLessonsCount }))
           }
         }
       }
@@ -1490,6 +1518,7 @@ export const synStudentCourseEnrollment = async function (courseId: string, team
       await sessionService.createEnrollment({
         courseId,
         lessons: studentRecord.lessons,
+        anonymous: studentRecord.anonymous,
         name: studentRecord.name,
         phoneNumber: studentRecord.phoneNumber,
         progress: studentRecord.progress,

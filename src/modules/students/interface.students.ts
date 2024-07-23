@@ -11,6 +11,7 @@ export interface Student {
   channelId: string
   email: string
   tz: string
+  anonymous: boolean
   custom?: any
 }
 
@@ -39,6 +40,7 @@ export interface StudentCourseStats {
   name: string
   studentId: string
   phoneNumber: string
+  anonymous: boolean
   completed?: boolean
   droppedOut?: boolean
   certificate?: string

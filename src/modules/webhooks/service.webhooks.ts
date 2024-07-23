@@ -190,7 +190,7 @@ export const generateCourseFlow = async function (courseId: string) {
                 if (blockData.bodyMedia && blockData.bodyMedia.url && blockData.bodyMedia.url.length > 10) {
                   flo.mediaType = blockData.bodyMedia.mediaType
                   flo.mediaUrl = blockData.bodyMedia.url
-                  if (blockData.bodyMedia.mediaType === MediaType.VIDEO && blockData.bodyMedia.embedUrl) {
+                  if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
                     flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
                     flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
                   }
@@ -228,10 +228,10 @@ export const generateCourseFlow = async function (courseId: string) {
                 block: blockData,
                 lesson: lessonData
               }
-              if (blockData.bodyMedia && blockData.bodyMedia.url && blockData.bodyMedia.url.length > 10) {
+              if (blockData.bodyMedia && blockData.bodyMedia.url) {
                 flo.mediaType = blockData.bodyMedia.mediaType
                 flo.mediaUrl = blockData.bodyMedia.url
-                if (blockData.bodyMedia.mediaType === MediaType.VIDEO && blockData.bodyMedia.embedUrl) {
+                if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
                   flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
                   flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
                 }
@@ -384,7 +384,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
   const course = await Courses.findById(payload.courseId)
   const student = await Students.findById(payload.studentId)
   if (course && student) {
-    const msgId = v4()
+    // const msgId = v4()
     if (payload.phoneNumber && !payload.slackChannel) {
       const key = `${config.redisBaseKey}enrollments:${payload.phoneNumber}:${payload.courseId}`
       const dtf = await redisClient.get(key)
@@ -417,7 +417,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
               }
             }
           })
-          await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
+          // await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
         }
       }
     } else if (payload.slackChannel && payload.slackToken && !payload.phoneNumber) {
@@ -459,7 +459,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
               ]
             }
           })
-          await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
+          // await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
         }
       }
     }
@@ -479,7 +479,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
   const course = await Courses.findById(payload.courseId)
   const student = await Students.findById(payload.studentId)
   if (course && student) {
-    const msgId = v4()
+    // const msgId = v4()
     if (payload.phoneNumber && !payload.slackChannel) {
       const key = `${config.redisBaseKey}enrollments:${payload.phoneNumber}:${payload.courseId}`
       const dtf = await redisClient.get(key)
@@ -513,7 +513,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
               }
             }
           })
-          await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
+          // await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
         }
       }
     } else if (payload.slackChannel && payload.slackToken && !payload.phoneNumber) {
@@ -555,7 +555,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
               ]
             }
           })
-          await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
+          // await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
         }
       }
     }
@@ -714,7 +714,7 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
     if (redisClient.isReady) {
       const courseKey = `${config.redisBaseKey}courses:${courseId}`
       const courseFlow = await redisClient.get(courseKey)
-      if (courseFlow && settings?.metadata) {
+      if (courseFlow) {
         const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
         const redisData: CourseEnrollment = {
           team: course.owner,
@@ -733,8 +733,8 @@ export const startCourse = async (phoneNumber: string, courseId: string, student
           currentBlock: 0,
           nextBlock: 1,
           totalBlocks: courseFlowData.length,
-          maxLessonsPerDay: settings?.metadata?.maxLessonsPerDay,
-          minLessonsPerDay: settings?.metadata?.minLessonsPerDay,
+          maxLessonsPerDay: settings?.metadata?.maxLessonsPerDay || 2,
+          minLessonsPerDay: settings?.metadata?.minLessonsPerDay || 1,
           dailyLessonsCount: 0,
           owedLessonsCount: 0
         }
@@ -762,7 +762,13 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
   const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${courseId}`
   const initialMessageId = v4()
   if (course && student) {
-    let courses = await Courses.find({ _id: { $in: course.courses } })
+    let titles: string[] = []
+    for (let id of course.courses) {
+      let course = await Courses.findById(id).select("title")
+      if (course) {
+        titles.push(course.title)
+      }
+    }
     const settings = await Settings.findById(course.settings)
     if (redisClient.isReady) {
       let totalBlocks = 0
@@ -770,7 +776,7 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
       const courseOwner = await Team.findById(course.owner)
       let payload: CourseFlowItem = {
         type: CourseFlowMessageType.INTRO,
-        content: `This is a bundle of courses. \n*Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nYou will receive the following courses in this order;\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}. \nHappy learning.`
+        content: `This is a bundle of courses. \n*Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nYou will receive the following courses in this order;\n${titles.map((title, index) => `${index + 1}. *${title}*`).join('\n')}. \nHappy learning.`
       }
       if (course.headerMedia && course.headerMedia.url && course.headerMedia.url.startsWith('https://')) {
         payload.mediaType = course.headerMedia.mediaType
@@ -787,26 +793,41 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
           flows.push(...courseFlowData)
         }
       }
-      const endOfBundleMessage = {
-        type: CourseFlowMessageType.END_OF_BUNDLE,
-        mediaType: course.headerMedia?.mediaType || "",
-        mediaUrl: course.headerMedia?.url || "",
-        content: `Congratulations on completing.\n *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}.`
-      }
+      // const endOfBundleMessage = {
+      //   type: CourseFlowMessageType.END_OF_BUNDLE,
+      //   mediaType: course.headerMedia?.mediaType || "",
+      //   mediaUrl: course.headerMedia?.url || "",
+      //   content: `Congratulations on completing.\n *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}.`
+      // }
 
 
-      flows.push(endOfBundleMessage)
+      // flows.push(endOfBundleMessage)
 
       flows = flows.filter(e => !e.surveyId)
+      flows = flows.filter(e => e.type !== CourseFlowMessageType.END_SURVEY)
       flows = flows.filter(e => e.type !== CourseFlowMessageType.WELCOME)
 
-      const updatedFlows = flows.map(item => {
-        if (item.type === 'end-of-course') {
-          return {
-            type: 'end-of-course',
-            mediaType: course?.headerMedia?.mediaType || "",
-            mediaUrl: course?.headerMedia?.url || "",
-            content: 'Congratulations on completing this course,\nYou will receive the next course in the bundle, shortly \n'
+      // Find the index of the last 'end-of-course' item
+      const lastEndOfCourseIndex = flows.map(item => item.type).lastIndexOf(CourseFlowMessageType.ENDCOURSE)
+
+      const updatedFlows = flows.map((item, index) => {
+        if (item.type === CourseFlowMessageType.ENDCOURSE) {
+          if (index === lastEndOfCourseIndex) {
+            // Return a different message for the last 'end-of-course' item
+            return {
+              type: CourseFlowMessageType.ENDCOURSE,
+              mediaType: course?.headerMedia?.mediaType || "",
+              mediaUrl: course?.headerMedia?.url || "",
+              content: 'Congratulations on completing this course,\nThis is the last course in the Bundle\nYou will receive your certificate shortly.'
+            }
+          } else {
+            // Return the regular message for all other 'end-of-course' items
+            return {
+              type: CourseFlowMessageType.ENDCOURSE,
+              mediaType: course?.headerMedia?.mediaType || "",
+              mediaUrl: course?.headerMedia?.url || "",
+              content: 'Congratulations on completing this course,\nYou will receive the next course in the bundle shortly.\n'
+            }
           }
         }
         return item
@@ -834,7 +855,7 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
           nextBlock: 0,
           totalBlocks,
           bundle: true,
-          maxLessonsPerDay: settings?.metadata?.maxLessonsPerDay || 1,
+          maxLessonsPerDay: settings?.metadata?.maxLessonsPerDay || 2,
           minLessonsPerDay: settings?.metadata?.minLessonsPerDay || 1,
           dailyLessonsCount: 0,
           owedLessonsCount: 0
@@ -1147,27 +1168,169 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             break
 
           case CourseFlowMessageType.ENDCOURSE:
-            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              to: phoneNumber,
-              type: "text",
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              text: {
-                body: item.content.replace('{survey}', '')
-              }
-            })
-            await delay(5000)
-            let next = flowData[nextIndex + 1]
-            if ((next?.surveyId && next.surveyQuestion) || data.bundle) {
-              updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
-              handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
-            } else {
-              // if no survey for this course, then send the certificate
-              agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
-                ...updatedData
-              })
-            }
+            if (data.bundle) {
+              if (updatedData.totalBlocks - updatedData.nextBlock < 4) {
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: phoneNumber,
+                  type: 'text',
+                  messaging_product: 'whatsapp',
+                  recipient_type: 'individual',
+                  text: {
+                    body: item.content.replace('{survey}', ''),
+                  },
+                })
+                await delay(5000)
+                let next = flowData[nextIndex + 1]
+                if ((next?.surveyId && next.surveyQuestion) || data.bundle) {
+                  updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
+                  handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
+                } else {
+                  // if no survey for this course, then send the certificate
+                  agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
+                    ...updatedData,
+                  })
+                }
+              } else {
+                if (!moment(updatedData.finishedLastLessonAt).isSame(moment(), 'day')) {
+                  updatedData = { ...updatedData, dailyLessonsCount: 1 }
+                } else {
+                  updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
+                }
 
+                let message = `Congratulations! 🎉 on completing the last lesson in this course! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nTap continue now to get the next course in the Bundle.\nWe're rooting for you!`.toString()
+
+                if (updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount > 0) {
+                  if (updatedData.minLessonsPerDay - updatedData.dailyLessonsCount > 0) {
+                    const stringToRemove = [
+                      "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.",
+                      "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap",
+                      "'Set Resumption Time' to choose the time to continue tomorrow",
+                    ]
+                    stringToRemove.forEach((substring) => {
+                      message = message.replace(new RegExp(substring, 'g'), '')
+                    })
+
+                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                      to: phoneNumber,
+                      type: 'interactive',
+                      messaging_product: 'whatsapp',
+                      recipient_type: 'individual',
+                      interactive: {
+                        body: {
+                          text: message,
+                        },
+                        type: 'button',
+                        action: {
+                          buttons: [
+                            {
+                              type: 'reply',
+                              reply: {
+                                id: CONTINUE + `|${messageId}`,
+                                title: 'Continue Now',
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    })
+                  } else {
+                    message = `Congratulations! 🎉 on completing this course.\nYou've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today.`.toString()
+
+                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                      to: phoneNumber,
+                      type: 'interactive',
+                      messaging_product: 'whatsapp',
+                      recipient_type: 'individual',
+                      interactive: {
+                        body: {
+                          text: message,
+                        },
+                        type: 'button',
+                        action: {
+                          buttons: [
+                            {
+                              type: 'reply',
+                              reply: {
+                                id: CONTINUE + `|${messageId}`,
+                                title: 'Continue Now',
+                              },
+                            },
+                            {
+                              type: 'reply',
+                              reply: {
+                                id: TOMORROW + `|${messageId}`,
+                                title: 'Continue Tomorrow',
+                              },
+                            },
+                            {
+                              type: 'reply',
+                              reply: {
+                                id: SCHEDULE_RESUMPTION + `|${messageId}`,
+                                title: 'Set Resumption Time',
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    })
+                  }
+                } else {
+                  message = `\nGreat job! 🥳 on completing this course.\nYou've reached the maximum lesson target for today.\nGo over what you've learnt today and come back tomorrow to continue with the next course in the bundle 😉`.toString()
+                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                    to: phoneNumber,
+                    type: 'interactive',
+                    messaging_product: 'whatsapp',
+                    recipient_type: 'individual',
+                    interactive: {
+                      body: {
+                        text: message,
+                      },
+                      type: 'button',
+                      action: {
+                        buttons: [
+                          {
+                            type: 'reply',
+                            reply: {
+                              id: TOMORROW + `|${messageId}`,
+                              title: 'Continue Tomorrow',
+                            },
+                          },
+                          {
+                            type: 'reply',
+                            reply: {
+                              id: SCHEDULE_RESUMPTION + `|${messageId}`,
+                              title: 'Set Resumption Time',
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  })
+                }
+                await redisClient.set(key, JSON.stringify({ ...updatedData }))
+              }
+            } else {
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: phoneNumber,
+                type: 'text',
+                messaging_product: 'whatsapp',
+                recipient_type: 'individual',
+                text: {
+                  body: item.content.replace('{survey}', ''),
+                },
+              })
+              await delay(5000)
+              let next = flowData[nextIndex + 1]
+              if ((next?.surveyId && next.surveyQuestion) || data.bundle) {
+                updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
+                handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
+              } else {
+                // if no survey for this course, then send the certificate
+                agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
+                  ...updatedData,
+                })
+              }
+            }
             break
           case CourseFlowMessageType.END_OF_BUNDLE:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -1194,13 +1357,93 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
             break
           case CourseFlowMessageType.ENDLESSON:
-            let studentData: CourseEnrollment = { ...data, dailyLessonsCount: data.dailyLessonsCount + 1 }
-            let message = item.content + `\nTotal lessons covered today ${data.dailyLessonsCount + 1} \nTotal lessons left for today ${data.maxLessonsPerDay + data.owedLessonsCount - (data.dailyLessonsCount + 1)} \nPlease do ensure you complete your daily lessons target for today`.toString()
-            const stringToRemove = ["'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
-            stringToRemove.forEach(substring => {
-              message = message.replace(new RegExp(substring, 'g'), '')
-            })
-            if ((data.maxLessonsPerDay + data.owedLessonsCount - data.dailyLessonsCount) > 0) {
+            if (!moment(updatedData.finishedLastLessonAt).isSame(moment(), 'day')) {
+              updatedData = { ...updatedData, dailyLessonsCount: 1 }
+            } else {
+              updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
+            }
+
+            let message = item.content + `\nWell done on completing the last lesson! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nWe're rooting for you!`.toString()
+
+            if (updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount > 0) {
+              if (updatedData.minLessonsPerDay - updatedData.dailyLessonsCount > 0) {
+                const stringToRemove = ["\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.", "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
+                stringToRemove.forEach(substring => {
+                  message = message.replace(new RegExp(substring, 'g'), '')
+                })
+
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: phoneNumber,
+                  type: "interactive",
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  interactive: {
+                    body: {
+                      text: message
+                    },
+                    type: "button",
+                    action: {
+                      buttons: [
+                        {
+                          type: "reply",
+                          reply: {
+                            id: CONTINUE + `|${messageId}`,
+                            title: "Continue Now"
+                          }
+                        },
+
+                      ]
+                    }
+                  }
+                })
+
+              } else {
+                message = item.content + `\nCongratulations! 🎉 You've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today`.toString()
+
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: phoneNumber,
+                  type: "interactive",
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  interactive: {
+                    body: {
+                      text: message
+                    },
+                    type: "button",
+                    action: {
+                      buttons: [
+                        {
+                          type: "reply",
+                          reply: {
+                            id: CONTINUE + `|${messageId}`,
+                            title: "Continue Now"
+                          }
+                        },
+                        {
+                          type: "reply",
+                          reply: {
+                            id: TOMORROW + `|${messageId}`,
+                            title: "Continue Tomorrow"
+                          }
+                        },
+                        {
+                          type: "reply",
+                          reply: {
+                            id: SCHEDULE_RESUMPTION + `|${messageId}`,
+                            title: "Set Resumption Time"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                })
+              }
+            } else {
+              message = item.content + `\nGreat job! 🥳 You've reached the maximum lesson target for today.\nGo over what you've learnt today and come back tomorrow for more 😉`.toString()
+              const stringToRemove = ["\n\n➡️ Tap 'Continue Now' when you're ready to start.\n"]
+              stringToRemove.forEach(substring => {
+                message = message.replace(new RegExp(substring, 'g'), '')
+              })
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: phoneNumber,
                 type: "interactive",
@@ -1213,40 +1456,6 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                   type: "button",
                   action: {
                     buttons: [
-                      {
-                        type: "reply",
-                        reply: {
-                          id: CONTINUE + `|${messageId}`,
-                          title: "Continue Now"
-                        }
-                      },
-
-                    ]
-                  }
-                }
-              })
-            } else {
-              //update lessons count
-              //account for total lessons left
-              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                to: phoneNumber,
-                type: "interactive",
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                interactive: {
-                  body: {
-                    text: item.content + `\nTotal lessons covered today ${data.dailyLessonsCount + 1} \n total lessons left for today ${data.maxLessonsPerDay + data.owedLessonsCount - (data.dailyLessonsCount + 1)} \n`.toString()
-                  },
-                  type: "button",
-                  action: {
-                    buttons: [
-                      // {
-                      //   type: "reply",
-                      //   reply: {
-                      //     id: CONTINUE + `|${messageId}`,
-                      //     title: "Continue Now"
-                      //   }
-                      // },
                       {
                         type: "reply",
                         reply: {
@@ -1266,12 +1475,13 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 }
               })
             }
-            await redisClient.set(key, JSON.stringify({ ...studentData }))
+            updatedData.finishedLastLessonAt = new Date().getTime()
+            await redisClient.set(key, JSON.stringify({ ...updatedData }))
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.QUIZ:
             await sendQuiz(item, phoneNumber, messageId)
-            updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date() }
+            updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.INTRO:
@@ -1313,7 +1523,8 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           case CourseFlowMessageType.BLOCK:
           case CourseFlowMessageType.BLOCKWITHQUIZ:
             await sendBlockContent(item, phoneNumber, messageId)
-            updatedData = { ...updatedData, blockStartTime: new Date() }
+            updatedData = { ...updatedData, blockStartTime: new Date().toISOString() }
+            console.log(updatedData)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.SURVEY_MULTI_CHOICE:
@@ -1678,7 +1889,7 @@ export const sendAuthMessage = async () => {
   logger.info(request_body)
 }
 
-export const sendResumptionOptions = async (phoneNumber: string, key: string, data: CourseEnrollment): Promise<void> => {
+export const sendResumptionOptions = async (phoneNumber: string, _: string, __: CourseEnrollment): Promise<void> => {
   try {
     let msgId = v4()
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -1718,16 +1929,16 @@ export const sendResumptionOptions = async (phoneNumber: string, key: string, da
         }
       }
     })
-    redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
+    // redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
 }
 
 
-export const sendResumptionMessage = async (phoneNumber: string, key: string, data: CourseEnrollment): Promise<void> => {
+export const sendResumptionMessage = async (phoneNumber: string, _: string, data: CourseEnrollment): Promise<void> => {
   try {
-    let msgId = v4()
+    // let msgId = v4()
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
       type: "interactive",
@@ -1755,7 +1966,7 @@ export const sendResumptionMessage = async (phoneNumber: string, key: string, da
         }
       }
     })
-    redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
+    // redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
@@ -1776,8 +1987,6 @@ export const sendScheduleAcknowledgement = async (phoneNumber: string, time: str
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
 }
-
-
 
 export const exchangeFacebookToken = async function (code: string, team: string) {
   try {
@@ -1803,4 +2012,3 @@ export const exchangeFacebookToken = async function (code: string, team: string)
     console.log((error as AxiosError).response.data)
   }
 }
-

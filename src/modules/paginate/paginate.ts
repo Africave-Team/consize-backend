@@ -1,6 +1,11 @@
 /* eslint-disable no-param-reassign */
 import { Schema, Document, Model } from 'mongoose'
 
+interface PopulateOption {
+  path: string
+  populate?: PopulateOption | null
+}
+
 export interface QueryResult<T> {
   data: T[]
   page: number
@@ -16,7 +21,7 @@ export interface IOptions {
   limit?: number
   page?: number
 }
-
+// @ts-ignore
 const paginate = <T extends Document, U extends Model<U>> (schema: Schema<T>): void => {
   /**
    * @typedef {Object} QueryResult
@@ -70,13 +75,18 @@ const paginate = <T extends Document, U extends Model<U>> (schema: Schema<T>): v
     let docsPromise = this.find(filter).sort(sort).skip(skip).limit(limit).select(project)
 
     if (options.populate) {
+      const buildNestedPopulate = function (paths: string[]): PopulateOption | null {
+        if (!paths.length) return null
+        const [path, ...rest] = paths
+        if (!path) return null
+        return {
+          path,
+          populate: buildNestedPopulate(rest)
+        }
+      }
       options.populate.split(',').forEach((populateOption: any) => {
-        docsPromise = docsPromise.populate(
-          populateOption
-            .split('.')
-            .reverse()
-            .reduce((a: string, b: string) => ({ path: b, populate: a }))
-        )
+        const populatePaths = populateOption.split('.')
+        docsPromise = docsPromise.populate(buildNestedPopulate(populatePaths))
       })
     }
 

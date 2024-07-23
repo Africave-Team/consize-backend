@@ -69,3 +69,13 @@ export const fetchTeamInfo = catchAsync(async (req: Request, res: Response) => {
     res.status(httpStatus.OK).send({ data: team })
   }
 })
+
+
+export const resolveTeamInfo = catchAsync(async (req: Request, res: Response) => {
+  if (typeof req.params['code'] === 'string') {
+    // await teamService.updateTeamShortCode()
+    const team = await teamService.resolveTeamWithShortcode(req.params["code"])
+    res.status(httpStatus.OK).send({ data: team })
+  }
+})
+
