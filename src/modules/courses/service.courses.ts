@@ -817,7 +817,7 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
               value: currentStats.averageCompletionMinutes
             }
           ],
-          current: currentStats.averageCompletionMinutes > 0 ? 100 : 0,
+          current: currentStats.completed > 0 ? 100 : 0,
         },
         averageCourseProgress: {
           trends: [
@@ -968,16 +968,16 @@ export const generateCurrentCourseTrends = async (courseId: string, teamId: stri
         let last = older[older.length - 1]
         if (last) {
           if (last.value === currentStats.averageCompletionMinutes) {
-            trendsData.averageCompletionMinutes.current = ((currentStats.averageCompletionMinutes - last.value)) * 100
+            trendsData.averageCompletionMinutes.current = currentStats.completed > 0 ? (((currentStats.averageCompletionMinutes - last.value)) * 100) : 0
           } else {
-            trendsData.averageCompletionMinutes.current = ((currentStats.averageCompletionMinutes - last.value) / last.value) * 100
+            trendsData.averageCompletionMinutes.current = currentStats.completed > 0 ? (((currentStats.averageCompletionMinutes - last.value) / last.value) * 100) : 0
           }
         }
         if (isNaN(trendsData.averageCompletionMinutes.current) || !isFinite(trendsData.averageCompletionMinutes.current)) {
           trendsData.averageCompletionMinutes.current = 0
         }
       }
-      trendsData.averageCompletionMinutes.current = currentStats.averageCompletionMinutes
+      trendsData.averageCompletionMinutes.current = currentStats.completed > 0 ? currentStats.averageCompletionMinutes : 0
       index = trendsData.averageCompletionMinutes.trends.findIndex(e => e.date === date)
       if (index >= 0 && trendsData.averageCompletionMinutes.trends[index]) {
         // @ts-ignore
