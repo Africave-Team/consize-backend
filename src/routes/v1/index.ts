@@ -19,7 +19,9 @@ import subscriptionRoute from "./subscriptions.routes"
 import aiRoute from "./ai.routes"
 import adminRoute from "./admin"
 import config from '../../config/config'
-import certificateRoute from './certificates'
+import certificateRoute from "./certificates.route"
+import dashboardRoute from './dashboard.route'
+
 
 const router = express.Router()
 
@@ -108,6 +110,10 @@ const defaultIRoute: IRoute[] = [
   {
     path: "/certificates",
     route: certificateRoute
+  },
+  {
+    path: "/dashboard",
+    route: dashboardRoute
   }
 ]
 
