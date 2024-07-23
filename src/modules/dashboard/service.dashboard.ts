@@ -8,7 +8,7 @@ import Enrollments from "../sessions/model"
 // }
 
 export const getLearnersStat = async ({ searchParams }: any, teamId: string): Promise<any> => {
-    const {enrollment_date_from, enrollment_date_to, courseId } = searchParams
+    const {enrollment_date_from, enrollment_date_to, courseId } = searchParams || {}
 
     const matchConditions: any = { teamId };
 
