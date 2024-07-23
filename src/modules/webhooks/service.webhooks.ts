@@ -1084,7 +1084,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             if (data.lastActivity) {
               let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
               if (timeBetweenActivities > INACTIVITY_TIME) {
-                diffInSeconds = INACTIVITY_TIME * 60
+                diffInSeconds = Math.min(INACTIVITY_TIME * 60, diffInSeconds)
               }
             }
             saveBlockDuration(data.team, data.student, diffInSeconds, currentItem.lesson, currentItem.block)
