@@ -26,8 +26,9 @@ export const updateDailyStats = async function (stats: DailyStatsModel): Promise
   if (stats.studentId) {
     q['studentId'] = stats.studentId
   }
+  console.log(q)
   const current = await StatsModel.findOne(q)
-
+  console.log(current)
   if (current) {
     await StatsModel.findByIdAndUpdate(current.id, { $set: { ...stats } })
   } else {
