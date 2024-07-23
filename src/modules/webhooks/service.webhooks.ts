@@ -1081,11 +1081,8 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           // calculate the elapsed time and update stats service
           if (data.blockStartTime) {
             let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
-            if (data.lastActivity) {
-              let timeBetweenActivities = moment().diff(moment(data.lastActivity), 'minutes')
-              if (timeBetweenActivities > INACTIVITY_TIME) {
-                diffInSeconds = Math.min(INACTIVITY_TIME * 60, diffInSeconds)
-              }
+            if (diffInSeconds > 250) {
+              diffInSeconds = 200
             }
             saveBlockDuration(data.team, data.student, diffInSeconds, currentItem.lesson, currentItem.block)
             updatedData = { ...updatedData, blockStartTime: null, lastActivity: new Date().toISOString() }
