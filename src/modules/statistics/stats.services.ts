@@ -1,5 +1,5 @@
 import StatsModel from './stats.model'
-import { DailyStatsModelInterface, DailyStatsServiceInput } from './stats.interfaces'
+import { DailyStatsModel, DailyStatsModelInterface, DailyStatsServiceInput } from './stats.interfaces'
 import moment from 'moment'
 
 
@@ -9,7 +9,18 @@ export const fetchDailyStats = async function (payload: DailyStatsServiceInput):
   return result
 }
 
-// export const updateDailyStats = async function (stats: DailyStatsModel): Promise<void> {
-// const current = await StatsModel.findOne({date: {$gte: moment().startOf('day').toDate(), $lte: moment().endOf('day').toDate()}})
+export const updateDailyStats = async function (stats: DailyStatsModel): Promise<void> {
+  const current = await StatsModel.findOne({
+    $and: [
+      { date: { $gte: moment().startOf('day').toDate() } },
+      { date: { $lte: moment().endOf('day').toDate() } }
+    ]
+  })
 
-// }
+  if (current) {
+    await StatsModel.findByIdAndUpdate(current.id, { $set: { ...stats } })
+  } else {
+    await StatsModel.create({ date: moment().toDate(), ...stats })
+  }
+
+}
