@@ -44,6 +44,12 @@ export const TeamSchema = new Schema<TeamsInterface, ITeamModel>(
         facebookToken: {
             type: Schema.Types.String
         },
+        facebookBusinessId: {
+            type: Schema.Types.String
+        },
+        facebookPhoneNumberId: {
+            type: Schema.Types.String
+        },
         owner: {
             type: String,
             ref: "User"
