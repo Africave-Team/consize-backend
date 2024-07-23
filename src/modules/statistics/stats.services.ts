@@ -4,7 +4,11 @@ import moment from 'moment'
 
 
 export const fetchDailyStats = async function (payload: DailyStatsServiceInput): Promise<DailyStatsModelInterface[]> {
-  const result = await StatsModel.find({ date: { $gte: moment(payload.start).toDate(), $lte: moment(payload.end).toDate() } })
+  let q: any = { date: { $gte: moment(payload.start).toDate(), $lte: moment(payload.end).toDate() }, teamId: payload.teamId }
+  if (payload.courseId) {
+    q['courseId'] = payload.courseId
+  }
+  const result = await StatsModel.find(q)
   // Return the total count
   return result
 }

@@ -28,6 +28,8 @@ export interface DailyStatsModelInterfaceModel extends Model<DailyStatsModelInte
 
 
 export interface DailyStatsServiceInput {
+  teamId: string
+  courseId?: string
   start: string
   end: string
 }
