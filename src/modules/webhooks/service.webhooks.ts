@@ -1990,22 +1990,55 @@ export const sendScheduleAcknowledgement = async (phoneNumber: string, time: str
 
 export const exchangeFacebookToken = async function (code: string, team: string) {
   try {
-    console.log({
-      'client_id': config.facebook.id,
-      'client_secret': config.facebook.secret,
-      'code': code,
-      'redirect_uri': config.facebook.redirectUrl
-    })
-    const result: AxiosResponse = await axios.get(`https://graph.facebook.com/v12.0/oauth/access_token`, {
+    const result: AxiosResponse = await axios.get(`https://graph.facebook.com/v17.0/oauth/access_token`, {
       params: {
         'client_id': config.facebook.id,
         'client_secret': config.facebook.secret,
-        'code': code
+        'code': code,
+        'grant_type': 'authorization_code'
       }
     })
+    const token = result.data.access_token
+    // fetch the associated business account
+    const accountInfo: AxiosResponse = await axios.get(`https://graph.facebook.com/v20.0/debug`, {
+      params: {
+        'input_token': token
+      },
+      headers: {
+        Authorization: `Bearer ${config.whatsappToken}`
+      }
+    })
+    const data = accountInfo.data.data
+    let businessId, phoneNumberId
+    if (data) {
+      const scopes = data.granular_scopes
+      if (scopes && Array.isArray(scopes)) {
+        let scope = scopes.find(e => e.scope === "whatsapp_business_management")
+        if (scope) {
+          businessId = scope.targetIds[0]
+          // then use the business account to fetch the phone numbers(test and real)
+          const phoneNumberInfo: AxiosResponse = await axios.get(`https://graph.facebook.com/v20.0/${businessId}/phone_numbers`, {
+            headers: {
+              Authorization: `Bearer ${config.whatsappToken}`
+            }
+          })
+
+          const numberInfo = phoneNumberInfo.data.data
+          if (numberInfo && Array.isArray(numberInfo)) {
+            let activeNumber = numberInfo.find(e => e.code_verification_status)
+            if (activeNumber) {
+              phoneNumberId = activeNumber.id
+            }
+          }
+
+        }
+      }
+    }
 
     await teamService.updateTeamInfo(team, {
-      facebookToken: result.data.access_token
+      facebookToken: token,
+      facebookBusinessId: businessId,
+      facebookPhoneNumberId: phoneNumberId
     })
   } catch (error) {
     // @ts-ignore

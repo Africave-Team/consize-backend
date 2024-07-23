@@ -11,6 +11,8 @@ export interface TeamsInterface extends Document {
     owner: string
     slackToken: string | null
     facebookToken: string | null
+    facebookBusinessId: string | null
+    facebookPhoneNumberId: string | null
     channels: DistributionChannel[]
     logo?: string
     createdAt?: Date
