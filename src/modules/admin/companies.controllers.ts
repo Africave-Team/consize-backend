@@ -36,6 +36,7 @@ export const resendOnboardEmail = catchAsync(async (req: Request, res: Response)
     const team = await teamService.fetchTeamByIdWithOwner(teamId)
     if (team) {
       const verifyEmailToken = await tokenService.generateVerifyEmailToken(team.owner)
+      console.log(verifyEmailToken)
       emailService.sendOnboardingEmail(team.owner.email, team.owner.name.split(' ')[0] || 'customer', verifyEmailToken)
     }
     res.status(httpStatus.OK).send({ message: "Company onboarded successfully", data: team })
