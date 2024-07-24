@@ -230,7 +230,7 @@ export const maxEnrollmentReached = async (settingsId: string, courseId: string,
 
 
 export const fetchPublishedCourses = async ({ page, pageSize, library, search, owner }: { page: number, pageSize: number, library?: boolean, search?: string, owner?: string }): Promise<QueryResult<CourseInterface>> => {
-  let q: any = { $and: [{ status: CourseStatus.PUBLISHED }] }
+  let q: any = { $and: [{ status: CourseStatus.PUBLISHED }, { private: false }] }
   if (library) {
     q.$and.push({ $or: [{ library: true }] })
   }

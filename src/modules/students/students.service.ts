@@ -23,6 +23,7 @@ import Settings from '../courses/model.settings'
 import { subscriptionService } from '../subscriptions'
 import { sessionService } from '../sessions'
 import { MAX_FREE_PLAN_MONTHLY_ENROLLMENTS } from '../../config/constants'
+import { statsService } from '../statistics'
 
 export const bulkAddStudents = async (students: Student[]): Promise<string[]> => {
   try {
@@ -487,6 +488,19 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
     }
     await dbRef.set(payload)
     await sessionService.updateEnrollment(studentId, lesson.course, payload)
+    await statsService.updateDailyStats({
+      baselineScore: 0,
+      endlineScore: 0,
+      blockDuration: duration,
+      completionTime: 0,
+      courseId: lesson.course,
+      lessonDuration: 0,
+      progress: 0,
+      retakeRate: 0,
+      studentId: student.id,
+      teamId: teamId,
+      testScore: 0
+    })
   }
 }
 

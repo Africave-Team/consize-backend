@@ -73,7 +73,7 @@ export const sendEmail = async ({ to, template, templateVariables, subject }: Me
           }
         ]
       })
-    logger.info(info)
+    logger.info(JSON.stringify(info.response.data))
   } catch (error) {
     logger.error(error)
   }
