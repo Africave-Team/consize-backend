@@ -185,3 +185,40 @@ export const getTopCourseMetrics = async (teamId: string): Promise<any> => {
 
     return result;
 }
+
+export const getGraphStats = async ({ dateRange }: any, teamId: string): Promise<any> => {
+    const { startDate,endDate }: any = dateRange
+    const result = await Statistics.aggregate([
+      {
+        $match: {
+          teamId: teamId,
+          date: {
+            $gte: new Date(startDate),
+            $lte: new Date(endDate),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$date',
+          totalEnrolledLearners: { $sum: 1 },
+          avgCourseProgress: { $avg: '$progress' },
+          avgCourseCompletionTime: { $avg: '$completionTime' },
+        },
+      },
+      {
+        $sort: { _id: 1 }, // Sort by date
+      },
+      {
+        $project: {
+          _id: 0,
+          date: '$_id',
+          totalEnrolledLearners: 1,
+          avgCourseProgress: 1,
+          avgCourseCompletionTime: 1,
+        },
+      },
+    ]);
+
+    return result;
+}

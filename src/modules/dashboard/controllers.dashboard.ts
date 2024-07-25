@@ -20,7 +20,7 @@ export const assessmentMetrics = catchAsync(async (req: Request, res: Response) 
 })
 
 export const graphMetrics = catchAsync(async (req: Request, res: Response) => {
-    const graphStats = await dashboardService.getAssessmentStat(req.query, req.user.team)
+    const graphStats = await dashboardService.getGraphStats(req.query, req.user.team)
     res.status(httpStatus.OK).send({ message: "graph stats", data: graphStats })
 })
 
