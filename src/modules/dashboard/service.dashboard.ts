@@ -149,3 +149,39 @@ export const getAssessmentStat = async ({searchParams}: any, teamId: string): Pr
       };
     }
 }
+
+export const getTopCourseMetrics = async (teamId: string): Promise<any> => {
+      const result = await Enrollments.aggregate([
+      { $match: { teamId: teamId } },
+      {
+        $group: {
+          _id: '$courseId',
+          totalEnrolledLearners: { $sum: 1 },
+          avgCompletionRate: { $avg: { $cond: [{ $eq: ['$completed', true] }, 1, 0] } },
+          avgCourseCompletionTime: { $avg: '$completionTime' }, // Assuming you have a completionTime field
+          avgCourseProgress: { $avg: '$progress' }
+        }
+      },
+      {
+        $lookup: {
+          from: 'courses', // Assuming you have a courses collection
+          localField: '_id',
+          foreignField: '_id', // Assuming the courseId in the enrollment matches the _id in courses
+          as: 'courseDetails'
+        }
+      },
+      { $unwind: '$courseDetails' },
+      {
+        $project: {
+          _id: 0,
+          courseName: '$courseDetails.name',
+          totalEnrolledLearners: 1,
+          avgCompletionRate: 1,
+          avgCourseCompletionTime: 1,
+          avgCourseProgress: 1
+        }
+      }
+    ]);
+
+    return result;
+}

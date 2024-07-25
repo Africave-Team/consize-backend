@@ -10,5 +10,8 @@ router.use(auth())
 router.get('/courses',  dashboardController.courseMetrics)
 router.get('/learners', dashboardController.learnersMetrics)
 router.get('/assessment', dashboardController.assessmentMetrics)
+router.get('/graph-metrics', dashboardController.graphMetrics)
+router.get('/top-courses', dashboardController.topCourseMetrics)
+router.get('/top-level-metrics', dashboardController.topLevelMetrics)
 
 export default router
