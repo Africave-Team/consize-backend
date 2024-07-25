@@ -30,6 +30,6 @@ export const topCourseMetrics = catchAsync(async (req: Request, res: Response) =
 })
 
 export const topLevelMetrics = catchAsync(async (req: Request, res: Response) => {
-    const topLevelStats = await dashboardService.getAssessmentStat(req.query, req.user.team)
-    res.status(httpStatus.OK).send({ message: "Certificate created", data: topLevelStats })
+    const topLevelStats = await dashboardService.getTopLevelStats(req.user.team)
+    res.status(httpStatus.OK).send({ message: "stats retrieved", data: topLevelStats })
 })

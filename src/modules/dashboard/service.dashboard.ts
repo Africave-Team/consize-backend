@@ -2,6 +2,8 @@
 // import Students from "../students/model.students"
 import Enrollments from "../sessions/model"
 import Statistics from "../statistics/stats.model";
+import Courses from "../courses/model.courses";
+import { CourseStatus } from "../courses/interfaces.courses";
 
 export const getCourseStat = async ({searchParams}: any, teamId: string): Promise<any> => {
     const { courseId, date_from, date_to } = searchParams || {}
@@ -221,4 +223,37 @@ export const getGraphStats = async ({ dateRange }: any, teamId: string): Promise
     ]);
 
     return result;
+}
+
+export const getTopLevelStats = async (teamId: string): Promise<any> => {
+ const stats = await Courses.aggregate([
+        { $match: { owner: teamId } },
+        {
+            $facet: {
+                totalCoursesAdded: [{ $count: 'count' }],
+                totalCourseBundles: [
+                    { $match: { bundle: true } },
+                    { $count: 'count' }
+                ],
+                totalPublishedCourses: [
+                    { $match: { status: CourseStatus.PUBLISHED } },
+                    { $count: 'count' }
+                ],
+                totalDraftCourses: [
+                    { $match: { status: CourseStatus.DRAFT } },
+                    { $count: 'count' }
+                ]
+            }
+        },
+        {
+            $project: {
+                totalCoursesAdded: { $arrayElemAt: ['$totalCoursesAdded.count', 0] },
+                totalCourseBundles: { $arrayElemAt: ['$totalCourseBundles.count', 0] },
+                totalPublishedCourses: { $arrayElemAt: ['$totalPublishedCourses.count', 0] },
+                totalDraftCourses: { $arrayElemAt: ['$totalDraftCourses.count', 0] }
+            }
+        }
+    ]).exec();
+
+    return stats[0];   
 }
