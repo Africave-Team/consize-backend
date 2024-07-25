@@ -7,8 +7,8 @@ import { dashboardController } from "../../modules/dashboard/"
 const router: Router = express.Router()
 router.use(auth())
 
-// router.get('/courses',  dashboardController.courseMetrics)
+router.get('/courses',  dashboardController.courseMetrics)
 router.get('/learners', dashboardController.learnersMetrics)
-// router.get('/assessment', dashboardController.assessmentMetrics)
+router.get('/assessment', dashboardController.assessmentMetrics)
 
 export default router
