@@ -1,4 +1,3 @@
-// import Courses from "../courses/model.courses"
 // import Students from "../students/model.students"
 import Enrollments from "../sessions/model"
 import Statistics from "../statistics/stats.model";
@@ -256,4 +255,72 @@ export const getTopLevelStats = async (teamId: string): Promise<any> => {
     ]).exec();
 
     return stats[0];   
+}
+
+export const getCourseCompletionBuckets = async (teamId: string): Promise<any> => {
+    const buckets = await Enrollments.aggregate([
+    { $match: { teamId } },
+    {
+      $facet: {
+        totalEnrolled: [{ $count: 'total' }],
+        totalStarted: [{ $match: { progress: { $gt: 0 } } }, { $count: 'total' }],
+        progressBuckets: [
+          {
+            $bucket: {
+              groupBy: "$progress",
+              boundaries: [0, 1, 21, 41, 61, 81, 100],
+              default: "Other",
+              output: {
+                count: { $sum: 1 }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      $project: {
+        totalEnrolled: { $arrayElemAt: ["$totalEnrolled.total", 0] },
+        totalStarted: { $arrayElemAt: ["$totalStarted.total", 0] },
+        progressBuckets: 1
+      }
+    }
+  ]);
+
+  // Format the results
+  const result = {
+    totalEnrolled: buckets[0]?.totalEnrolled || 0,
+    totalStarted: buckets[0]?.totalStarted || 0,
+    progress: {
+      '0%': 0,
+      '1% - 20%': 0,
+      '21% - 40%': 0,
+      '41% - 60%': 0,
+      '61% - 80%': 0,
+      '81% - 99%': 0,
+      '100%': 0
+    }
+  };
+
+  if (buckets[0]?.progressBuckets) {
+    buckets[0].progressBuckets.forEach((bucket:any) => {
+      if (bucket._id === 0) {
+        result.progress['0%'] = bucket.count;
+      } else if (bucket._id === 1) {
+        result.progress['1% - 20%'] = bucket.count;
+      } else if (bucket._id === 21) {
+        result.progress['21% - 40%'] = bucket.count;
+      } else if (bucket._id === 41) {
+        result.progress['41% - 60%'] = bucket.count;
+      } else if (bucket._id === 61) {
+        result.progress['61% - 80%'] = bucket.count;
+      } else if (bucket._id === 81) {
+        result.progress['81% - 99%'] = bucket.count;
+      } else if (bucket._id === 100) {
+        result.progress['100%'] = bucket.count;
+      }
+    });
+  }
+
+  return result;
 }
