@@ -37,14 +37,14 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
         if (action && action.value) {
           let enrollments: CourseEnrollment[] = await fetchEnrollmentsSlack(channel.id)
           let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
-          const [btnId] = action.value.split('|')
-          // if (messageId && !btnId?.startsWith("continue_")) {
-          //   if (enrollment) {
-          //     if (enrollment.lastMessageId && enrollment.lastMessageId !== messageId) {
-          //       return
-          //     }
-          //   }
-          // }
+          const [btnId, messageId] = action.value.split('|')
+          if (messageId && !btnId?.startsWith("continue_")) {
+            if (enrollment) {
+              if (enrollment.lastMessageId && enrollment.lastMessageId !== messageId) {
+                return
+              }
+            }
+          }
           switch (btnId) {
             case START:
             case RESUME_COURSE:
@@ -227,10 +227,10 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                   for (let enrollment of enrollments) {
                     const key = `${config.redisBaseKey}enrollments:slack:${channel.id}:${enrollment.id}`
                     let msgId = v4()
+                    redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId }))
                     if (enrollment.id === courseId) {
-                      await handleContinueSlack(enrollment.nextBlock, `${config.redisBaseKey}courses:${enrollment.id}`, channel.id, response_url, msgId, enrollment)
+                      await handleContinueSlack(enrollment.currentBlock, `${config.redisBaseKey}courses:${enrollment.id}`, channel.id, response_url, msgId, enrollment)
                     }
-                    redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId, lastMessageId: msgId, currentBlock: enrollment.currentBlock + 1, nextBlock: enrollment.nextBlock + 1 }))
                   }
                 }
                 // if (btnId.startsWith('enroll_now_')) {
