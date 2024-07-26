@@ -160,6 +160,10 @@ const SettingSchema = new Schema<CourseSettingsInterface, CourseSettingsInterfac
     },
     resumption: {
       type: CourseResumptionSettingsSchema
+    },
+    disableReminders: {
+      saturday: Boolean,
+      sunday: Boolean
     }
 
   },

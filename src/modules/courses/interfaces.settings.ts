@@ -83,6 +83,10 @@ export interface CourseSettings {
   inactivityPeriod: Period
   dropoutEvent: DropoutEvents
   resumption: CourseResumptionSettings
+  disableReminders?: {
+    saturday?: boolean
+    sunday?: boolean
+  }
 
 }
 

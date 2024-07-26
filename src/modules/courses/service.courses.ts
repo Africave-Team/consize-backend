@@ -172,6 +172,10 @@ const setInitialCourseSettings = async function (id: string) {
       time: "08:00",
       enableImmediate: true,
       enabledDateTimeSetup: true
+    },
+    disableReminders: {
+      sunday: false,
+      saturday: false
     }
   })
   await Course.findByIdAndUpdate(id, { $set: { settings: setting.id } })
