@@ -67,6 +67,11 @@ export interface CourseResumptionSettings {
   time: string
 }
 
+export interface CourseDisableDays {
+  saturday?: boolean
+  sunday?: boolean
+}
+
 
 export interface CourseSettings {
   enrollmentFormFields: EnrollmentField[]
@@ -83,10 +88,7 @@ export interface CourseSettings {
   inactivityPeriod: Period
   dropoutEvent: DropoutEvents
   resumption: CourseResumptionSettings
-  disableReminders?: {
-    saturday?: boolean
-    sunday?: boolean
-  }
+  disableReminders?: CourseDisableDays
 
 }
 

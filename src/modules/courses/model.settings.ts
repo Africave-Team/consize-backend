@@ -162,8 +162,14 @@ const SettingSchema = new Schema<CourseSettingsInterface, CourseSettingsInterfac
       type: CourseResumptionSettingsSchema
     },
     disableReminders: {
-      saturday: Boolean,
-      sunday: Boolean
+      saturday: {
+        type: Boolean,
+        default: false
+      },
+      sunday: {
+        type: Boolean,
+        default: false
+      },
     }
 
   },

@@ -112,6 +112,7 @@ export interface CourseEnrollment {
   lastLessonCompleted?: string
   finishedLastLessonAt?: number | null
   inactivityPeriod?: Period | undefined
+  reminderDaysCount?: number
   slackResponseUrl?: string
   slackToken?: string
   blockStartTime?: string | null
