@@ -3,6 +3,7 @@ import { IUser, IUserDoc } from '../user/user.interfaces'
 import { QueryResult } from '../paginate/paginate'
 import { Distribution } from '../courses/interfaces.courses'
 
+
 export interface TeamsInterface extends Document {
     _id: string
     name: string
@@ -15,6 +16,10 @@ export interface TeamsInterface extends Document {
     facebookPhoneNumberId: string | null
     channels: DistributionChannel[]
     logo?: string
+    color?: {
+        primary: string
+        secondary: string
+    },
     createdAt?: Date
     updatedAt?: Date
 }
