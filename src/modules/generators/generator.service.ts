@@ -302,6 +302,8 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
             link: url
           }
         })
+      } else {
+        console.log("Failed to generate certificate")
       }
       if (settings) {
         if (settings.courseMaterials.length > 0) {
@@ -345,6 +347,8 @@ export const sendCourseCertificateSlack = async (courseId: string, studentId: st
             ]
           }
         })
+      } else {
+        console.log("Failed to generate certificate")
       }
       if (settings) {
         if (settings.courseMaterials.length > 0) {
