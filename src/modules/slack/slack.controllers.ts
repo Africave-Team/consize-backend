@@ -39,7 +39,6 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
           let enrollments: CourseEnrollment[] = await fetchEnrollmentsSlack(channel.id)
           let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
           const [btnId, messageId] = action.value.split('|')
-          console.log(btnId, messageId, enrollment?.lastMessageId)
           if (messageId && !btnId?.startsWith("continue_")) {
             if (enrollment) {
               if (enrollment.lastMessageId && enrollment.lastMessageId !== messageId) {
@@ -47,7 +46,8 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
               }
             }
           }
-          let today = moment().format('YYYY-MM-DD')
+          console.log(btnId, messageId, enrollment?.lastMessageId)
+          let today = moment().add(24, "hours").format('YYYY-MM-DD')
           switch (btnId) {
             case START:
             case RESUME_COURSE:
@@ -81,6 +81,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
               if (btnId === QUIZ_C) answerResponse = 2
               if (enrollment) {
                 const msgId = v4()
+                console.log("lesson quiz")
                 await handleLessonQuiz(answerResponse, enrollment, response_url, msgId, channel.id)
                 scheduleInactivityMessage(enrollment, undefined, channel.id)
               }
@@ -154,7 +155,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
 
               if (enrollment) {
                 let msgId = v4()
-                const dateTimeString = `${today} 13:00` // Note: removed 'PM'
+                const dateTimeString = `${today} 09:00` // Note: removed 'PM'
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
@@ -164,7 +165,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
             case AFTERNOON:
               if (enrollment) {
                 let msgId = v4()
-                const dateTimeString = `${today} 13:10` // Note: removed 'PM'
+                const dateTimeString = `${today} 15:00` // Note: removed 'PM'
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
@@ -174,7 +175,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
             case EVENING:
               if (enrollment) {
                 let msgId = v4()
-                const dateTimeString = `${today} 13:20` // Note: removed 'PM'
+                const dateTimeString = `${today} 20:00` // Note: removed 'PM'
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
@@ -243,7 +244,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                     let msgId = v4()
                     await redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId }))
                     if (enrollment.id === courseId) {
-                      await handleContinueSlack(enrollment.currentBlock, `${config.redisBaseKey}courses:${enrollment.id}`, channel.id, response_url, msgId, { ...enrollment, currentBlock: enrollment.currentBlock - 1 })
+                      await handleContinueSlack(enrollment.currentBlock, `${config.redisBaseKey}courses:${enrollment.id}`, channel.id, response_url, msgId, { ...enrollment })
                     }
                   }
                 }
