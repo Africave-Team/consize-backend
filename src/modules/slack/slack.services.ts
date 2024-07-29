@@ -1248,7 +1248,7 @@ export const handleSurvey = async (answer: number, data: CourseEnrollment, surve
   }
 }
 
-export const sendResumptionOptions = async (url: string, _: string, __: CourseEnrollment): Promise<void> => {
+export const sendResumptionOptions = async (url: string, key: string, data: CourseEnrollment): Promise<void> => {
   try {
     let msgId = v4()
     agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
@@ -1300,16 +1300,16 @@ export const sendResumptionOptions = async (url: string, _: string, __: CourseEn
         ]
       }
     })
-    // await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
+    await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
 }
 
 
-export const sendResumptionMessageSlack = async (channelId: string, _: string, data: CourseEnrollment): Promise<void> => {
+export const sendResumptionMessageSlack = async (channelId: string, key: string, data: CourseEnrollment): Promise<void> => {
   try {
-    // let msgId = v4()
+    let msgId = v4()
     agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
       channel: channelId,
       accessToken: data.slackToken || "",
@@ -1332,7 +1332,7 @@ export const sendResumptionMessageSlack = async (channelId: string, _: string, d
                   "text": "Resume now",
                   "emoji": true
                 },
-                "value": RESUME_COURSE,
+                "value": RESUME_COURSE + `|${msgId}`,
                 style: MessageActionButtonStyle.PRIMARY
               }
             ]
@@ -1340,7 +1340,7 @@ export const sendResumptionMessageSlack = async (channelId: string, _: string, d
         ]
       }
     })
-    // await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
+    await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
