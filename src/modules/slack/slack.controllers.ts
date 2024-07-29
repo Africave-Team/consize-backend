@@ -46,7 +46,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
               }
             }
           }
-          let today = moment().add(24, 'hours').format('YYYY-MM-DD')
+          // let today = moment().add(24, 'hours').format('YYYY-MM-DD')
           switch (btnId) {
             case START:
             case RESUME_COURSE:
@@ -159,31 +159,31 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
 
               if (enrollment) {
                 let msgId = v4()
-                const dateTimeString = `${today} 09:00` // Note: removed 'PM'
+                // const dateTimeString = `${today} 09:00` // Note: removed 'PM'
                 const now = moment.tz(enrollment.tz)
-                const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
-                agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
-                sendScheduleAcknowledgement(response_url, "9:00am")
+                const time = moment().add(1, 'hour').subtract(now.utcOffset(), 'minutes')
+                agenda.schedule(time.startOf('hour').toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
+                sendScheduleAcknowledgement(response_url, time.format('hh:mm a'))
               }
               break
             case AFTERNOON:
               if (enrollment) {
                 let msgId = v4()
-                const dateTimeString = `${today} 15:00` // Note: removed 'PM'
+                // const dateTimeString = `${today} 15:00` // Note: removed 'PM'
                 const now = moment.tz(enrollment.tz)
-                const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
-                agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
-                sendScheduleAcknowledgement(response_url, "3:00pm")
+                const time = moment().add(2, 'hour').subtract(now.utcOffset(), 'minutes')
+                agenda.schedule(time.startOf('hour').toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
+                sendScheduleAcknowledgement(response_url, time.format('hh:mm a'))
               }
               break
             case EVENING:
               if (enrollment) {
                 let msgId = v4()
-                const dateTimeString = `${today} 20:00` // Note: removed 'PM'
+                // const dateTimeString = `${today} 20:00` // Note: removed 'PM'
                 const now = moment.tz(enrollment.tz)
-                const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
-                agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
-                sendScheduleAcknowledgement(response_url, "8:00pm")
+                const time = moment().add(3, 'hour').subtract(now.utcOffset(), 'minutes')
+                agenda.schedule(time.startOf('hour').toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
+                sendScheduleAcknowledgement(response_url, time.format('hh:mm a'))
               }
               break
             case SCHEDULE_RESUMPTION:
