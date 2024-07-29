@@ -39,7 +39,6 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
           let enrollments: CourseEnrollment[] = await fetchEnrollmentsSlack(channel.id)
           let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
           const [btnId, messageId] = action.value.split('|')
-          console.log(btnId, messageId, enrollment?.lastMessageId)
           if (messageId && !btnId?.startsWith("continue_")) {
             if (enrollment) {
               if (enrollment.lastMessageId && enrollment.lastMessageId !== messageId) {
@@ -47,6 +46,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
               }
             }
           }
+          console.log(btnId, messageId, enrollment?.lastMessageId)
           let today = moment().format('YYYY-MM-DD')
           switch (btnId) {
             case START:
@@ -81,6 +81,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
               if (btnId === QUIZ_C) answerResponse = 2
               if (enrollment) {
                 const msgId = v4()
+                console.log("lesson quiz")
                 await handleLessonQuiz(answerResponse, enrollment, response_url, msgId, channel.id)
                 scheduleInactivityMessage(enrollment, undefined, channel.id)
               }
