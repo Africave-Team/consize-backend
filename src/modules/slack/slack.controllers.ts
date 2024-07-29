@@ -245,7 +245,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                     let msgId = v4()
                     await redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId }))
                     if (enrollment.id === courseId) {
-                      await handleContinueSlack(enrollment.currentBlock, `${config.redisBaseKey}courses:${enrollment.id}`, channel.id, response_url, msgId, { ...enrollment })
+                      await handleContinueSlack(enrollment.currentBlock, `${config.redisBaseKey}courses:${enrollment.id}`, channel.id, response_url, msgId, { ...enrollment, currentBlock: enrollment.currentBlock - 1, nextBlock: enrollment.currentBlock })
                     }
                   }
                 }
