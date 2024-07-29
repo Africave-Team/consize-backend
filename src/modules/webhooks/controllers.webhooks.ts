@@ -4,7 +4,7 @@ import { Request, Response } from 'express'
 import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { ENROLL_STUDENT_DEFAULT_DATE, RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
-import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow } from './interfaces.webhooks'
+import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow, RESUME_COURSE_TOMORROW } from './interfaces.webhooks'
 import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -137,6 +137,15 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               let msgId = v4()
               let key = `${config.redisBaseKey}courses:${enrollment.id}`
               await handleContinue(enrollment.nextBlock, key, destination, msgId, enrollment)
+              // schedule inactivity message
+              scheduleInactivityMessage(enrollment, destination)
+            }
+            break
+          case RESUME_COURSE_TOMORROW:
+            if (enrollment) {
+              let msgId = v4()
+              let key = `${config.redisBaseKey}courses:${enrollment.id}`
+              await handleContinue(enrollment.currentBlock, key, destination, msgId, enrollment)
               // schedule inactivity message
               scheduleInactivityMessage(enrollment, destination)
             }
