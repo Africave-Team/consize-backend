@@ -153,7 +153,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
 
               if (enrollment) {
                 let msgId = v4()
-                const dateTimeString = `${today} 12:00` // Note: removed 'PM'
+                const dateTimeString = `${today} 13:00` // Note: removed 'PM'
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
@@ -163,7 +163,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
             case AFTERNOON:
               if (enrollment) {
                 let msgId = v4()
-                const dateTimeString = `${today} 12:10` // Note: removed 'PM'
+                const dateTimeString = `${today} 13:10` // Note: removed 'PM'
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
@@ -173,7 +173,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
             case EVENING:
               if (enrollment) {
                 let msgId = v4()
-                const dateTimeString = `${today} 12:20` // Note: removed 'PM'
+                const dateTimeString = `${today} 13:20` // Note: removed 'PM'
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
