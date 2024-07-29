@@ -884,6 +884,10 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                 ...updatedData,
                 slackResponseUrl: url
               })
+              updatedData.completed = true
+              updatedData.progress = 100
+              updatedData.currentBlock = data.totalBlocks
+              updatedData.nextBlock = data.totalBlocks
 
             }
 
@@ -1022,6 +1026,10 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
               ...updatedData,
               slackResponseUrl: url
             })
+            updatedData.completed = true
+            updatedData.progress = 100
+            updatedData.currentBlock = data.totalBlocks
+            updatedData.nextBlock = data.totalBlocks
             break
           default:
             break

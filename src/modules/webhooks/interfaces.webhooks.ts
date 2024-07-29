@@ -118,6 +118,7 @@ export interface CourseEnrollment {
   slackToken?: string
   blockStartTime?: string | null
   bundle?: boolean
+  completed?: boolean
   courses?: {
     key: string
     status: "completed" | "pending" | "progress"

@@ -160,7 +160,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
-                sendScheduleAcknowledgement(response_url, time.format('hh:mm a'))
+                sendScheduleAcknowledgement(response_url, "9:00PM")
               }
               break
             case AFTERNOON:
@@ -170,7 +170,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
-                sendScheduleAcknowledgement(response_url, time.format('hh:mm a'))
+                sendScheduleAcknowledgement(response_url, "3:00PM")
               }
               break
             case EVENING:
@@ -180,7 +180,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
-                sendScheduleAcknowledgement(response_url, time.format('hh:mm a'))
+                sendScheduleAcknowledgement(response_url, "8:00PM")
               }
               break
             case SCHEDULE_RESUMPTION:
@@ -359,6 +359,12 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
               ...enrollment,
               slackResponseUrl: response.response_url
             })
+            const key = `${config.redisBaseKey}enrollments:slack:${student.channelId}:${enrollment.id}`
+            enrollment.completed = true
+            enrollment.progress = 100
+            enrollment.currentBlock = enrollment.totalBlocks
+            enrollment.nextBlock = enrollment.totalBlocks
+            await redisClient.set(key, JSON.stringify({ ...enrollment, progress: 100, completed: true }))
           }
         }
       }
