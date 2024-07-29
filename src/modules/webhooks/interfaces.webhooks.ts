@@ -154,6 +154,7 @@ export const AFTERNOON = TOMORROW + '_3pm'
 export const EVENING = TOMORROW + '_8pm'
 
 export const RESUME_COURSE = "RESUME_COURSE"
+export const RESUME_COURSE_TOMORROW = "RESUME_COURSE_TOMORROW"
 
 
 // slack
