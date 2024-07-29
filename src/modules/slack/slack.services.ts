@@ -1044,7 +1044,7 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ur
   let updatedData = { ...data, lastMessageId: messageId }
   if (courseFlow) {
     const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
-    const item = courseFlowData[data.currentBlock - 1]
+    const item = courseFlowData[data.currentBlock]
     let payload: SlackTextMessage = {
       type: SlackTextMessageTypes.MARKDOWN,
       text: ``
@@ -1102,7 +1102,7 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, u
   const courseFlow = await redisClient.get(courseKey)
   if (courseFlow) {
     const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
-    const item = courseFlowData[data.currentBlock - 1]
+    const item = courseFlowData[data.currentBlock]
     let payload: SlackTextMessage = {
       type: SlackTextMessageTypes.MARKDOWN,
       text: ``
