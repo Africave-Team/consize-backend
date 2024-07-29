@@ -39,6 +39,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
           let enrollments: CourseEnrollment[] = await fetchEnrollmentsSlack(channel.id)
           let enrollment: CourseEnrollment | undefined = enrollments.find(e => e.active)
           const [btnId, messageId] = action.value.split('|')
+          console.log(btnId, messageId, enrollment?.lastMessageId)
           if (messageId && !btnId?.startsWith("continue_")) {
             if (enrollment) {
               if (enrollment.lastMessageId && enrollment.lastMessageId !== messageId) {
