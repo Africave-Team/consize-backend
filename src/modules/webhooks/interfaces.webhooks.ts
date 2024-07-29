@@ -1,5 +1,6 @@
 import { MediaType } from '../courses/interfaces.courses'
 import { Period } from '../courses/interfaces.settings'
+import { SendSlackModalPayload } from '../slack/interfaces.slack'
 
 interface Header {
   type: MediaType
@@ -112,6 +113,7 @@ export interface CourseEnrollment {
   lastLessonCompleted?: string
   finishedLastLessonAt?: number | null
   inactivityPeriod?: Period | undefined
+  reminderDaysCount?: number
   slackResponseUrl?: string
   slackToken?: string
   blockStartTime?: string | null
@@ -124,7 +126,8 @@ export interface CourseEnrollment {
     [id: string]: {
       scores: number[]
     }
-  }
+  },
+  surveyData?: SendSlackModalPayload
 }
 
 
@@ -153,6 +156,7 @@ export const AFTERNOON = TOMORROW + '_3pm'
 export const EVENING = TOMORROW + '_8pm'
 
 export const RESUME_COURSE = "RESUME_COURSE"
+export const RESUME_COURSE_TOMORROW = "RESUME_COURSE_TOMORROW"
 
 
 // slack

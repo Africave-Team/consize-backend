@@ -14,13 +14,19 @@ export const fetchDailyStats = async function (payload: DailyStatsServiceInput):
 }
 
 export const updateDailyStats = async function (stats: DailyStatsModel): Promise<void> {
-  const current = await StatsModel.findOne({
+  let q: any = {
     $and: [
       { date: { $gte: moment().startOf('day').toDate() } },
       { date: { $lte: moment().endOf('day').toDate() } }
-    ]
-  })
-
+    ], teamId: stats.teamId
+  }
+  if (stats.courseId) {
+    q['courseId'] = stats.courseId
+  }
+  if (stats.studentId) {
+    q['studentId'] = stats.studentId
+  }
+  const current = await StatsModel.findOne(q)
   if (current) {
     await StatsModel.findByIdAndUpdate(current.id, { $set: { ...stats } })
   } else {
