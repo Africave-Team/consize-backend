@@ -50,6 +50,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
           switch (btnId) {
             case START:
             case RESUME_COURSE:
+            case RESUME_COURSE_TOMORROW:
             case CONTINUE:
               if (enrollment) {
                 let msgId = v4()
@@ -57,13 +58,6 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 scheduleInactivityMessage(enrollment, undefined, channel.id)
                 // jwihrtuiojwer
                 // exhnage
-              }
-              break
-            case RESUME_COURSE_TOMORROW:
-              if (enrollment) {
-                let msgId = v4()
-                await handleContinueSlack(enrollment.currentBlock, `${config.redisBaseKey}courses:${enrollment.id}`, channel.id, response_url, msgId, enrollment)
-                scheduleInactivityMessage(enrollment, undefined, channel.id)
               }
               break
             case QUIZ_NO:
