@@ -160,7 +160,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
-                sendScheduleAcknowledgement(response_url, "9:00PM")
+                sendScheduleAcknowledgement(response_url, "9:00AM")
               }
               break
             case AFTERNOON:
