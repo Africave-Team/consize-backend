@@ -90,6 +90,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
 
               break
             case CourseFlowMessageType.START_SURVEY:
+              console.log("start survey")
               if (enrollment && enrollment.slackToken) {
                 handleSendSurveySlack(`${config.redisBaseKey}courses:${enrollment.id}`, enrollment, trigger_id)
                 const key = `${config.redisBaseKey}enrollments:slack:${channel.id}:${enrollment?.id}`
@@ -361,8 +362,6 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
           }
         }
       }
-
-
     }
   })
   const { payload: ld } = req.body

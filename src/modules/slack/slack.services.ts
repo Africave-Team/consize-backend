@@ -764,7 +764,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                   elements: [
                     {
                       type: SlackActionType.BUTTON,
-                      value: `start-survey|${messageId}`,
+                      value: CourseFlowMessageType.START_SURVEY + `|${messageId}`,
                       text: {
                         type: SlackTextMessageTypes.PLAINTEXT,
                         emoji: true,
