@@ -775,6 +775,99 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                   ]
                 }
               ]
+              // generate survey payload and save to redis
+              const surveyItems = flowData.filter(e => e.surveyId)
+              let payload: SendSlackModalPayload = {
+                trigger_id: "",
+                token: data.slackToken || "",
+                view: {
+                  "type": "modal",
+                  callback_id: `survey|${data.student}`,
+                  "submit": {
+                    "type": SlackTextMessageTypes.PLAINTEXT,
+                    "text": "Submit",
+                    "emoji": true
+                  },
+                  "close": {
+                    "type": SlackTextMessageTypes.PLAINTEXT,
+                    "text": "Cancel",
+                    "emoji": true
+                  },
+                  "title": {
+                    "type": SlackTextMessageTypes.PLAINTEXT,
+                    "text": "End of course survey",
+                    "emoji": true
+                  },
+                  "blocks": [
+                    {
+                      "type": MessageBlockType.SECTION,
+                      "text": {
+                        "type": SlackTextMessageTypes.PLAINTEXT,
+                        "text": `:wave: We'd love to hear from you how we can make this place the best place you’ve ever worked.`,
+                        "emoji": true
+                      }
+                    },
+                    {
+                      "type": MessageBlockType.DIVIDER
+                    }
+                  ]
+                }
+              }
+              const choices = [SURVEY_A, SURVEY_B, SURVEY_C]
+              for (let item of surveyItems) {
+                if (payload.view.callback_id) {
+                  payload.view.callback_id = `survey=${item.surveyId}|course=${data.id}|student=${data.student}|team=${data.team}`
+                }
+                if (item.surveyQuestion?.responseType === ResponseType.MULTI_CHOICE && payload.view && payload.view.blocks) {
+                  payload.view.blocks.push({
+                    "type": MessageBlockType.INPUT,
+                    "block_id": item.surveyQuestion.id,
+                    "label": {
+                      "type": SlackTextMessageTypes.PLAINTEXT,
+                      "text": item.surveyQuestion.question,
+                      "emoji": true
+                    },
+                    "element": {
+                      "type": SlackActionType.SELECT,
+                      "action_id": `${item.surveyQuestion.id}_value`,
+                      "placeholder": {
+                        "type": SlackTextMessageTypes.PLAINTEXT,
+                        "text": "Select your response",
+                        "emoji": true
+                      },
+                      "options": [
+                        ...item.surveyQuestion.choices.map((choice, index) => ({
+                          "text": {
+                            "type": SlackTextMessageTypes.PLAINTEXT,
+                            "text": choice,
+                            "emoji": true
+                          },
+                          "value": choices[index] || ''
+                        })),
+                      ]
+                    }
+                  })
+                }
+
+                if (item.surveyQuestion?.responseType === ResponseType.FREE_FORM && payload.view && payload.view.blocks) {
+                  payload.view.blocks.push({
+                    "type": MessageBlockType.INPUT,
+                    "block_id": item.surveyQuestion.id,
+                    "label": {
+                      "type": SlackTextMessageTypes.PLAINTEXT,
+                      "text": item.surveyQuestion.question,
+                      "emoji": true
+                    },
+                    "element": {
+                      "type": SlackActionType.TEXTINPUT,
+                      "multiline": true,
+                      "action_id": `${item.surveyQuestion.id}_value`,
+                    }
+                  })
+                }
+              }
+              updatedData.surveyData = payload
+
             } else {
               blocks = [
                 {
@@ -939,102 +1032,9 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
   }
 }
 
-export const handleSendSurveySlack = async (courseKey: string, data: CourseEnrollment, trigger_id: string): Promise<void> => {
-  const flow = await redisClient.get(courseKey)
-
-  if (flow && data.slackToken) {
-    const flowData: CourseFlowItem[] = JSON.parse(flow)
-    const surveyItems = flowData.filter(e => e.surveyId)
-    let payload: SendSlackModalPayload = {
-      trigger_id,
-      token: data.slackToken,
-      view: {
-        "type": "modal",
-        callback_id: `survey|${data.student}`,
-        "submit": {
-          "type": SlackTextMessageTypes.PLAINTEXT,
-          "text": "Submit",
-          "emoji": true
-        },
-        "close": {
-          "type": SlackTextMessageTypes.PLAINTEXT,
-          "text": "Cancel",
-          "emoji": true
-        },
-        "title": {
-          "type": SlackTextMessageTypes.PLAINTEXT,
-          "text": "End of course survey",
-          "emoji": true
-        },
-        "blocks": [
-          {
-            "type": MessageBlockType.SECTION,
-            "text": {
-              "type": SlackTextMessageTypes.PLAINTEXT,
-              "text": `:wave: We'd love to hear from you how we can make this place the best place you’ve ever worked.`,
-              "emoji": true
-            }
-          },
-          {
-            "type": MessageBlockType.DIVIDER
-          }
-        ]
-      }
-    }
-    const choices = [SURVEY_A, SURVEY_B, SURVEY_C]
-    for (let item of surveyItems) {
-      if (payload.view.callback_id) {
-        payload.view.callback_id = `survey=${item.surveyId}|course=${data.id}|student=${data.student}|team=${data.team}`
-      }
-      if (item.surveyQuestion?.responseType === ResponseType.MULTI_CHOICE && payload.view && payload.view.blocks) {
-        payload.view.blocks.push({
-          "type": MessageBlockType.INPUT,
-          "block_id": item.surveyQuestion.id,
-          "label": {
-            "type": SlackTextMessageTypes.PLAINTEXT,
-            "text": item.surveyQuestion.question,
-            "emoji": true
-          },
-          "element": {
-            "type": SlackActionType.SELECT,
-            "action_id": `${item.surveyQuestion.id}_value`,
-            "placeholder": {
-              "type": SlackTextMessageTypes.PLAINTEXT,
-              "text": "Select your response",
-              "emoji": true
-            },
-            "options": [
-              ...item.surveyQuestion.choices.map((choice, index) => ({
-                "text": {
-                  "type": SlackTextMessageTypes.PLAINTEXT,
-                  "text": choice,
-                  "emoji": true
-                },
-                "value": choices[index] || ''
-              })),
-            ]
-          }
-        })
-      }
-
-      if (item.surveyQuestion?.responseType === ResponseType.FREE_FORM && payload.view && payload.view.blocks) {
-        payload.view.blocks.push({
-          "type": MessageBlockType.INPUT,
-          "block_id": item.surveyQuestion.id,
-          "label": {
-            "type": SlackTextMessageTypes.PLAINTEXT,
-            "text": item.surveyQuestion.question,
-            "emoji": true
-          },
-          "element": {
-            "type": SlackActionType.TEXTINPUT,
-            "multiline": true,
-            "action_id": `${item.surveyQuestion.id}_value`,
-          }
-        })
-      }
-    }
-    agenda.now<SendSlackModalPayload>(SEND_SLACK_MODAL, payload)
+export const handleSendSurveySlack = async (_: string, data: CourseEnrollment, trigger_id: string): Promise<void> => {
+  if (data.surveyData && data.slackToken) {
+    agenda.now<SendSlackModalPayload>(SEND_SLACK_MODAL, { ...data.surveyData, trigger_id })
   }
 }
 

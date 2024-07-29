@@ -1,5 +1,6 @@
 import { MediaType } from '../courses/interfaces.courses'
 import { Period } from '../courses/interfaces.settings'
+import { SendSlackModalPayload } from '../slack/interfaces.slack'
 
 interface Header {
   type: MediaType
@@ -125,7 +126,8 @@ export interface CourseEnrollment {
     [id: string]: {
       scores: number[]
     }
-  }
+  },
+  surveyData?: SendSlackModalPayload
 }
 
 
