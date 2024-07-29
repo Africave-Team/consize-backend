@@ -479,7 +479,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
   const course = await Courses.findById(payload.courseId)
   const student = await Students.findById(payload.studentId)
   if (course && student) {
-    // const msgId = v4()
+    const msgId = v4()
     if (payload.phoneNumber && !payload.slackChannel) {
       const key = `${config.redisBaseKey}enrollments:${payload.phoneNumber}:${payload.courseId}`
       const dtf = await redisClient.get(key)
@@ -547,7 +547,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
                         "text": "Continue",
                         "emoji": true
                       },
-                      "value": `continue_${payload.courseId}`,
+                      "value": `continue_${payload.courseId}|${msgId}`,
                       style: MessageActionButtonStyle.PRIMARY
                     }
                   ]
@@ -555,7 +555,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
               ]
             }
           })
-          // await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
+          await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
         }
       }
     }
