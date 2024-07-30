@@ -345,7 +345,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                       fields: [
                         {
                           type: SlackTextMessageTypes.MARKDOWN,
-                          text: `Thank you for sharing your opinions. We grately appreciate you taking the time.`
+                          text: `Thank you for sharing your opinions. We greatly appreciate you taking the time.`
 
                         }
                       ]
