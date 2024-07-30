@@ -43,3 +43,9 @@ export const courseCompletionBuckets = catchAsync(async (req: Request, res: Resp
     const courseCompletionBucketsStats = await dashboardService.getCourseCompletionBuckets(req.user.team)
     res.status(httpStatus.OK).send({ message: "course completion buckets", data: courseCompletionBucketsStats })
 })
+
+export const courseMetricsById = catchAsync(async (req: Request, res: Response) => {
+    const { courseId } = req.params
+    const courseMetrics = await dashboardService.getCourseStudentsStatById(req.query,req.user.team, courseId || "")
+    res.status(httpStatus.OK).send({ message: "course stats", data: courseMetrics })
+})

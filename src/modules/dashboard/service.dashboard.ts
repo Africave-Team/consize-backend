@@ -400,3 +400,60 @@ export const getStudentsStats = async ({ searchParams }: any, teamId: string): P
     const results = await Enrollments.aggregate(pipeline).exec();
     return results;
 }
+
+export const getCourseStudentsStatById = async ({ searchParams }: any, teamId: string, courseId: string): Promise<any> => {
+    const { enrollmentDateFrom, enrollmentDateTo} = searchParams || {}
+    const matchStage: any = {
+    teamId,
+    courseId
+    };
+
+    if (enrollmentDateFrom || enrollmentDateTo) {
+    matchStage.createdAt = {};
+    if (enrollmentDateFrom) {
+        matchStage.createdAt.$gte = enrollmentDateFrom;
+    }
+    if (enrollmentDateTo) {
+        matchStage.createdAt.$lte = enrollmentDateTo;
+    }
+    }
+
+    // Define the aggregation pipeline
+    const pipeline = [
+    { $match: matchStage },
+    {
+        $lookup: {
+        from: 'students', // Name of the students collection
+        localField: 'studentId',
+        foreignField: '_id',
+        as: 'studentInfo'
+        }
+    },
+    { $unwind: '$studentInfo' }, // Deconstructs the array created by $lookup
+    {
+        $addFields: {
+        fullName: {
+            $concat: [
+            '$studentInfo.firstName',
+            ' ',
+            '$studentInfo.otherNames'
+            ]
+        }
+        }
+    },
+    {
+        $project: {
+        studentName: '$fullName',
+        email: '$studentInfo.email',
+        cohortName: '$teamId', // Assuming teamId represents the cohort name
+        enrollmentDate: '$createdAt',
+        progressPercentage: '$progress',
+        testScore: '$scores'
+        }
+    }
+    ];
+
+    // Execute the aggregation pipeline
+    const results = await Enrollments.aggregate(pipeline).exec();
+    return results;
+}
