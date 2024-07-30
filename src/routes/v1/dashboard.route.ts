@@ -14,5 +14,6 @@ router.get('/graph-metrics', dashboardController.graphMetrics)
 router.get('/top-courses', dashboardController.topCourseMetrics)
 router.get('/top-level-metrics', dashboardController.topLevelMetrics)
 router.get('/course-completion-buckets', dashboardController.courseCompletionBuckets)
+router.get('/students', dashboardController.studentsMetrics)
 
 export default router

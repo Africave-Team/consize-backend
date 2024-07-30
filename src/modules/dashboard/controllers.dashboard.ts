@@ -35,8 +35,8 @@ export const topLevelMetrics = catchAsync(async (req: Request, res: Response) =>
 })
 
 export const studentsMetrics = catchAsync(async (req: Request, res: Response) => {
-    const topLevelStats = await dashboardService.getTopLevelStats(req.user.team)
-    res.status(httpStatus.OK).send({ message: "stats retrieved", data: topLevelStats })
+    const studentsStats = await dashboardService.getTopLevelStats(req.user.team)
+    res.status(httpStatus.OK).send({ message: "stats retrieved", data: studentsStats })
 })
 
 export const courseCompletionBuckets = catchAsync(async (req: Request, res: Response) => {

@@ -324,3 +324,79 @@ export const getCourseCompletionBuckets = async (teamId: string): Promise<any> =
 
   return result;
 }
+
+export const getStudentsStats = async ({ searchParams }: any, teamId: string): Promise<any> => {
+    const { enrollmentDateFrom, enrollmentDateTo, studentName, courseTitle } = searchParams || {}
+    const matchStage: any = {
+        teamId
+    };
+
+    if (enrollmentDateFrom || enrollmentDateTo) {
+    matchStage.createdAt = {};
+    if (enrollmentDateFrom) {
+        matchStage.createdAt.$gte = enrollmentDateFrom;
+    }
+    if (enrollmentDateTo) {
+        matchStage.createdAt.$lte = enrollmentDateTo;
+    }
+    }
+
+    // Define the aggregation pipeline
+    const pipeline = [
+    { $match: matchStage },
+    {
+        $lookup: {
+        from: 'students', // Name of the students collection
+        localField: 'studentId',
+        foreignField: '_id',
+        as: 'studentInfo'
+        }
+    },
+    { $unwind: '$studentInfo' }, // Deconstructs the array created by $lookup
+    {
+        $lookup: {
+        from: 'courses', // Name of the courses collection
+        localField: 'courseId',
+        foreignField: '_id',
+        as: 'courseInfo'
+        }
+    },
+    { $unwind: '$courseInfo' }, // Deconstructs the array created by $lookup
+    {
+        $addFields: {
+        fullName: {
+            $concat: [
+            '$studentInfo.firstName',
+            ' ',
+            '$studentInfo.otherNames'
+            ]
+        },
+        courseTitle: '$courseInfo.title'
+        }
+    },
+    {
+        $match: studentName || courseTitle ? {
+        $or: [
+            studentName ? { fullName: { $regex: studentName, $options: 'i' } } : {},
+            courseTitle ? { courseTitle: { $regex: courseTitle, $options: 'i' } } : {}
+        ]
+        } : {}
+    },
+    {
+        $project: {
+        studentName: '$fullName',
+        studentEmail: '$studentInfo.email',
+        studentNumber: '$studentInfo.phoneNumber',
+        deliveryPlatform: '$distribution', // Assuming distribution represents delivery platform
+        cohort: '$teamId', // Assuming teamId represents the cohort
+        courseTitle: 1,
+        courseProgress: '$progress',
+        courseCompletionRate: { $cond: [{ $eq: ['$completed', true] }, 100, '$progress'] }
+        }
+    }
+    ];
+
+    // Execute the aggregation pipeline
+    const results = await Enrollments.aggregate(pipeline).exec();
+    return results;
+}
