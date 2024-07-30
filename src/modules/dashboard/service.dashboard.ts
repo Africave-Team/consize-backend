@@ -34,7 +34,7 @@ export const getCourseStat = async ({searchParams}: any, teamId: string): Promis
       },
       {
         $group: {
-          _id: null,
+          _id: teamId,
           avgCompletionTime: { $avg: "$completionTime" },
           avgCourseProgress: { $avg: "$progress" },
           avgLessonDuration: { $avg: "$lessonDuration" },
@@ -130,7 +130,7 @@ export const getAssessmentStat = async ({searchParams}: any, teamId: string): Pr
       },
       {
         $group: {
-          _id: null,
+          _id: teamId,
           avgTestScores: { $avg: "$testScore" },
           avgMCQRetakeRates: { $avg: "$retakeRate" },
           avgBaselineScores: { $avg: "$baselineScore" },
