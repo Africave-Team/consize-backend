@@ -673,10 +673,22 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             redisClient.del(keySelected)
             if (teamCourses) {
               // get the course short code
-              const regex = /id:\s*_(\S+)_/
-              const match = regex.exec(response)
-              if (match && match[1]) {
-                let code = match[1]
+              const extractId = function (text: string) {
+                const startIdIndex = text.indexOf('(id: _')
+                const endIdIndex = text.indexOf('_)', startIdIndex)
+
+                if (startIdIndex !== -1 && endIdIndex !== -1) {
+                  const shortCode = text.substring(startIdIndex + 5, endIdIndex).replace("_", "")
+                  console.log(shortCode)
+                  return [shortCode]
+                } else {
+                  console.log("no deuce")
+                  return undefined
+                }
+              }
+              const match = extractId(response)
+              if (match && match[0]) {
+                let code = match[0]
                 const { name, courses } = await resolveTeamCourseWithShortcode(code)
                 const key = `${config.redisBaseKey}last_request:${destination}`
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -693,11 +705,26 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             }
             if (singleCourse) {
               // get the course short code
-              const regex = /id:\s*_(\S+)_\s*\n\(group:\s*_(\S+)_\)/
-              const match = regex.exec(response)
-              if (match && match[1] && match[2]) {
-                let code = match[1]
-                let group = match[2]
+              const extractGroupAndId = function (text: string) {
+                const startIdIndex = text.indexOf('(id: _')
+                const endIdIndex = text.indexOf('_)', startIdIndex)
+                const startGroupIndex = text.indexOf('(group: _')
+                const endGroupIndex = text.indexOf('_)', startGroupIndex)
+
+                if (startIdIndex !== -1 && endIdIndex !== -1 && startGroupIndex !== -1 && endGroupIndex !== -1) {
+                  const shortCode = text.substring(startIdIndex + 5, endIdIndex).replace("_", "")
+                  const cohort = text.substring(startGroupIndex + 8, endGroupIndex).replace("_", "")
+                  console.log(cohort, shortCode)
+                  return [shortCode, cohort]
+                } else {
+                  console.log("no deuce")
+                  return undefined
+                }
+              }
+              const match = extractGroupAndId(response)
+              if (match && match[0] && match[1]) {
+                let code = match[0]
+                let group = match[1]
                 const course = await resolveCourseWithShortcode(code)
                 const cohort = await resolveCohortWithShortCode(group)
                 if (!course) {
