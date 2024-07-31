@@ -11,10 +11,12 @@ export enum CohortsStatus {
 export interface CohortsInterface extends Document {
     _id: string,
     name: string,
+    shortCode: string
     distribution: Distribution
     schedule: boolean
     members: string[]
     courseId: string,
+    global: boolean
     date?: Date,
     time?: string,
     status: CohortsStatus
@@ -22,15 +24,23 @@ export interface CohortsInterface extends Document {
 
 export interface CreateCohortInterface {
     distribution: Distribution
+    name: string,
+    courseId: string,
+}
+
+
+export interface EnrollCohortInterface {
     schedule: boolean
     students?: string[]
     channels?: string[]
     members?: string[]
-    name: string,
+    cohortId: string,
     courseId: string,
     date?: Date,
     time?: string,
 }
+
+
 
 export interface CohortsInterfaceModel extends Model<CohortsInterface> {
     paginate (filter: Record<string, any>, options: Record<string, any>): Promise<QueryResult<CohortsInterface>>

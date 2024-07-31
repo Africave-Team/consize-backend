@@ -45,9 +45,9 @@ export const confirmWhatsappOTP = catchAsync(async (req: Request, res: Response)
 
 export const enrollStudentToCourse = catchAsync(async (req: Request, res: Response) => {
   const { student } = req.params
-  const { course, custom } = req.body
+  const { course, custom, cohortId } = req.body
   if (course && student) {
-    await studentService.enrollStudentToCourse(student, course, "api", custom)
+    await studentService.enrollStudentToCourse(student, course, "api", custom, cohortId)
   }
   res.status(200).send({ message: "Enrollment created" })
 })

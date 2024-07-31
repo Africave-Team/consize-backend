@@ -48,6 +48,7 @@ export interface StudentCourseStats {
   progress: number
   scores: number[]
   custom?: any
+  cohortId?: string
   lessons: {
     [lessonId: string]: {
       duration: number

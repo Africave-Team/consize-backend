@@ -16,7 +16,8 @@ export const confirmStudentPhoneNumber = {
 export const enrollStudent = {
   body: Joi.object().keys({
     course: Joi.string().required().description("course id"),
-    custom: Joi.object()
+    custom: Joi.object(),
+    cohortId: Joi.string()
   }),
   params: Joi.object().keys({
     student: Joi.string().required().description("student id"),

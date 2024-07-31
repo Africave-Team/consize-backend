@@ -18,6 +18,10 @@ const enrollmentSchema = new Schema<EnrollmentSessionInterface, EnrollmentSessio
   certificate: String,
   distribution: String,
   custom: Schema.Types.Mixed,
+  cohortId: {
+    type: String,
+    ref: "Cohorts"
+  },
   scores: [Number],
   lessons: Object
 }, {
