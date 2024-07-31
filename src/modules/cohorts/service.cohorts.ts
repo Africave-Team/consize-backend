@@ -49,111 +49,113 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
         throw new ApiError(httpStatus.BAD_REQUEST, "Could not resolve the provided team ID")
     }
 
-    if (!team.slackToken) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Slack token is yet to be set")
-    }
-
     // list of student ids
     let cohortMembers: string[] = []
     let cohortMembersInfo: { id: string, tz: string }[] = []
     // resolve slack or whatsapp
-    if (distribution === Distribution.SLACK && team && team.slackToken) {
-        let slackIds: string[] = []
-        if (members) {
-            await checkSubscriptionEnrollmentCount(members.length, courseInformation.owner)
-            slackIds = members
-        }
-        if (channels) {
-            // @ts-ignore
-            const channelMembers = await Promise.all(channels.map(e => slackServices.fetchChannelMembers(team.slackToken, e)))
-            slackIds = [...slackIds, ...channelMembers.flat()]
-        }
-        // check if the slack ids are matched with any existing students
-        const existingStudents = await Student.find({ slackId: { $in: slackIds } })
-
-        const nonExistingStudents = slackIds.filter((id) => !existingStudents.find(e => e.slackId === id))
-        // for non-existing members, initiate onboarding process
-        // @ts-ignore
-        const profiles = await Promise.all(nonExistingStudents.map(e => slackServices.fetchSlackUserProfile(team.slackToken, e)))
-        // create student info for all profiles
-        const studentsList = await Promise.all(profiles.map((user) => {
-            if (user && !user.deleted && !user.is_bot) {
-                return studentService.registerStudentSlack({
-                    email: "",
-                    slackId: user.id,
-                    firstName: user.profile.first_name,
-                    otherNames: user.profile.last_name,
-                    phoneNumber: user.profile.phone,
-                    tz: user.tz
-                })
+    if (distribution === Distribution.SLACK) {
+        if (team && team.slackToken) {
+            let slackIds: string[] = []
+            if (members) {
+                await checkSubscriptionEnrollmentCount(members.length, courseInformation.owner)
+                slackIds = members
             }
-            return null
-        }))
+            if (channels) {
+                // @ts-ignore
+                const channelMembers = await Promise.all(channels.map(e => slackServices.fetchChannelMembers(team.slackToken, e)))
+                slackIds = [...slackIds, ...channelMembers.flat()]
+            }
+            // check if the slack ids are matched with any existing students
+            const existingStudents = await Student.find({ slackId: { $in: slackIds } })
 
-        let list = studentsList.filter((e) => e !== null) as StudentInterface[]
-        cohortMembers = [...cohortMembers, ...existingStudents.map((e) => e.id), ...list.map(e => e.id)]
-        cohortMembersInfo = [...cohortMembersInfo, ...existingStudents.map((e) => ({ id: e.id, tz: e.tz })), ...list.map((e) => ({ id: e.id, tz: e.tz }))]
-        // send onboarding messages to all profiles
-        if (team !== null && team.slackToken) {
-            await Promise.allSettled(profiles.map(async (user): Promise<void> => {
-                if (user && team && team.slackToken) {
-                    // @ts-ignore
-                    const token = team.slackToken
-                    const conversation = await slackServices.createConversation(token, user.id)
-                    if (conversation) {
-                        agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
-                            channel: conversation,
-                            accessToken: token,
-                            message: {
-                                blocks: [
-                                    {
-                                        type: MessageBlockType.SECTION,
-                                        fields: [
-                                            {
-                                                type: SlackTextMessageTypes.MARKDOWN,
-                                                text: `Welcome *${user.profile.first_name}*`
-                                            },
-                                            {
-                                                type: SlackTextMessageTypes.MARKDOWN,
-                                                text: `You have been invited by your organization admin to participate in courses distributed through Consize. \n\nClick the button below to accept this invitation.`
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: MessageBlockType.ACTIONS,
-                                        elements: [
-                                            {
-                                                type: SlackActionType.BUTTON,
-                                                style: MessageActionButtonStyle.PRIMARY,
-                                                text: {
-                                                    type: SlackTextMessageTypes.PLAINTEXT,
-                                                    "emoji": true,
-                                                    text: "Accept invitation",
-                                                },
-                                                value: ACCEPT_INVITATION
-                                            },
-                                            {
-                                                type: SlackActionType.BUTTON,
-                                                style: MessageActionButtonStyle.DANGER,
-                                                text: {
-                                                    type: SlackTextMessageTypes.PLAINTEXT,
-                                                    "emoji": true,
-                                                    text: "Reject invitation",
-                                                },
-                                                value: REJECT_INVITATION
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        })
-
-                        await Student.findOneAndUpdate({ slackId: user.id }, { channelId: conversation })
-                    }
+            const nonExistingStudents = slackIds.filter((id) => !existingStudents.find(e => e.slackId === id))
+            // for non-existing members, initiate onboarding process
+            // @ts-ignore
+            const profiles = await Promise.all(nonExistingStudents.map(e => slackServices.fetchSlackUserProfile(team.slackToken, e)))
+            // create student info for all profiles
+            const studentsList = await Promise.all(profiles.map((user) => {
+                if (user && !user.deleted && !user.is_bot) {
+                    return studentService.registerStudentSlack({
+                        email: "",
+                        slackId: user.id,
+                        firstName: user.profile.first_name,
+                        otherNames: user.profile.last_name,
+                        phoneNumber: user.profile.phone,
+                        tz: user.tz
+                    })
                 }
+                return null
             }))
+
+            let list = studentsList.filter((e) => e !== null) as StudentInterface[]
+            cohortMembers = [...cohortMembers, ...existingStudents.map((e) => e.id), ...list.map(e => e.id)]
+            cohortMembersInfo = [...cohortMembersInfo, ...existingStudents.map((e) => ({ id: e.id, tz: e.tz })), ...list.map((e) => ({ id: e.id, tz: e.tz }))]
+            // send onboarding messages to all profiles
+            if (team !== null && team.slackToken) {
+                await Promise.allSettled(profiles.map(async (user): Promise<void> => {
+                    if (user && team && team.slackToken) {
+                        // @ts-ignore
+                        const token = team.slackToken
+                        const conversation = await slackServices.createConversation(token, user.id)
+                        if (conversation) {
+                            agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+                                channel: conversation,
+                                accessToken: token,
+                                message: {
+                                    blocks: [
+                                        {
+                                            type: MessageBlockType.SECTION,
+                                            fields: [
+                                                {
+                                                    type: SlackTextMessageTypes.MARKDOWN,
+                                                    text: `Welcome *${user.profile.first_name}*`
+                                                },
+                                                {
+                                                    type: SlackTextMessageTypes.MARKDOWN,
+                                                    text: `You have been invited by your organization admin to participate in courses distributed through Consize. \n\nClick the button below to accept this invitation.`
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            type: MessageBlockType.ACTIONS,
+                                            elements: [
+                                                {
+                                                    type: SlackActionType.BUTTON,
+                                                    style: MessageActionButtonStyle.PRIMARY,
+                                                    text: {
+                                                        type: SlackTextMessageTypes.PLAINTEXT,
+                                                        "emoji": true,
+                                                        text: "Accept invitation",
+                                                    },
+                                                    value: ACCEPT_INVITATION
+                                                },
+                                                {
+                                                    type: SlackActionType.BUTTON,
+                                                    style: MessageActionButtonStyle.DANGER,
+                                                    text: {
+                                                        type: SlackTextMessageTypes.PLAINTEXT,
+                                                        "emoji": true,
+                                                        text: "Reject invitation",
+                                                    },
+                                                    value: REJECT_INVITATION
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            })
+
+                            await Student.findOneAndUpdate({ slackId: user.id }, { channelId: conversation })
+                        }
+                    }
+                }))
+            }
+        } else {
+            throw new ApiError(httpStatus.BAD_REQUEST, "Slack has not been connected to your account")
         }
-    } else {
+    }
+
+    if (distribution === Distribution.WHATSAPP) {
         if (students) {
             await checkSubscriptionEnrollmentCount(students.length, courseInformation.owner)
             const studentsData = await Promise.all(students.map(e => studentService.findStudentById(e)))
