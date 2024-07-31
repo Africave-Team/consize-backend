@@ -722,11 +722,14 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 }
               }
               const match = extractGroupAndId(response)
-              if (match && match[0] && match[1]) {
+              if (match && match[0]) {
                 let code = match[0]
                 let group = match[1]
                 const course = await resolveCourseWithShortcode(code)
-                const cohort = await resolveCohortWithShortCode(group)
+                let cohort
+                if (group) {
+                  cohort = await resolveCohortWithShortCode(group)
+                }
                 if (!course) {
                   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                     to: destination,
