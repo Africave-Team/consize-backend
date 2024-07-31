@@ -17,6 +17,7 @@ const enrollmentSchema = new Schema<EnrollmentSessionInterface, EnrollmentSessio
   droppedOut: Boolean,
   certificate: String,
   distribution: String,
+  custom: Schema.Types.Mixed,
   scores: [Number],
   lessons: Object
 }, {

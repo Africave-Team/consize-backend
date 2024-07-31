@@ -12,6 +12,9 @@ const EnrollFieldSchema = new Schema<EnrollmentField>({
   variableName: {
     type: String
   },
+  dataType: {
+    type: String
+  },
   defaultField: {
     type: Boolean
   },

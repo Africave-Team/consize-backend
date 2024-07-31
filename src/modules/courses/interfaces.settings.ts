@@ -6,6 +6,7 @@ export interface EnrollmentField {
   variableName: string
   required: boolean
   defaultField: boolean
+  dataType: "text" | "number" | "boolean"
   id: string
   position: number
 }
