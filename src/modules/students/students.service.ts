@@ -96,6 +96,7 @@ export const sendOTP = async (userId: string, phoneNumber: string): Promise<void
     code,
     student: userId
   }, { upsert: true })
+  console.log(code)
   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
     "messaging_product": "whatsapp",
     "recipient_type": "individual",
@@ -158,7 +159,7 @@ export const verifyOTP = async (code: string): Promise<StudentInterface> => {
 
 
 // course sessions
-export const enrollStudentToCourse = async (studentId: string, courseId: string, source: "api" | "qr"): Promise<void> => {
+export const enrollStudentToCourse = async (studentId: string, courseId: string, source: "api" | "qr", customData?: any): Promise<void> => {
   const student = await Students.findOne({ _id: studentId })
   if (!student) {
     throw new ApiError(httpStatus.NOT_FOUND, "No student account found.")
@@ -318,15 +319,15 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
         }
       })
     } else {
-      startEnrollmentWhatsapp(studentId, courseId, source)
+      startEnrollmentWhatsapp(studentId, courseId, source, customData)
     }
   } else {
-    startEnrollmentWhatsapp(studentId, courseId, source)
+    startEnrollmentWhatsapp(studentId, courseId, source, customData)
   }
 
 }
 
-export const startEnrollmentWhatsapp = async function (studentId: string, courseId: string, source: "api" | "qr"): Promise<void> {
+export const startEnrollmentWhatsapp = async function (studentId: string, courseId: string, source: "api" | "qr", customData?: any): Promise<void> {
   const student = await Students.findOne({ _id: studentId })
   if (!student) {
     throw new ApiError(httpStatus.NOT_FOUND, "No student account found.")
@@ -376,7 +377,6 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
     } else {
       throw new ApiError(httpStatus.NOT_FOUND, "No course in this course bundle, please add course")
     }
-
   }
   let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
   await dbRef.child("students").child(studentId).set({
@@ -401,7 +401,8 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
     completed: false,
     droppedOut: false,
     scores: [],
-    lessons: {}
+    lessons: {},
+    custom: customData || {}
   })
 
   const jobs = await agenda.jobs({ 'data.courseId': courseId, name: GENERATE_COURSE_TRENDS })

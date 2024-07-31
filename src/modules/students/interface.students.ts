@@ -47,6 +47,7 @@ export interface StudentCourseStats {
   distribution?: string
   progress: number
   scores: number[]
+  custom?: any
   lessons: {
     [lessonId: string]: {
       duration: number
