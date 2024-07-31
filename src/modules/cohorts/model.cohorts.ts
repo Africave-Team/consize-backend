@@ -35,8 +35,15 @@ const CohortSchema = new Schema<CohortsInterface, CohortsInterfaceModel>(
         date: {
             type: Date,
         },
+        shortCode: {
+            type: String
+        },
         time: {
             type: String,
+        },
+        global: {
+            type: Boolean,
+            default: false
         },
 
     },

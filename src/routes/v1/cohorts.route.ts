@@ -7,8 +7,9 @@ import { cohortsControllers, cohortsValidator } from "../../modules/cohorts"
 const router: Router = express.Router()
 router.use(auth())
 
-router.post("/", validate(cohortsValidator), cohortsControllers.createCohort)
-router.get("/:course", cohortsControllers.getCohorts)
+router.post("/", validate(cohortsValidator.createCohorts), cohortsControllers.createCohort)
+router.post("/enroll", validate(cohortsValidator.enrollCohorts), cohortsControllers.enrollWithCohort)
+router.get("/:course/:distribution", cohortsControllers.getCohorts)
 router.delete("/:cohortId", cohortsControllers.deleteCohort)
 
 
