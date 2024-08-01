@@ -150,39 +150,47 @@ export const getAssessmentStat = async ({searchParams}: any, teamId: string): Pr
 }
 
 export const getTopCourseMetrics = async (teamId: string): Promise<any> => {
-      const result = await Enrollments.aggregate([
-        { $match: { teamId: teamId } },
-        {
-            $group: {
-            _id: '$courseId',
-            totalEnrolledLearners: { $sum: 1 },
-            avgCompletionRate: { $avg: { $cond: [{ $eq: ['$completed', true] }, 1, 0] } },
-            avgCourseCompletionTime: { $avg: '$completionTime' }, // Assuming you have a completionTime field
-            avgCourseProgress: { $avg: '$progress' }
+    const result = await Enrollments.aggregate([
+    { $match: { teamId: teamId } },
+    {
+        $group: {
+        _id: '$courseId',
+        totalEnrolledLearners: { $sum: 1 },
+        avgCompletionRate: { $avg: { $cond: [{ $eq: ['$completed', true] }, 1, 0] } },
+        totalDuration: {
+            $sum: {
+            $reduce: {
+                input: { $objectToArray: '$lessons' },
+                initialValue: 0,
+                in: { $add: ['$$value', '$$this.v.duration'] }
+            }
             }
         },
-        {
-            $lookup: {
-            from: 'courses', // Assuming the collection name for courses is 'courses'
-            localField: '_id', // courseId from the group result
-            foreignField: '_id', // The _id field in the courses collection
-            as: 'courseDetails'
-            }
-        },
-        { $unwind: '$courseDetails' },
-        {
-            $project: {
-            _id: 0,
-            courseTitle: '$courseDetails.title',
-            totalEnrolledLearners: 1,
-            avgCompletionRate: 1,
-            avgCourseCompletionTime: 1,
-            avgCourseProgress: 1
-            }
+        avgCourseProgress: { $avg: '$progress' }
         }
-        ]);
+    },
+    {
+        $lookup: {
+        from: 'courses', // Assuming the collection name for courses is 'courses'
+        localField: '_id', // courseId from the group result
+        foreignField: '_id', // The _id field in the courses collection
+        as: 'courseDetails'
+        }
+    },
+    { $unwind: '$courseDetails' },
+    {
+        $project: {
+        _id: 0,
+        courseTitle: '$courseDetails.title',
+        totalEnrolledLearners: 1,
+        avgCompletionRate: 1,
+        avgCourseCompletionTime: { $divide: ['$totalDuration', { $cond: [{ $eq: ['$totalEnrolledLearners', 0] }, 1, '$totalEnrolledLearners'] }] },
+        avgCourseProgress: 1
+        }
+    }
+    ]);
 
-        return result;
+    return result;
 }
 
 export const getGraphStats = async (dateRange : any, teamId: string): Promise<any> => {
