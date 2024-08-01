@@ -55,13 +55,13 @@ export const getCourseStat = async ({searchParams}: any, teamId: string): Promis
     }
 }
 
-export const getLearnersStat = async ({ searchParams }: any, teamId: string): Promise<any> => {
+export const getLearnersStat = async (searchParams: any, teamId: string): Promise<any> => {
     const {enrollment_date_from, enrollment_date_to, courseId } = searchParams || {}
 
     const matchConditions: any = { teamId };
 
     if (courseId) {
-      matchConditions.courseId = courseId;
+        matchConditions.courseId = courseId;
     }
 
     if (enrollment_date_from && enrollment_date_to) {
@@ -94,9 +94,7 @@ export const getLearnersStat = async ({ searchParams }: any, teamId: string): Pr
       totalDroppedOut: stats[0].totalDroppedOut[0] ? stats[0].totalDroppedOut[0].count : 0,
     };
 
-    console.log(result);
     return result;
-
 }
 
 export const getAssessmentStat = async ({searchParams}: any, teamId: string): Promise<any> => {
@@ -153,41 +151,41 @@ export const getAssessmentStat = async ({searchParams}: any, teamId: string): Pr
 
 export const getTopCourseMetrics = async (teamId: string): Promise<any> => {
       const result = await Enrollments.aggregate([
-      { $match: { teamId: teamId } },
-      {
-        $group: {
-          _id: '$courseId',
-          totalEnrolledLearners: { $sum: 1 },
-          avgCompletionRate: { $avg: { $cond: [{ $eq: ['$completed', true] }, 1, 0] } },
-          avgCourseCompletionTime: { $avg: '$completionTime' }, // Assuming you have a completionTime field
-          avgCourseProgress: { $avg: '$progress' }
+        { $match: { teamId: teamId } },
+        {
+            $group: {
+            _id: '$courseId',
+            totalEnrolledLearners: { $sum: 1 },
+            avgCompletionRate: { $avg: { $cond: [{ $eq: ['$completed', true] }, 1, 0] } },
+            avgCourseCompletionTime: { $avg: '$completionTime' }, // Assuming you have a completionTime field
+            avgCourseProgress: { $avg: '$progress' }
+            }
+        },
+        {
+            $lookup: {
+            from: 'courses', // Assuming the collection name for courses is 'courses'
+            localField: '_id', // courseId from the group result
+            foreignField: '_id', // The _id field in the courses collection
+            as: 'courseDetails'
+            }
+        },
+        { $unwind: '$courseDetails' },
+        {
+            $project: {
+            _id: 0,
+            courseTitle: '$courseDetails.title',
+            totalEnrolledLearners: 1,
+            avgCompletionRate: 1,
+            avgCourseCompletionTime: 1,
+            avgCourseProgress: 1
+            }
         }
-      },
-      {
-        $lookup: {
-          from: 'courses', // Assuming you have a courses collection
-          localField: '_id',
-          foreignField: '_id', // Assuming the courseId in the enrollment matches the _id in courses
-          as: 'courseDetails'
-        }
-      },
-      { $unwind: '$courseDetails' },
-      {
-        $project: {
-          _id: 0,
-          courseName: '$courseDetails.name',
-          totalEnrolledLearners: 1,
-          avgCompletionRate: 1,
-          avgCourseCompletionTime: 1,
-          avgCourseProgress: 1
-        }
-      }
-    ]);
+        ]);
 
-    return result;
+        return result;
 }
 
-export const getGraphStats = async ({ dateRange }: any, teamId: string): Promise<any> => {
+export const getGraphStats = async (dateRange : any, teamId: string): Promise<any> => {
     const { startDate,endDate }: any = dateRange
     const result = await Statistics.aggregate([
       {
@@ -325,19 +323,21 @@ export const getCourseCompletionBuckets = async (teamId: string): Promise<any> =
   return result;
 }
 
-export const getStudentsStats = async ({ searchParams }: any, teamId: string): Promise<any> => {
-    const { enrollmentDateFrom, enrollmentDateTo, studentName, courseTitle } = searchParams || {}
+export const getStudentsStats = async (searchParams : any, teamId: string): Promise<any> => {
+    const { enrollmentDateFrom, enrollmentDateTo, studentName, courseTitle } = searchParams || {};
+
     const matchStage: any = {
-        teamId
+    teamId
     };
 
+    // Filter by enrollment date range if provided
     if (enrollmentDateFrom || enrollmentDateTo) {
     matchStage.createdAt = {};
     if (enrollmentDateFrom) {
-        matchStage.createdAt.$gte = enrollmentDateFrom;
+        matchStage.createdAt.$gte = new Date(enrollmentDateFrom);
     }
     if (enrollmentDateTo) {
-        matchStage.createdAt.$lte = enrollmentDateTo;
+        matchStage.createdAt.$lte = new Date(enrollmentDateTo);
     }
     }
 
@@ -374,13 +374,12 @@ export const getStudentsStats = async ({ searchParams }: any, teamId: string): P
         courseTitle: '$courseInfo.title'
         }
     },
+    // Filter by student name and course title if provided
     {
-        $match: studentName || courseTitle ? {
-        $or: [
-            studentName ? { fullName: { $regex: studentName, $options: 'i' } } : {},
-            courseTitle ? { courseTitle: { $regex: courseTitle, $options: 'i' } } : {}
-        ]
-        } : {}
+        $match: {
+        ...(studentName && { fullName: { $regex: studentName, $options: 'i' } }),
+        ...(courseTitle && { courseTitle: { $regex: courseTitle, $options: 'i' } })
+        }
     },
     {
         $project: {
@@ -398,13 +397,12 @@ export const getStudentsStats = async ({ searchParams }: any, teamId: string): P
 
     // Execute the aggregation pipeline
     const results = await Enrollments.aggregate(pipeline).exec();
-    return results;
+    return results
 }
 
-export const getCourseStudentsStatById = async ({ searchParams }: any, teamId: string, courseId: string): Promise<any> => {
+export const getCourseStudentsStatById = async ( searchParams : any,  courseId: string): Promise<any> => {
     const { enrollmentDateFrom, enrollmentDateTo} = searchParams || {}
     const matchStage: any = {
-    teamId,
     courseId
     };
 
