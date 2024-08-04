@@ -6,6 +6,7 @@ import httpStatus from 'http-status'
 import { CourseInterface } from './interfaces.courses'
 import { QueryResult } from '../paginate/paginate'
 // import { agenda } from '../scheduler'
+import { unlinkSync } from "fs"
 
 export const createCourseManually = catchAsync(async (req: Request, res: Response) => {
   const createdCourse = await courseService.createCourse(req.body, req.user.team)
@@ -321,6 +322,20 @@ export const setLearnerGroupLaunchTime = catchAsync(async (req: Request, res: Re
   res.status(200).send({ message: "Settings updated" })
 })
 
+
+export const exportStats = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+  if (course) {
+    const { file, filename } = await courseService.exportCourseStats(course)
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition')
+    return res.download(file, filename, (err) => {
+      unlinkSync(file)
+      console.log(err)
+    })
+  } else {
+    return res.status(200).send({ message: "Settings updated" })
+  }
+})
 
 // AI apis
 export const createCourseAI = catchAsync(async (req: Request, res: Response) => {

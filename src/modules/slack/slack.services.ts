@@ -424,6 +424,7 @@ export const startEnrollmentSlack = async (studentId: string, courseId: string):
     await dbRef.child("students").child(studentId).set({
       name: student.firstName + ' ' + student.otherNames,
       phoneNumber: student.phoneNumber,
+      slackId: student.slackId,
       studentId,
       progress: 0,
       completed: false,
@@ -434,7 +435,9 @@ export const startEnrollmentSlack = async (studentId: string, courseId: string):
     await sessionService.createEnrollment({
       anonymous: student.anonymous,
       courseId,
+      slackId: student.slackId,
       teamId: course.owner,
+      distribution: Distribution.SLACK,
       name: student.firstName + ' ' + student.otherNames,
       phoneNumber: student.phoneNumber,
       progress: 0,

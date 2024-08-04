@@ -8,6 +8,7 @@ const enrollmentSchema = new Schema<EnrollmentSessionInterface, EnrollmentSessio
   _id: { type: String, default: () => v4() },
   studentId: String,
   courseId: String,
+  slackId: String,
   teamId: String,
   name: String,
   phoneNumber: String,

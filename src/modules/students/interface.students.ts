@@ -40,6 +40,7 @@ export interface StudentCourseStats {
   name: string
   studentId: string
   phoneNumber: string
+  slackId?: string
   anonymous: boolean
   completed?: boolean
   droppedOut?: boolean

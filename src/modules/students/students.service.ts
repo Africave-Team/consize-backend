@@ -25,6 +25,7 @@ import { sessionService } from '../sessions'
 import { MAX_FREE_PLAN_MONTHLY_ENROLLMENTS } from '../../config/constants'
 import { statsService } from '../statistics'
 import { Cohorts } from '../cohorts'
+import { Distribution } from '../courses/interfaces.courses'
 
 export const bulkAddStudents = async (students: Student[]): Promise<string[]> => {
   try {
@@ -408,6 +409,7 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
     courseId,
     anonymous: student.anonymous,
     teamId: course.owner,
+    distribution: Distribution.WHATSAPP,
     name: student.firstName + ' ' + student.otherNames,
     phoneNumber: student.phoneNumber,
     progress: 0,
