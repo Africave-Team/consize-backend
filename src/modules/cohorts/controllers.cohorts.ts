@@ -37,3 +37,17 @@ export const getCohorts = catchAsync(async (req: Request, res: Response) => {
     }
 
 })
+
+
+export const getAllCohorts = catchAsync(async (req: Request, res: Response) => {
+
+    const { course } = req.params
+
+    if (course) {
+        const cohorts = await cohortService.fetchGeneralCohorts(course)
+        res.status(httpStatus.OK).send({ data: cohorts })
+    } else {
+        res.status(404).send({ message: "Course not found" })
+    }
+
+})

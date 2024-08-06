@@ -381,16 +381,6 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
     }
   }
   let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
-  await dbRef.child("students").child(studentId).set({
-    name: student.firstName + ' ' + student.otherNames,
-    phoneNumber: student.phoneNumber,
-    progress: 0,
-    studentId,
-    completed: false,
-    droppedOut: false,
-    scores: [],
-    lessons: {}
-  })
 
   if (!cohortId) {
     let cohort
@@ -404,6 +394,20 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
       cohortId = cohort.id
     }
   }
+
+  await dbRef.child("students").child(studentId).set({
+    name: student.firstName + ' ' + student.otherNames,
+    phoneNumber: student.phoneNumber,
+    distribution: Distribution.WHATSAPP,
+    cohortId: cohortId || "",
+    dateEnrolled: moment().format('MM-DD-YYYY'),
+    progress: 0,
+    studentId,
+    completed: false,
+    droppedOut: false,
+    scores: [],
+    lessons: {}
+  })
 
   await sessionService.createEnrollment({
     courseId,

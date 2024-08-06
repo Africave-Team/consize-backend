@@ -26,6 +26,7 @@ import { ResponseType } from '../surveys/survey.interfaces'
 import Surveys from '../surveys/survey.model'
 import Settings from '../courses/model.settings'
 import { sessionService } from '../sessions'
+import { Cohorts } from '../cohorts'
 
 export const handleSlackWebhook = async function () { }
 
@@ -373,7 +374,7 @@ export const startCourseSlack = async (channel: string, courseId: string, studen
 }
 
 
-export const enrollStudentToCourseSlack = async (studentId: string, courseId: string): Promise<void> => {
+export const enrollStudentToCourseSlack = async (studentId: string, courseId: string, cohortId?: string): Promise<void> => {
   const student = await Students.findOne({ _id: studentId })
   if (!student) {
     return
@@ -391,10 +392,10 @@ export const enrollStudentToCourseSlack = async (studentId: string, courseId: st
   if (!owner || !owner.slackToken) {
     return
   }
-  startEnrollmentSlack(studentId, courseId)
+  startEnrollmentSlack(studentId, courseId, cohortId)
 }
 
-export const startEnrollmentSlack = async (studentId: string, courseId: string): Promise<void> => {
+export const startEnrollmentSlack = async (studentId: string, courseId: string, cohortId?: string): Promise<void> => {
   const student = await Students.findOne({ _id: studentId })
   if (!student) {
     return
@@ -415,46 +416,63 @@ export const startEnrollmentSlack = async (studentId: string, courseId: string):
   const conversation = await createConversation(owner.slackToken, student.slackId)
 
   if (conversation) {
-    await Students.findByIdAndUpdate(studentId, { $set: { channelId: conversation } })
-    await generateCourseFlow(courseId)
-    const id = await startCourseSlack(conversation, courseId, student.id, owner.slackToken)
-    await sendWelcomeSlack(courseId, student.slackId, owner.slackToken, id)
+    try {
+      await Students.findByIdAndUpdate(studentId, { $set: { channelId: conversation } })
+      await generateCourseFlow(courseId)
+      const id = await startCourseSlack(conversation, courseId, student.id, owner.slackToken)
+      await sendWelcomeSlack(courseId, student.slackId, owner.slackToken, id)
 
-    let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
-    await dbRef.child("students").child(studentId).set({
-      name: student.firstName + ' ' + student.otherNames,
-      phoneNumber: student.phoneNumber,
-      slackId: student.slackId,
-      studentId,
-      progress: 0,
-      completed: false,
-      droppedOut: false,
-      scores: [],
-      lessons: {}
-    })
-    await sessionService.createEnrollment({
-      anonymous: student.anonymous,
-      courseId,
-      slackId: student.slackId,
-      teamId: course.owner,
-      distribution: Distribution.SLACK,
-      name: student.firstName + ' ' + student.otherNames,
-      phoneNumber: student.phoneNumber,
-      progress: 0,
-      studentId,
-      completed: false,
-      droppedOut: false,
-      scores: [],
-      lessons: {}
-    })
+      let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
+      if (!cohortId) {
+        let cohort = await Cohorts.findOne({ name: "Website", global: true })
 
-    const jobs = await agenda.jobs({ 'data.courseId': courseId })
-    if (jobs.length === 0) {
-      // Queue the trends generator
-      agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
+        if (cohort) {
+          cohortId = cohort.id
+        }
+      }
+      let payload = {
+        name: student.firstName + ' ' + student.otherNames,
+        phoneNumber: student.phoneNumber,
+        slackId: student.slackId,
+        distribution: Distribution.SLACK,
+        cohortId: cohortId || "",
+        dateEnrolled: moment().format('MM-DD-YYYY'),
+        studentId,
+        progress: 0,
+        completed: false,
+        droppedOut: false,
+        scores: [],
+        lessons: {}
+      }
+      console.log(payload)
+      await dbRef.child("students").child(studentId).set(payload)
+      await sessionService.createEnrollment({
+        anonymous: student.anonymous,
         courseId,
-        teamId: course.owner
+        slackId: student.slackId,
+        teamId: course.owner,
+        distribution: Distribution.SLACK,
+        cohortId: cohortId || "",
+        name: student.firstName + ' ' + student.otherNames,
+        phoneNumber: student.phoneNumber,
+        progress: 0,
+        studentId,
+        completed: false,
+        droppedOut: false,
+        scores: [],
+        lessons: {}
       })
+
+      const jobs = await agenda.jobs({ 'data.courseId': courseId })
+      if (jobs.length === 0) {
+        // Queue the trends generator
+        agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
+          courseId,
+          teamId: course.owner
+        })
+      }
+    } catch (error) {
+      console.log(error, "=> error here")
     }
   }
 

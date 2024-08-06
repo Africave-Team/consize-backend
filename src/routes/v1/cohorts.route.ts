@@ -9,6 +9,7 @@ router.use(auth())
 
 router.post("/", validate(cohortsValidator.createCohorts), cohortsControllers.createCohort)
 router.post("/enroll", validate(cohortsValidator.enrollCohorts), cohortsControllers.enrollWithCohort)
+router.get("/general/:course", cohortsControllers.getAllCohorts)
 router.get("/:course/:distribution", cohortsControllers.getCohorts)
 router.delete("/:cohortId", cohortsControllers.deleteCohort)
 

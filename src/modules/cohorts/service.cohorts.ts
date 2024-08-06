@@ -232,6 +232,20 @@ export const fetchCohorts = async (courseId: string, distribution: Distribution)
     return cohorts
 }
 
+export const fetchGeneralCohorts = async (courseId: string): Promise<CohortsInterface[]> => {
+    const cohorts = await Cohorts.find({
+        $or: [
+            {
+                courseId: courseId
+            },
+            {
+                global: true
+            }
+        ]
+    }).populate("members")
+    return cohorts
+}
+
 
 export const resolveCohortWithShortCode = async (code: string): Promise<CohortsInterface | null> => {
     const cohort = await Cohorts.findOne({
@@ -254,11 +268,11 @@ export const initiateCourseForCohort = async function (cohortId: string) {
     if (cohort) {
         if (cohort.distribution === Distribution.SLACK) {
             await Promise.all(cohort.members.map(async (student) => {
-                await slackServices.enrollStudentToCourseSlack(student, cohort.courseId)
+                await slackServices.enrollStudentToCourseSlack(student, cohort.courseId, cohort.id)
             }))
         } else {
             await Promise.all(cohort.members.map(async (student: string) => {
-                await studentService.enrollStudentToCourse(student, cohort.courseId, "api")
+                await studentService.enrollStudentToCourse(student, cohort.courseId, "api", {}, cohort.id)
             }))
         }
 
