@@ -21,10 +21,11 @@ import { SEND_SLACK_MESSAGE, SEND_SLACK_RESPONSE, SEND_WHATSAPP_MESSAGE } from '
 import { fetchSignatures } from '../signatures/service.signatures'
 import { completeCourse } from '../students/students.service'
 import { redisClient } from '../redis'
-import { MessageBlockType, SendSlackMessagePayload, SendSlackResponsePayload } from '../slack/interfaces.slack'
+import { MessageBlockType, SendSlackMessagePayload, SendSlackResponsePayload, SlackTextMessageTypes } from '../slack/interfaces.slack'
 import { handleContinueSlack } from '../slack/slack.services'
 import Students from '../students/model.students'
 import Courses from '../courses/model.courses'
+import Settings from '../courses/model.settings'
 
 const projectRoot = process.cwd()
 const localVideoPath = path.join(projectRoot, '.temp')
@@ -285,12 +286,13 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
   const student = await Students.findById(studentId)
   const course = await Courses.findById(courseId)
   if (course && student) {
+    const settings = await Settings.findById(course.settings)
     const owner = await Teams.findById(course.owner)
     if (owner) {
       const url = await generateCourseCertificate(course, student, owner)
+      completeCourse(course.owner, studentId, courseId, url)
       if (url.includes('https://')) {
         // send media message with continue button
-        completeCourse(course.owner, studentId, courseId, url)
         agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
           to: student.phoneNumber,
           type: "image",
@@ -300,7 +302,23 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
             link: url
           }
         })
+      } else {
+        console.log("Failed to generate certificate")
       }
+      if (settings) {
+        if (settings.courseMaterials.length > 0) {
+          agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+            to: student.phoneNumber,
+            type: "text",
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            text: {
+              body: `Congratulations once again. For further reading, please refer to these extra resources.\n\n\n${settings.courseMaterials.map((mat) => `${mat.fileName}\n${mat.fileUrl}`).join('\n\n\n')}`
+            },
+          })
+        }
+      }
+
     }
   }
 }
@@ -309,12 +327,13 @@ export const sendCourseCertificateSlack = async (courseId: string, studentId: st
   const student = await Students.findById(studentId)
   const course = await Courses.findById(courseId)
   if (course && student) {
+    const settings = await Settings.findById(course.settings)
     const owner = await Teams.findById(course.owner)
     if (owner && owner.slackToken) {
       const url = await generateCourseCertificate(course, student, owner)
+      completeCourse(course.owner, studentId, courseId, url)
       if (url.includes('https://')) {
         // send media message with continue button
-        completeCourse(course.owner, studentId, courseId, url)
         agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
           accessToken: owner.slackToken,
           channel: student.channelId,
@@ -328,6 +347,27 @@ export const sendCourseCertificateSlack = async (courseId: string, studentId: st
             ]
           }
         })
+      } else {
+        console.log("Failed to generate certificate")
+      }
+      if (settings) {
+        if (settings.courseMaterials.length > 0) {
+          agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+            accessToken: owner.slackToken,
+            channel: student.channelId,
+            message: {
+              blocks: [
+                {
+                  type: MessageBlockType.SECTION,
+                  text: {
+                    type: SlackTextMessageTypes.MARKDOWN,
+                    text: `Congratulations once again. For further reading, please refer to these extra resources.\n\n\n${settings.courseMaterials.map((mat) => `${mat.fileName}\n${mat.fileUrl}`).join('\n\n\n')}`
+                  },
+                }
+              ]
+            }
+          })
+        }
       }
     }
   }

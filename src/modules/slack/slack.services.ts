@@ -13,7 +13,7 @@ import { GENERATE_COURSE_TRENDS, SEND_CERTIFICATE_SLACK, SEND_LEADERBOARD_SLACK,
 import { CourseInterface, Distribution } from '../courses/interfaces.courses'
 import Courses from '../courses/model.courses'
 import { v4 } from 'uuid'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, MORNING, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE, SCHEDULE_RESUMPTION, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from '../webhooks/interfaces.webhooks'
+import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, MORNING, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, SCHEDULE_RESUMPTION, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from '../webhooks/interfaces.webhooks'
 import Students from '../students/model.students'
 import Teams from '../teams/model.teams'
 import { COURSE_STATS } from '../rtdb/nodes'
@@ -764,7 +764,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                   elements: [
                     {
                       type: SlackActionType.BUTTON,
-                      value: `start-survey|${messageId}`,
+                      value: CourseFlowMessageType.START_SURVEY + `|${messageId}`,
                       text: {
                         type: SlackTextMessageTypes.PLAINTEXT,
                         emoji: true,
@@ -1044,7 +1044,7 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ur
   let updatedData = { ...data, lastMessageId: messageId }
   if (courseFlow) {
     const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
-    const item = courseFlowData[data.currentBlock]
+    const item = courseFlowData[data.currentBlock - 1]
     let payload: SlackTextMessage = {
       type: SlackTextMessageTypes.MARKDOWN,
       text: ``
@@ -1102,7 +1102,7 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, u
   const courseFlow = await redisClient.get(courseKey)
   if (courseFlow) {
     const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
-    const item = courseFlowData[data.currentBlock]
+    const item = courseFlowData[data.currentBlock - 1]
     let payload: SlackTextMessage = {
       type: SlackTextMessageTypes.MARKDOWN,
       text: ``
@@ -1248,7 +1248,7 @@ export const handleSurvey = async (answer: number, data: CourseEnrollment, surve
   }
 }
 
-export const sendResumptionOptions = async (url: string, _: string, __: CourseEnrollment): Promise<void> => {
+export const sendResumptionOptions = async (url: string, key: string, data: CourseEnrollment): Promise<void> => {
   try {
     let msgId = v4()
     agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
@@ -1300,16 +1300,16 @@ export const sendResumptionOptions = async (url: string, _: string, __: CourseEn
         ]
       }
     })
-    // await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
+    await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
 }
 
 
-export const sendResumptionMessageSlack = async (channelId: string, _: string, data: CourseEnrollment): Promise<void> => {
+export const sendResumptionMessageSlack = async (channelId: string, key: string, data: CourseEnrollment): Promise<void> => {
   try {
-    // let msgId = v4()
+    let msgId = v4()
     agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
       channel: channelId,
       accessToken: data.slackToken || "",
@@ -1332,7 +1332,7 @@ export const sendResumptionMessageSlack = async (channelId: string, _: string, d
                   "text": "Resume now",
                   "emoji": true
                 },
-                "value": RESUME_COURSE,
+                "value": RESUME_COURSE_TOMORROW + `|${msgId}`,
                 style: MessageActionButtonStyle.PRIMARY
               }
             ]
@@ -1340,7 +1340,7 @@ export const sendResumptionMessageSlack = async (channelId: string, _: string, d
         ]
       }
     })
-    // await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
+    await redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }

@@ -4,6 +4,7 @@ import { v4 } from "uuid"
 import { toJSON } from '../toJSON'
 import { paginate } from '../paginate'
 import { Distribution } from '../courses/interfaces.courses'
+const defaultColors = ['#3b5998', '#1da1f2', '#e1306c', '#c13584', '#0077b5', '#ea4335', '#1db954', '#e50914', '#ff0000', '#ff9900', '#611f69']
 
 const ChannelSchema = new Schema<DistributionChannel>(
     {
@@ -22,6 +23,7 @@ const ChannelSchema = new Schema<DistributionChannel>(
         _id: false
     }
 )
+
 
 export const TeamSchema = new Schema<TeamsInterface, ITeamModel>(
     {
@@ -53,6 +55,16 @@ export const TeamSchema = new Schema<TeamsInterface, ITeamModel>(
         owner: {
             type: String,
             ref: "User"
+        },
+        color: {
+            primary: {
+                type: String,
+                default: () => defaultColors[Math.floor(Math.random() * defaultColors.length)]
+            },
+            secondary: {
+                type: String,
+                default: () => defaultColors[Math.floor(Math.random() * defaultColors.length)]
+            },
         },
         verified: {
             type: Boolean,

@@ -12,6 +12,17 @@ jobs:
           name: SSH into the server
           command: ssh -o StrictHostKeyChecking=no -T ${SSH_USERNAME}@${SERVER_ADDRESS} "source ~/.nvm/nvm.sh; cd ~/consize-backend && git add . && git stash && git pull && /root/.nvm/versions/node/v18.19.1/bin/npm i && /root/.nvm/versions/node/v18.19.1/bin/npm run compile && /root/.nvm/versions/node/v18.19.1/bin/pm2 restart 0"
 
+  build_and_deploy_develop:
+    docker:
+      - image: circleci/node:14
+
+    steps:
+      - checkout
+      # SSH into the server
+      - run:
+          name: SSH into the server
+          command: ssh -o StrictHostKeyChecking=no -T ${SSH_USERNAME}@${SERVER_ADDRESS} "source ~/.nvm/nvm.sh; cd ~/consize-backend-develop && git add . && git stash && git pull && /root/.nvm/versions/node/v18.19.1/bin/npm i && /root/.nvm/versions/node/v18.19.1/bin/npm run compile && /root/.nvm/versions/node/v18.19.1/bin/pm2 restart DEV"
+
   build_and_deploy_prod:
     docker:
       - image: circleci/node:14
@@ -22,6 +33,8 @@ jobs:
       - run:
           name: SSH into the server
           command: ssh -o StrictHostKeyChecking=no -T ${SSH_USERNAME}@${SERVER_ADDRESS_PROD} "source ~/.nvm/nvm.sh; cd ~/consize-backend && git add . && git stash && git pull && /root/.nvm/versions/node/v19.9.0/bin/npm i && /root/.nvm/versions/node/v19.9.0/bin/npm run compile && /root/.nvm/versions/node/v19.9.0/bin/pm2 restart 0"
+
+  
 workflows:
   build_and_deploy_work:
     jobs:
@@ -35,3 +48,8 @@ workflows:
             branches:
               only:
                 - prod
+      - build_and_deploy_develop:
+          filters:
+            branches:
+              only:
+                - develop

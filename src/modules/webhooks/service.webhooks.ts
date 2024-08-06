@@ -2,7 +2,7 @@ import httpStatus from 'http-status'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
+import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -479,7 +479,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
   const course = await Courses.findById(payload.courseId)
   const student = await Students.findById(payload.studentId)
   if (course && student) {
-    // const msgId = v4()
+    const msgId = v4()
     if (payload.phoneNumber && !payload.slackChannel) {
       const key = `${config.redisBaseKey}enrollments:${payload.phoneNumber}:${payload.courseId}`
       const dtf = await redisClient.get(key)
@@ -547,7 +547,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
                         "text": "Continue",
                         "emoji": true
                       },
-                      "value": `continue_${payload.courseId}`,
+                      "value": `continue_${payload.courseId}|${msgId}`,
                       style: MessageActionButtonStyle.PRIMARY
                     }
                   ]
@@ -555,7 +555,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
               ]
             }
           })
-          // await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
+          await redisClient.set(key, JSON.stringify({ ...redisData, lastMessageId: msgId }))
         }
       }
     }
@@ -1877,7 +1877,7 @@ export const sendAuthMessage = async () => {
   logger.info(request_body)
 }
 
-export const sendResumptionOptions = async (phoneNumber: string, _: string, __: CourseEnrollment): Promise<void> => {
+export const sendResumptionOptions = async (phoneNumber: string, key: string, data: CourseEnrollment): Promise<void> => {
   try {
     let msgId = v4()
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -1917,7 +1917,7 @@ export const sendResumptionOptions = async (phoneNumber: string, _: string, __: 
         }
       }
     })
-    // redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
+    redisClient.set(key, JSON.stringify({ ...data, lastMessageId: msgId }))
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
@@ -1946,7 +1946,7 @@ export const sendResumptionMessage = async (phoneNumber: string, _: string, data
             {
               type: "reply",
               reply: {
-                id: RESUME_COURSE,
+                id: RESUME_COURSE_TOMORROW,
                 title: "Resume Now"
               }
             }

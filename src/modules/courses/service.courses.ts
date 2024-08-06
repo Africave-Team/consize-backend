@@ -13,7 +13,7 @@ import Blocks from './model.blocks'
 import { CreateQuizPayload, QuizInterface } from './interfaces.quizzes'
 import Quizzes from './model.quizzes'
 import Settings from './model.settings'
-import { CourseSettings, DropoutEvents, LearnerGroup, LearnerGroupLaunchTime, PeriodTypes } from './interfaces.settings'
+import { CourseDisableDays, CourseSettings, DropoutEvents, LearnerGroup, LearnerGroupLaunchTime, PeriodTypes } from './interfaces.settings'
 import Students from '../students/model.students'
 import { StudentCourseStats } from '../students/interface.students'
 import moment, { Moment } from 'moment-timezone'
@@ -172,6 +172,10 @@ const setInitialCourseSettings = async function (id: string) {
       time: "08:00",
       enableImmediate: true,
       enabledDateTimeSetup: true
+    },
+    disableReminders: {
+      sunday: false,
+      saturday: false
     }
   })
   await Course.findByIdAndUpdate(id, { $set: { settings: setting.id } })
@@ -1368,7 +1372,13 @@ const handleCourseReminders = async (courseId: string, ownerId: string, settings
   const dbRef = db.ref(COURSE_STATS).child(ownerId).child(courseId).child('students')
   // get settings
   const settings = await Settings.findById(settingsId)
+  let day = moment().format('dddd').toLowerCase() as keyof CourseDisableDays
   if (settings) {
+    if (settings.disableReminders && settings.disableReminders.hasOwnProperty(day)) {
+      if (settings.disableReminders[day]) {
+        return
+      }
+    }
     const snapshot = await dbRef.once('value')
     let data: { [studentId: string]: StudentCourseStats } | null = snapshot.val()
     if (data) {
@@ -1392,15 +1402,20 @@ const handleCourseReminders = async (courseId: string, ownerId: string, settings
             }
 
             if (enrollment && enrollment.active) {
-              let today = moment().format('YYYY-MM-DD')
-              settings.reminderSchedule.map((schedule, index) => {
-                const dateTimeString = `${today} ${schedule}` // Note: removed 'PM'
-                const now = moment.tz(studentInfo.tz)
-                const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
-                agenda.schedule<DailyReminderNotificationPayload>(time.toDate(), DAILY_REMINDER, {
-                  courseId, studentId: student.studentId, settingsId, distribution: distribution || Distribution.WHATSAPP, ownerId, last: index === settings.reminderSchedule.length
+              let count = enrollment.reminderDaysCount || 0
+              if (count < settings.reminderDuration.value) {
+                let today = moment().format('YYYY-MM-DD')
+                settings.reminderSchedule.map((schedule, index) => {
+                  const dateTimeString = `${today} ${schedule}` // Note: removed 'PM'
+                  const now = moment.tz(studentInfo.tz)
+                  const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
+                  agenda.schedule<DailyReminderNotificationPayload>(time.toDate(), DAILY_REMINDER, {
+                    courseId, studentId: student.studentId, settingsId, distribution: distribution || Distribution.WHATSAPP, ownerId, last: index === settings.reminderSchedule.length
+                  })
                 })
-              })
+                count++
+                await redisClient.set(key, JSON.stringify({ ...enrollment, reminderDaysCount: count }))
+              }
             }
 
 
