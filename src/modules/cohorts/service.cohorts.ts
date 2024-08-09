@@ -66,6 +66,23 @@ export const createCohort = async ({ courseId, distribution, name }: CreateCohor
     return cohort
 }
 
+export const updateCohort = async (id: string, payload: Pick<CohortsInterface, "name" | "default">): Promise<void> => {
+
+    const cohort = await Cohorts.findById(id)
+    if (cohort) {
+        if (payload.name) {
+            cohort.name = payload.name
+        }
+        if ('default' in payload) {
+            cohort.default = payload.default
+            if (payload.default) {
+                await Cohorts.updateMany({ courseId: cohort.courseId }, { $set: { default: false } })
+            }
+        }
+        await cohort.save()
+    }
+}
+
 
 export const enrollCohort = async ({ courseId, cohortId, members, channels, students, schedule, date, time }: EnrollCohortInterface): Promise<CohortsInterface> => {
     const courseInformation = await courseService.fetchSingleCourse({ courseId })
@@ -237,9 +254,6 @@ export const fetchGeneralCohorts = async (courseId: string): Promise<CohortsInte
         $or: [
             {
                 courseId: courseId
-            },
-            {
-                global: true
             }
         ]
     }).populate("members")

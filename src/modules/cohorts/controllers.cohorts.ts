@@ -16,9 +16,9 @@ export const enrollWithCohort = catchAsync(async (req: Request, res: Response) =
 })
 
 export const deleteCohort = catchAsync(async (req: Request, res: Response) => {
-    const { cohortId } = req.params
-    if (cohortId) {
-        await cohortService.deleteCohort(cohortId)
+    const { id } = req.params
+    if (id) {
+        await cohortService.deleteCohort(id)
     }
     res.status(httpStatus.CREATED).send({ message: "Cohort deleted" })
 })
@@ -46,6 +46,20 @@ export const getAllCohorts = catchAsync(async (req: Request, res: Response) => {
     if (course) {
         const cohorts = await cohortService.fetchGeneralCohorts(course)
         res.status(httpStatus.OK).send({ data: cohorts })
+    } else {
+        res.status(404).send({ message: "Course not found" })
+    }
+
+})
+
+
+export const UpdateCohorts = catchAsync(async (req: Request, res: Response) => {
+
+    const { id } = req.params
+
+    if (id) {
+        await cohortService.updateCohort(id, req.body)
+        res.status(httpStatus.OK).send({ message: "Cohort updated" })
     } else {
         res.status(404).send({ message: "Course not found" })
     }

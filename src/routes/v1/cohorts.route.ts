@@ -11,7 +11,10 @@ router.post("/", validate(cohortsValidator.createCohorts), cohortsControllers.cr
 router.post("/enroll", validate(cohortsValidator.enrollCohorts), cohortsControllers.enrollWithCohort)
 router.get("/general/:course", cohortsControllers.getAllCohorts)
 router.get("/:course/:distribution", cohortsControllers.getCohorts)
-router.delete("/:cohortId", cohortsControllers.deleteCohort)
+
+router.route("/single/:id")
+  .put(cohortsControllers.UpdateCohorts)
+  .delete(cohortsControllers.deleteCohort)
 
 
 export default router

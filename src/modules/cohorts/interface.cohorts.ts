@@ -14,6 +14,7 @@ export interface CohortsInterface extends Document {
     shortCode: string
     distribution: Distribution
     schedule: boolean
+    default: boolean
     members: string[]
     courseId: string,
     global: boolean

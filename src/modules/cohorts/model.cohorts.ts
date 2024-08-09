@@ -18,6 +18,10 @@ const CohortSchema = new Schema<CohortsInterface, CohortsInterfaceModel>(
             type: Boolean,
             default: false
         },
+        default: {
+            type: Boolean,
+            default: false
+        },
         status: {
             type: String,
             enum: Object.values(CohortsStatus),
