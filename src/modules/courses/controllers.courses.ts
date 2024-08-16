@@ -411,3 +411,13 @@ export const createQuestionsGroup = catchAsync(async (req: Request, res: Respons
   }
   res.status(200).send({ message: "questions group created", questionGroup })
 })
+
+export const fetchQuestionGroup = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+  const { type } = req.query 
+  let questionsGroups
+  if (course) {
+    questionsGroups = await courseService.fetchCourseQuestionGroups({ course, type })
+  }
+  res.status(200).send({ message: "questions retrieved", questionsGroups })
+})

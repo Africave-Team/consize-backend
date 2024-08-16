@@ -573,6 +573,19 @@ export const addQuestionGroup = async (questionGroupPayload: QuestionGroupsPaylo
   return questionGroup
 }
 
+export const fetchCourseQuestionGroups = async ({ course, type}:{ course: string, type: any }): Promise<QuestionGroupsInterface[]> => {
+  const query:any = {
+      course: course
+    };
+    
+    if (type) {
+      query.type = { $regex: new RegExp(type, 'i') };
+    }
+
+    const questionGroup = await QuestionGroup.find(query).exec();
+    return questionGroup;
+}
+
 // settings
 export const updateCourseSettings = async (id: string, payload: Partial<CourseSettings>): Promise<void> => {
 
