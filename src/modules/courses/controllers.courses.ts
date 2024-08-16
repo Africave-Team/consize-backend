@@ -402,3 +402,12 @@ export const fetchQuestion = catchAsync(async (req: Request, res: Response) => {
   }
   res.status(200).send({ message: "questions retrieved", questions })
 })
+
+export const createQuestionsGroup = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+  let questionGroup
+  if (course) {
+    questionGroup = await courseService.addQuestionGroup ( req.body, course )
+  }
+  res.status(200).send({ message: "questions group created", questionGroup })
+})

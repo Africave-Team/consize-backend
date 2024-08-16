@@ -33,6 +33,8 @@ import { sessionService } from '../sessions'
 import { generatorService } from '../generators'
 import { teamService } from '../teams'
 import { handleExport, RowData } from '../utils/generateExcelSheet'
+import { QuestionGroupsInterface, QuestionGroupsPayload } from './interfaces.question-group'
+import QuestionGroup from './model.question-group'
 import Enrollments from '../sessions/model'
 
 interface SessionStudent extends StudentCourseStats {
@@ -563,6 +565,12 @@ export const fetchCourseQuestions = async ({ course, questionType}:{ course: str
 
     const quizzes = await Quizzes.find(query).exec();
     return quizzes;
+}
+
+export const addQuestionGroup = async (questionGroupPayload: QuestionGroupsPayload,course: string ): Promise<QuestionGroupsInterface> => {
+  const questionGroup = new QuestionGroup({ ...questionGroupPayload, course })
+  await questionGroup.save()
+  return questionGroup
 }
 
 // settings

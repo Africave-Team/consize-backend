@@ -11,5 +11,7 @@ router.use(auth())
 router.put('/:quiz', courseControllers.updateQuiz)
 
 router.get('/questions/:course', courseControllers.fetchQuestion)
+router.post('/questionsGroup/:course', courseControllers.createQuestionsGroup )
+
 
 export default router
