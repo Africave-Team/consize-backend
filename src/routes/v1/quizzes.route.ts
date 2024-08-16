@@ -10,4 +10,6 @@ const router: Router = express.Router()
 router.use(auth())
 router.put('/:quiz', courseControllers.updateQuiz)
 
+router.get('/questions/:course', courseControllers.fetchQuestion)
+
 export default router

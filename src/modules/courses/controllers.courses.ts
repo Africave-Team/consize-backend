@@ -392,3 +392,13 @@ export const generateCourseHeader = catchAsync(async (req: Request, res: Respons
   }
   res.status(200).send({ message: "Course duplicated", data })
 })
+
+export const fetchQuestion = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+  const { questionType } = req.query 
+  let questions
+  if (course) {
+    questions = await courseService.fetchCourseQuestions({ course, questionType })
+  }
+  res.status(200).send({ message: "questions retrieved", questions })
+})

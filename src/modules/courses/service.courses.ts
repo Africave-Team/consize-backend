@@ -552,6 +552,19 @@ export const deleteQuizFromLesson = async (lesson: string, quiz: string): Promis
   await Quizzes.findByIdAndDelete(quiz)
 }
 
+export const fetchCourseQuestions = async ({ course, questionType}:{ course: string, questionType: any }): Promise<QuizInterface[]> => {
+  const query:any = {
+      course: course
+    };
+    
+    if (questionType) {
+      query.questionType = { $regex: new RegExp(questionType, 'i') };
+    }
+
+    const quizzes = await Quizzes.find(query).exec();
+    return quizzes;
+}
+
 // settings
 export const updateCourseSettings = async (id: string, payload: Partial<CourseSettings>): Promise<void> => {
 
