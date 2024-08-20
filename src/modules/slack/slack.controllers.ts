@@ -91,8 +91,8 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
               break
             case CourseFlowMessageType.START_SURVEY:
               console.log("start survey")
-              if (enrollment && enrollment.slackToken) {
-                handleSendSurveySlack(`${config.redisBaseKey}courses:${enrollment.id}`, enrollment, trigger_id)
+              if (enrollment && enrollment.slackToken && enrollment.surveyData) {
+                await handleSendSurveySlack(`${config.redisBaseKey}courses:${enrollment.id}`, enrollment, trigger_id)
                 const key = `${config.redisBaseKey}enrollments:slack:${channel.id}:${enrollment?.id}`
                 let copy = { ...enrollment }
                 copy.lastMessageId = v4()
@@ -160,7 +160,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
-                sendScheduleAcknowledgement(response_url, time.format('hh:mm a'))
+                sendScheduleAcknowledgement(response_url, "9:00AM")
               }
               break
             case AFTERNOON:
@@ -170,7 +170,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
-                sendScheduleAcknowledgement(response_url, time.format('hh:mm a'))
+                sendScheduleAcknowledgement(response_url, "3:00PM")
               }
               break
             case EVENING:
@@ -180,7 +180,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
-                sendScheduleAcknowledgement(response_url, time.format('hh:mm a'))
+                sendScheduleAcknowledgement(response_url, "8:00PM")
               }
               break
             case SCHEDULE_RESUMPTION:
@@ -345,7 +345,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                       fields: [
                         {
                           type: SlackTextMessageTypes.MARKDOWN,
-                          text: `Thank you for sharing your opinions. We grately appreciate you taking the time.`
+                          text: `Thank you for sharing your opinions. We greatly appreciate you taking the time.`
 
                         }
                       ]
@@ -359,6 +359,12 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
               ...enrollment,
               slackResponseUrl: response.response_url
             })
+            const key = `${config.redisBaseKey}enrollments:slack:${student.channelId}:${enrollment.id}`
+            enrollment.completed = true
+            enrollment.progress = 100
+            enrollment.currentBlock = enrollment.totalBlocks
+            enrollment.nextBlock = enrollment.totalBlocks
+            await redisClient.set(key, JSON.stringify({ ...enrollment, progress: 100, completed: true }))
           }
         }
       }

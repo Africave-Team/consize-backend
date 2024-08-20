@@ -1,5 +1,6 @@
 import { MediaType } from '../courses/interfaces.courses'
 import { Period } from '../courses/interfaces.settings'
+import { SendSlackModalPayload } from '../slack/interfaces.slack'
 
 interface Header {
   type: MediaType
@@ -117,6 +118,7 @@ export interface CourseEnrollment {
   slackToken?: string
   blockStartTime?: string | null
   bundle?: boolean
+  completed?: boolean
   courses?: {
     key: string
     status: "completed" | "pending" | "progress"
@@ -125,7 +127,8 @@ export interface CourseEnrollment {
     [id: string]: {
       scores: number[]
     }
-  }
+  },
+  surveyData?: SendSlackModalPayload
 }
 
 

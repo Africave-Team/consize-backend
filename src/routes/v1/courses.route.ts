@@ -27,6 +27,9 @@ router.put('/settings/:id', courseControllers.updateCourseSetting)
 router.post('/settings/add-learner-group/:id', courseControllers.addLearnerGroup)
 router.delete('/settings/remove-learner-group/:id/:groupId', courseControllers.removeLearnerGroup)
 
+router.route('/:course/export-stats')
+  .get(courseControllers.exportStats)
+
 router.patch('/settings/launchtimes/:id/:groupId', courseControllers.setLearnerGroupLaunchTime)
 
 // AI apis

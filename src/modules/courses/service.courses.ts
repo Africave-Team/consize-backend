@@ -32,6 +32,10 @@ import { buildCourse } from '../ai/services'
 import { sessionService } from '../sessions'
 import { generatorService } from '../generators'
 import { teamService } from '../teams'
+import { handleExport, RowData } from '../utils/generateExcelSheet'
+import { QuestionGroupsInterface, QuestionGroupsPayload } from './interfaces.question-group'
+import QuestionGroup from './model.question-group'
+import Enrollments from '../sessions/model'
 
 interface SessionStudent extends StudentCourseStats {
   id: string
@@ -517,6 +521,12 @@ export const fetchSingleLessonBlock = async ({ block }: { block: string }): Prom
 }
 
 // Quizzes
+export const addQuiz = async (quizPayload: CreateQuizPayload, course: string): Promise<QuizInterface> => {
+  const quiz = new Quizzes({ ...quizPayload, course })
+  await quiz.save()
+  return quiz
+}
+
 export const addLessonQuiz = async (quizPayload: CreateQuizPayload, lesson: string, course: string): Promise<QuizInterface> => {
   const quiz = new Quizzes({ ...quizPayload, lesson, course })
   await Lessons.findByIdAndUpdate(lesson, { $push: { quizzes: quiz.id } })
@@ -550,6 +560,38 @@ export const deleteQuizFromLesson = async (lesson: string, quiz: string): Promis
   await Quizzes.findByIdAndDelete(quiz)
 }
 
+export const fetchCourseQuestions = async ({ course, questionType}:{ course: string, questionType: any }): Promise<QuizInterface[]> => {
+  const query:any = {
+      course: course
+    };
+    
+    if (questionType) {
+      query.questionType = { $regex: new RegExp(questionType, 'i') };
+    }
+
+    const quizzes = await Quizzes.find(query).exec();
+    return quizzes;
+}
+
+export const addQuestionGroup = async (questionGroupPayload: QuestionGroupsPayload,course: string ): Promise<QuestionGroupsInterface> => {
+  const questionGroup = new QuestionGroup({ ...questionGroupPayload, course })
+  await questionGroup.save()
+  return questionGroup
+}
+
+export const fetchCourseQuestionGroups = async ({ course, type}:{ course: string, type: any }): Promise<QuestionGroupsInterface[]> => {
+  const query:any = {
+      course: course
+    };
+    
+    if (type) {
+      query.type = { $regex: new RegExp(type, 'i') };
+    }
+
+    const questionGroup = await QuestionGroup.find(query).exec();
+    return questionGroup;
+}
+
 // settings
 export const updateCourseSettings = async (id: string, payload: Partial<CourseSettings>): Promise<void> => {
 
@@ -574,6 +616,430 @@ export const addLearnerGroup = async (id: string, payload: Partial<LearnerGroup>
 export const setLearnerGroupLaunchTime = async (groupId: string, settingsId: string, launchTime: LearnerGroupLaunchTime): Promise<void> => {
   await Settings.findOneAndUpdate({ _id: settingsId, 'learnerGroups._id': groupId }, { $set: { 'learnerGroups.$.launchTimes': launchTime } })
   initiateGroupScheduleAgenda()
+}
+
+
+export const exportCourseStats = async (courseId: string): Promise<{ file: string, filename: string }> => {
+  let course = await Course.findById(courseId)
+
+  if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Could not find the specified course')
+  let name = `course-report-${course.title}-${moment().format('DD-MM-YY hh:mm')}`
+  const titles = [
+    {
+      v: "Student name",
+      t: "s",
+      s: {
+        font: {
+          bold: true,
+          sz: 15
+        }
+      }
+    },
+    {
+      v: "Delivery Medium",
+      t: "s",
+      s: {
+        font: {
+          sz: 15,
+          bold: true
+        }
+      }
+    },
+    {
+      v: "Phone number",
+      t: "s",
+      s: {
+        font: {
+          sz: 15,
+          bold: true
+        }
+      }
+    },
+    {
+      v: "Slack ID",
+      t: "s",
+      s: {
+        font: {
+          sz: 15,
+          bold: true
+        }
+      }
+    }
+  ]
+
+
+  const fields: {
+    field: keyof CourseStatistics,
+    description: string,
+    title: string
+    unit: string
+  }[] = [
+      { description: 'Total number of students who registered on the course', unit: "", field: "enrolled", title: "Enrolled students" },
+      { description: 'No. of users who are still in between the course', unit: "", field: "active", title: "Active students" },
+      { description: 'No. of users who have completed the course', unit: "", field: "completed", title: "Completed students" },
+      { description: 'No. of users who have dropped out of this course', unit: "", field: "dropouts", title: "Students dropped out" },
+      { description: 'The scores achieved for all the quizzes in the course, averaged over all enrolled students', unit: "", field: "averageTestScore", title: "Avg. test score" },
+      { description: 'Time taken to complete the course averaged over all enrolled students', unit: "minutes", field: "averageCompletionMinutes", title: "Avg. completion time" },
+      { description: 'The extent of course completed by student averaged over all enrolled students', unit: "%", field: "averageCourseProgress", title: "Avg. course progress" },
+      { description: 'The percentage of quiz questions that the students got wrong in the first attempt and then took another attempt', unit: "%", field: "averageMcqRetakeRate", title: "Avg. MCQ retake rates" },
+      { description: 'Time taken to complete a lesson, averaged over all enrolled users', unit: "minutes", field: "averageLessonDurationMinutes", title: "Avg. lesson duration" },
+      { description: 'Avg. Time taken to complete a section in the course, averaged over all users', unit: "minutes", field: "averageBlockDurationMinutes", title: "Avg. section duration" },
+    ]
+
+  let stats: CourseStatistics = {
+    enrolled: 0,
+    active: 0,
+    averageCompletionPercentage: 0,
+    dropouts: 0,
+    completed: 0,
+    averageTestScore: 0,
+    averageCompletionDays: 0,
+    averageCompletionMinutes: 0,
+    averageCourseDurationSeconds: 0,
+    dropoutRate: 0,
+    averageCourseProgress: 0,
+    averageMcqRetakeRate: 0,
+    averageLessonDurationMinutes: 0,
+    averageBlockDurationMinutes: 0,
+    averageBlockDurationSeconds: 0,
+  }
+
+  const enrollments = await Enrollments.find({ courseId })
+
+  let quizes = 0
+  const scores = enrollments.reduce((acc, curr) => {
+    if (curr.scores && curr.scores.length > 0) {
+      quizes = Math.max(curr.scores.length, quizes)
+      let total = curr.scores.reduce((a, b) => a + b, 0)
+      return acc + total
+    } else {
+      return acc
+    }
+  }, 0)
+  stats.enrolled = enrollments.length
+  stats.active = enrollments.filter(e => !e.completed && !e.droppedOut).length
+  stats.dropoutRate = (enrollments.filter(e => e.droppedOut).length / stats.enrolled) * 100
+  stats.completed = enrollments.filter(e => e.completed).length
+  stats.averageTestScore = isNaN(scores / quizes) ? 0 : (((scores / quizes) * 100) / enrollments.length)
+
+  stats.averageCourseProgress = enrollments.reduce((acc, curr) => {
+    if (curr.progress) {
+      return acc + curr.progress
+    } else {
+      return acc
+    }
+  }, 0) / enrollments.length
+
+  stats.averageCompletionMinutes = enrollments.filter(e => e.completed).reduce((acc, curr) => {
+    if (curr.lessons) {
+      const lessons = Object.values(curr.lessons)
+      if (lessons.length === 0) {
+        return acc
+      } else {
+        let total = 0
+        for (let lesson of lessons) {
+          if (lesson.blocks) {
+            let value = Object.values(lesson.blocks).reduce((acc, curr) => acc + curr.duration, 0)
+            total += value
+          }
+        }
+        return acc + (total / 60)
+      }
+    } else {
+      return acc
+    }
+  }, 0) / enrollments.filter(e => e.completed).length
+
+  let quizCount = 0
+  let retakes = enrollments.reduce((acc, curr) => {
+    if (curr.lessons) {
+      const lessons = Object.values(curr.lessons)
+      if (lessons.length === 0) {
+        return acc
+      } else {
+        let total = lessons.map(e => {
+          if (e.quizzes) {
+            const quizzes = Object.values(e.quizzes)
+            quizCount += quizzes.length
+            return quizzes.reduce((acc, curr) => acc + curr.retakes, 0) / quizzes.length
+          }
+          return 0
+        }).reduce((a, b) => a + b, 0)
+        return acc + (total)
+      }
+    } else {
+      return acc
+    }
+  }, 0)
+  stats.averageMcqRetakeRate = isNaN(retakes / quizCount) ? 0 : retakes / quizCount
+
+  let lessonCount = 0
+  let lessonDuration = enrollments.reduce((acc, curr) => {
+    if (curr.lessons) {
+      const lessons = Object.values(curr.lessons)
+      if (lessons.length === 0) {
+        return acc
+      } else {
+        lessonCount += lessons.length
+        let total = 0
+        for (let lesson of lessons) {
+          if (lesson.blocks) {
+            let value = Object.values(lesson.blocks).reduce((acc, curr) => acc + curr.duration, 0)
+            total += value
+          }
+        }
+        return acc + (total / 60)
+      }
+    } else {
+      return acc
+    }
+  }, 0)
+
+  stats.averageLessonDurationMinutes = isNaN(lessonDuration / lessonCount) ? 0 : lessonDuration / lessonCount
+
+  let blockCount = 0
+  let blockDuration = enrollments.reduce((acc, curr) => {
+    if (curr.lessons) {
+      const lessons = Object.values(curr.lessons)
+      if (lessons.length === 0) {
+        return acc
+      } else {
+        let total = lessons.map(e => {
+          if (e.blocks) {
+            const blocks = Object.values(e.blocks)
+            blockCount += blocks.length
+            return blocks.reduce((acc, curr) => acc + curr.duration / 60, 0)
+          }
+          return 0
+        }).reduce((a, b) => a + b, 0)
+        return acc + (total)
+      }
+    } else {
+      return acc
+    }
+  }, 0)
+  stats.averageBlockDurationMinutes = isNaN(blockDuration / blockCount) ? 0 : blockDuration / blockCount
+
+  const statsData: RowData[][] = [
+    [
+      {
+        v: "Title",
+        t: "s",
+        s: {
+          font: {
+            bold: true,
+            sz: 15
+          }
+        }
+      },
+      {
+        v: "Value",
+        t: "s",
+        s: {
+          font: {
+            sz: 15,
+            bold: true,
+          }
+        }
+      },
+      {
+        v: "Description",
+        t: "s",
+        s: {
+          font: {
+            sz: 15,
+            bold: true,
+          }
+        }
+      }
+    ],
+    ...fields.map((field) => {
+      return [
+        {
+          v: field.title,
+          t: "s",
+          s: {
+            font: {
+              bold: true
+            }
+          }
+        },
+        { //@ts-ignore
+          v: (stats[field.field] ? stats[field.field].toFixed(1) : 0) + field.unit,
+          t: "s",
+          s: {
+            alignment: {
+              horizontal: 'left',
+              vertical: 'center',
+            },
+          }
+        },
+        { //@ts-ignore
+          v: field.description,
+          t: "s",
+        },
+
+      ]
+    })
+  ]
+  const tableData: RowData[][] = [
+    [
+      ...titles,
+      {
+        v: "Total lessons completed",
+        t: "s",
+        s: {
+          font: {
+            sz: 15,
+            bold: true
+          },
+        }
+      },
+      {
+        v: "Progress",
+        t: "s",
+        s: {
+          font: {
+            sz: 15,
+            bold: true
+          }
+        }
+      },
+      {
+        v: "Performance",
+        t: "s",
+        s: {
+          font: {
+            sz: 15,
+            bold: true
+          }
+        }
+      },
+      {
+        v: "Status",
+        t: "s",
+        s: {
+          font: {
+            sz: 15,
+            bold: true
+          },
+        }
+      },
+    ],
+    ...enrollments.map((enrollment) => {
+      let lessons = Object.entries(enrollment.lessons)
+      let scores = enrollment.scores
+      let total = scores.reduce((a, b) => a + b, 0)
+      return [
+        {
+          v: enrollment.name,
+          t: "s",
+          s: {
+            font: {
+              bold: true
+            }
+          }
+        },
+        {
+          v: enrollment.distribution || Distribution.WHATSAPP,
+          t: "s",
+          s: {
+            font: {
+              bold: true
+            }
+          }
+        },
+        {
+          v: enrollment.phoneNumber,
+          t: "s",
+          s: {
+            alignment: {
+              horizontal: 'left',
+              vertical: 'center',
+            },
+            font: {
+              bold: true
+            }
+          }
+        },
+        {
+          v: enrollment.slackId || "",
+          t: "s",
+          s: {
+            alignment: {
+              horizontal: 'left',
+              vertical: 'center',
+            },
+            font: {
+              bold: true
+            }
+          }
+        },
+        {
+          v: lessons.length.toFixed(0) || "0",
+          t: "s",
+          s: {
+            alignment: {
+              horizontal: 'left',
+              vertical: 'center',
+            },
+            font: {
+              bold: true
+            }
+          }
+        },
+        {
+          v: (enrollment.progress.toFixed(1) || "") + "%",
+          t: "s",
+          s: {
+            alignment: {
+              horizontal: 'left',
+              vertical: 'center',
+            },
+            font: {
+              bold: true
+            }
+          }
+        },
+        {
+          v: (scores.length > 0 ? ((total / scores.length) * 100).toFixed(1) : '0') + "%",
+          t: "s",
+          s: {
+            alignment: {
+              horizontal: 'left',
+              vertical: 'center',
+            },
+            font: {
+              bold: true
+            }
+          }
+        },
+        {
+          v: enrollment.droppedOut ? 'Dropped out' : enrollment.completed ? 'Completed' : 'Active',
+          t: "s",
+          s: {
+            alignment: {
+              horizontal: 'left',
+              vertical: 'center',
+            },
+            font: {
+              bold: true
+            }
+          }
+        },
+      ]
+    })
+  ]
+  const path = await handleExport({
+    name,
+    statsData,
+    tableData
+  })
+  return {
+    file: path,
+    filename: name
+  }
+
 }
 
 export const removeLearnerGroup = async (id: string, groupId: string): Promise<void> => {

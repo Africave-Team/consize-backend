@@ -8,6 +8,10 @@ import { generateCourseFlow } from '../webhooks/service.webhooks'
 const QuizSchema = new Schema<QuizInterface, QuizInterfaceModel>(
   {
     _id: { type: String, default: () => v4() },
+    questionType: {
+      type: String,
+      required: true
+    },
     question: {
       type: String,
       required: true

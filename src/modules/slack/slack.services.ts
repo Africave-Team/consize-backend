@@ -26,6 +26,7 @@ import { ResponseType } from '../surveys/survey.interfaces'
 import Surveys from '../surveys/survey.model'
 import Settings from '../courses/model.settings'
 import { sessionService } from '../sessions'
+import { Cohorts } from '../cohorts'
 
 export const handleSlackWebhook = async function () { }
 
@@ -373,7 +374,7 @@ export const startCourseSlack = async (channel: string, courseId: string, studen
 }
 
 
-export const enrollStudentToCourseSlack = async (studentId: string, courseId: string): Promise<void> => {
+export const enrollStudentToCourseSlack = async (studentId: string, courseId: string, cohortId?: string): Promise<void> => {
   const student = await Students.findOne({ _id: studentId })
   if (!student) {
     return
@@ -391,10 +392,10 @@ export const enrollStudentToCourseSlack = async (studentId: string, courseId: st
   if (!owner || !owner.slackToken) {
     return
   }
-  startEnrollmentSlack(studentId, courseId)
+  startEnrollmentSlack(studentId, courseId, cohortId)
 }
 
-export const startEnrollmentSlack = async (studentId: string, courseId: string): Promise<void> => {
+export const startEnrollmentSlack = async (studentId: string, courseId: string, cohortId?: string): Promise<void> => {
   const student = await Students.findOne({ _id: studentId })
   if (!student) {
     return
@@ -415,43 +416,63 @@ export const startEnrollmentSlack = async (studentId: string, courseId: string):
   const conversation = await createConversation(owner.slackToken, student.slackId)
 
   if (conversation) {
-    await Students.findByIdAndUpdate(studentId, { $set: { channelId: conversation } })
-    await generateCourseFlow(courseId)
-    const id = await startCourseSlack(conversation, courseId, student.id, owner.slackToken)
-    await sendWelcomeSlack(courseId, student.slackId, owner.slackToken, id)
+    try {
+      await Students.findByIdAndUpdate(studentId, { $set: { channelId: conversation } })
+      await generateCourseFlow(courseId)
+      const id = await startCourseSlack(conversation, courseId, student.id, owner.slackToken)
+      await sendWelcomeSlack(courseId, student.slackId, owner.slackToken, id)
 
-    let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
-    await dbRef.child("students").child(studentId).set({
-      name: student.firstName + ' ' + student.otherNames,
-      phoneNumber: student.phoneNumber,
-      studentId,
-      progress: 0,
-      completed: false,
-      droppedOut: false,
-      scores: [],
-      lessons: {}
-    })
-    await sessionService.createEnrollment({
-      anonymous: student.anonymous,
-      courseId,
-      teamId: course.owner,
-      name: student.firstName + ' ' + student.otherNames,
-      phoneNumber: student.phoneNumber,
-      progress: 0,
-      studentId,
-      completed: false,
-      droppedOut: false,
-      scores: [],
-      lessons: {}
-    })
+      let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
+      if (!cohortId) {
+        let cohort = await Cohorts.findOne({ name: "Website", global: true })
 
-    const jobs = await agenda.jobs({ 'data.courseId': courseId })
-    if (jobs.length === 0) {
-      // Queue the trends generator
-      agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
+        if (cohort) {
+          cohortId = cohort.id
+        }
+      }
+      let payload = {
+        name: student.firstName + ' ' + student.otherNames,
+        phoneNumber: student.phoneNumber,
+        slackId: student.slackId,
+        distribution: Distribution.SLACK,
+        cohortId: cohortId || "",
+        dateEnrolled: moment().format('MM-DD-YYYY'),
+        studentId,
+        progress: 0,
+        completed: false,
+        droppedOut: false,
+        scores: [],
+        lessons: {}
+      }
+      console.log(payload)
+      await dbRef.child("students").child(studentId).set(payload)
+      await sessionService.createEnrollment({
+        anonymous: student.anonymous,
         courseId,
-        teamId: course.owner
+        slackId: student.slackId,
+        teamId: course.owner,
+        distribution: Distribution.SLACK,
+        cohortId: cohortId || "",
+        name: student.firstName + ' ' + student.otherNames,
+        phoneNumber: student.phoneNumber,
+        progress: 0,
+        studentId,
+        completed: false,
+        droppedOut: false,
+        scores: [],
+        lessons: {}
       })
+
+      const jobs = await agenda.jobs({ 'data.courseId': courseId })
+      if (jobs.length === 0) {
+        // Queue the trends generator
+        agenda.every("15 minutes", GENERATE_COURSE_TRENDS, {
+          courseId,
+          teamId: course.owner
+        })
+      }
+    } catch (error) {
+      console.log(error, "=> error here")
     }
   }
 
@@ -775,6 +796,99 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                   ]
                 }
               ]
+              // generate survey payload and save to redis
+              const surveyItems = flowData.filter(e => e.surveyId)
+              let payload: SendSlackModalPayload = {
+                trigger_id: "",
+                token: data.slackToken || "",
+                view: {
+                  "type": "modal",
+                  callback_id: `survey|${data.student}`,
+                  "submit": {
+                    "type": SlackTextMessageTypes.PLAINTEXT,
+                    "text": "Submit",
+                    "emoji": true
+                  },
+                  "close": {
+                    "type": SlackTextMessageTypes.PLAINTEXT,
+                    "text": "Cancel",
+                    "emoji": true
+                  },
+                  "title": {
+                    "type": SlackTextMessageTypes.PLAINTEXT,
+                    "text": "End of course survey",
+                    "emoji": true
+                  },
+                  "blocks": [
+                    {
+                      "type": MessageBlockType.SECTION,
+                      "text": {
+                        "type": SlackTextMessageTypes.PLAINTEXT,
+                        "text": `:wave: We'd love to hear from you how we can make this place the best place you’ve ever worked.`,
+                        "emoji": true
+                      }
+                    },
+                    {
+                      "type": MessageBlockType.DIVIDER
+                    }
+                  ]
+                }
+              }
+              const choices = [SURVEY_A, SURVEY_B, SURVEY_C]
+              for (let item of surveyItems) {
+                if (payload.view.callback_id) {
+                  payload.view.callback_id = `survey=${item.surveyId}|course=${data.id}|student=${data.student}|team=${data.team}`
+                }
+                if (item.surveyQuestion?.responseType === ResponseType.MULTI_CHOICE && payload.view && payload.view.blocks) {
+                  payload.view.blocks.push({
+                    "type": MessageBlockType.INPUT,
+                    "block_id": item.surveyQuestion.id,
+                    "label": {
+                      "type": SlackTextMessageTypes.PLAINTEXT,
+                      "text": item.surveyQuestion.question,
+                      "emoji": true
+                    },
+                    "element": {
+                      "type": SlackActionType.SELECT,
+                      "action_id": `${item.surveyQuestion.id}_value`,
+                      "placeholder": {
+                        "type": SlackTextMessageTypes.PLAINTEXT,
+                        "text": "Select your response",
+                        "emoji": true
+                      },
+                      "options": [
+                        ...item.surveyQuestion.choices.map((choice, index) => ({
+                          "text": {
+                            "type": SlackTextMessageTypes.PLAINTEXT,
+                            "text": choice,
+                            "emoji": true
+                          },
+                          "value": choices[index] || ''
+                        })),
+                      ]
+                    }
+                  })
+                }
+
+                if (item.surveyQuestion?.responseType === ResponseType.FREE_FORM && payload.view && payload.view.blocks) {
+                  payload.view.blocks.push({
+                    "type": MessageBlockType.INPUT,
+                    "block_id": item.surveyQuestion.id,
+                    "label": {
+                      "type": SlackTextMessageTypes.PLAINTEXT,
+                      "text": item.surveyQuestion.question,
+                      "emoji": true
+                    },
+                    "element": {
+                      "type": SlackActionType.TEXTINPUT,
+                      "multiline": true,
+                      "action_id": `${item.surveyQuestion.id}_value`,
+                    }
+                  })
+                }
+              }
+              updatedData.surveyData = payload
+
             } else {
               blocks = [
                 {
@@ -791,6 +905,10 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                 ...updatedData,
                 slackResponseUrl: url
               })
+              updatedData.completed = true
+              updatedData.progress = 100
+              updatedData.currentBlock = data.totalBlocks
+              updatedData.nextBlock = data.totalBlocks
 
             }
 
@@ -929,6 +1047,10 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
               ...updatedData,
               slackResponseUrl: url
             })
+            updatedData.completed = true
+            updatedData.progress = 100
+            updatedData.currentBlock = data.totalBlocks
+            updatedData.nextBlock = data.totalBlocks
             break
           default:
             break
@@ -939,102 +1061,9 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
   }
 }
 
-export const handleSendSurveySlack = async (courseKey: string, data: CourseEnrollment, trigger_id: string): Promise<void> => {
-  const flow = await redisClient.get(courseKey)
-
-  if (flow && data.slackToken) {
-    const flowData: CourseFlowItem[] = JSON.parse(flow)
-    const surveyItems = flowData.filter(e => e.surveyId)
-    let payload: SendSlackModalPayload = {
-      trigger_id,
-      token: data.slackToken,
-      view: {
-        "type": "modal",
-        callback_id: `survey|${data.student}`,
-        "submit": {
-          "type": SlackTextMessageTypes.PLAINTEXT,
-          "text": "Submit",
-          "emoji": true
-        },
-        "close": {
-          "type": SlackTextMessageTypes.PLAINTEXT,
-          "text": "Cancel",
-          "emoji": true
-        },
-        "title": {
-          "type": SlackTextMessageTypes.PLAINTEXT,
-          "text": "End of course survey",
-          "emoji": true
-        },
-        "blocks": [
-          {
-            "type": MessageBlockType.SECTION,
-            "text": {
-              "type": SlackTextMessageTypes.PLAINTEXT,
-              "text": `:wave: We'd love to hear from you how we can make this place the best place you’ve ever worked.`,
-              "emoji": true
-            }
-          },
-          {
-            "type": MessageBlockType.DIVIDER
-          }
-        ]
-      }
-    }
-    const choices = [SURVEY_A, SURVEY_B, SURVEY_C]
-    for (let item of surveyItems) {
-      if (payload.view.callback_id) {
-        payload.view.callback_id = `survey=${item.surveyId}|course=${data.id}|student=${data.student}|team=${data.team}`
-      }
-      if (item.surveyQuestion?.responseType === ResponseType.MULTI_CHOICE && payload.view && payload.view.blocks) {
-        payload.view.blocks.push({
-          "type": MessageBlockType.INPUT,
-          "block_id": item.surveyQuestion.id,
-          "label": {
-            "type": SlackTextMessageTypes.PLAINTEXT,
-            "text": item.surveyQuestion.question,
-            "emoji": true
-          },
-          "element": {
-            "type": SlackActionType.SELECT,
-            "action_id": `${item.surveyQuestion.id}_value`,
-            "placeholder": {
-              "type": SlackTextMessageTypes.PLAINTEXT,
-              "text": "Select your response",
-              "emoji": true
-            },
-            "options": [
-              ...item.surveyQuestion.choices.map((choice, index) => ({
-                "text": {
-                  "type": SlackTextMessageTypes.PLAINTEXT,
-                  "text": choice,
-                  "emoji": true
-                },
-                "value": choices[index] || ''
-              })),
-            ]
-          }
-        })
-      }
-
-      if (item.surveyQuestion?.responseType === ResponseType.FREE_FORM && payload.view && payload.view.blocks) {
-        payload.view.blocks.push({
-          "type": MessageBlockType.INPUT,
-          "block_id": item.surveyQuestion.id,
-          "label": {
-            "type": SlackTextMessageTypes.PLAINTEXT,
-            "text": item.surveyQuestion.question,
-            "emoji": true
-          },
-          "element": {
-            "type": SlackActionType.TEXTINPUT,
-            "multiline": true,
-            "action_id": `${item.surveyQuestion.id}_value`,
-          }
-        })
-      }
-    }
-    agenda.now<SendSlackModalPayload>(SEND_SLACK_MODAL, payload)
+export const handleSendSurveySlack = async (_: string, data: CourseEnrollment, trigger_id: string): Promise<void> => {
+  if (data.surveyData && data.slackToken) {
+    agenda.now<SendSlackModalPayload>(SEND_SLACK_MODAL, { ...data.surveyData, trigger_id })
   }
 }
 
@@ -1044,7 +1073,7 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ur
   let updatedData = { ...data, lastMessageId: messageId }
   if (courseFlow) {
     const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
-    const item = courseFlowData[data.currentBlock - 1]
+    const item = courseFlowData[data.currentBlock]
     let payload: SlackTextMessage = {
       type: SlackTextMessageTypes.MARKDOWN,
       text: ``
@@ -1102,7 +1131,7 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, u
   const courseFlow = await redisClient.get(courseKey)
   if (courseFlow) {
     const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
-    const item = courseFlowData[data.currentBlock - 1]
+    const item = courseFlowData[data.currentBlock]
     let payload: SlackTextMessage = {
       type: SlackTextMessageTypes.MARKDOWN,
       text: ``

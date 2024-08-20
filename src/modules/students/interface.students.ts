@@ -40,6 +40,7 @@ export interface StudentCourseStats {
   name: string
   studentId: string
   phoneNumber: string
+  slackId?: string
   anonymous: boolean
   completed?: boolean
   droppedOut?: boolean
@@ -47,6 +48,8 @@ export interface StudentCourseStats {
   distribution?: string
   progress: number
   scores: number[]
+  custom?: any
+  cohortId?: string
   lessons: {
     [lessonId: string]: {
       duration: number
