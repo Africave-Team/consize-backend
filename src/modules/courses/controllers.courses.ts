@@ -260,7 +260,14 @@ export const deleteQuizFromBlock = catchAsync(async (req: Request, res: Response
   res.status(httpStatus.NO_CONTENT).send()
 })
 
-export const addQuizToLesson = catchAsync(async (req: Request, res: Response) => {
+export const createQuiz = catchAsync(async (req: Request, res: Response) => {
+  // const { course } = req.params
+
+  // if (course) {
+  //   const quiz = await courseService.addQuiz(req.body, course)
+  //   res.status(httpStatus.CREATED).send({ data: quiz, message: "Your question has been created successfully" })
+  // }
+
   const { lesson, course } = req.params
 
   if (lesson && course) {
@@ -275,6 +282,15 @@ export const updateQuiz = catchAsync(async (req: Request, res: Response) => {
   if (quiz) {
     await courseService.updateQuiz(quiz, req.body)
     res.status(httpStatus.OK).send({ message: "Your quiz has been updated successfully" })
+  }
+})
+
+export const addQuizToLesson = catchAsync(async (req: Request, res: Response) => {
+  const { lesson, course } = req.params
+
+  if (lesson && course) {
+    const quiz = await courseService.addLessonQuiz(req.body, lesson, course)
+    res.status(httpStatus.CREATED).send({ data: quiz, message: "Your quiz has been created successfully" })
   }
 })
 

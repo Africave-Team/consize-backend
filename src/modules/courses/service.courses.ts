@@ -521,6 +521,12 @@ export const fetchSingleLessonBlock = async ({ block }: { block: string }): Prom
 }
 
 // Quizzes
+export const addQuiz = async (quizPayload: CreateQuizPayload, course: string): Promise<QuizInterface> => {
+  const quiz = new Quizzes({ ...quizPayload, course })
+  await quiz.save()
+  return quiz
+}
+
 export const addLessonQuiz = async (quizPayload: CreateQuizPayload, lesson: string, course: string): Promise<QuizInterface> => {
   const quiz = new Quizzes({ ...quizPayload, lesson, course })
   await Lessons.findByIdAndUpdate(lesson, { $push: { quizzes: quiz.id } })
