@@ -19,6 +19,10 @@ const QuestionGroupSchema = new Schema<QuestionGroupsInterface, QuestionGroupsIn
       type: [String],
       required: true
     },
+    course: {
+      type: String,
+      required: true
+    }
     
   },
   {

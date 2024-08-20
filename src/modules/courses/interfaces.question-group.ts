@@ -12,6 +12,7 @@ interface QuestionGroups {
   type: QuestionGroupsTypes
   position: string
   questions: string[]
+  course: string
 }
 
 export interface QuestionGroupsPayload {
