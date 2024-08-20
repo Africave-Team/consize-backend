@@ -9,7 +9,7 @@ import {
 const router: Router = express.Router()
 router.use(auth())
 router.put('/:quiz', courseControllers.updateQuiz)
-router.post('/:quiz', courseControllers.createQuiz)
+router.post('/:course/:lesson', courseControllers.createQuiz)
 
 router.get('/questions/:course', courseControllers.fetchQuestion)
 router.get('/questionGroups/:course', courseControllers.fetchQuestionGroups)
