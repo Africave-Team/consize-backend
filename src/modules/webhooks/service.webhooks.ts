@@ -1987,9 +1987,62 @@ export const exchangeFacebookToken = async function (code: string, team: string)
       }
     })
     const token = result.data.access_token
-    await teamService.updateTeamInfo(team, {
+    const teamData = await teamService.updateTeamInfo(team, {
       facebookToken: token
     })
+    if (teamData && teamData.facebookPhoneNumberId) {
+      // register the phone number
+      await axios.post(`https://graph.facebook.com/v17.0/${teamData.facebookPhoneNumberId}/register`, {
+        messaging_product: "whatsapp",
+        pin: "112233"
+      }, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      // subscribe to webhooks
+      await axios.post(`https://graph.facebook.com/v17.0/${teamData.facebookBusinessId}/subscribed_apps`, {
+
+      }, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      // copy the auth template to the new waba from main account
+      // get the auth template
+
+      const parentTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v17.0/${config.whatsapp.waba}/message_templates?fields=name,status,category,components,language`, {
+        headers: {
+          Authorization: `Bearer ${config.whatsapp.token}`
+        }
+      })
+      const childTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v17.0/${teamData.facebookBusinessId}/message_templates?fields=name,status,category,components`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      const parent_optin_template = parentTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
+      const child_optin_template = childTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
+      if (parent_optin_template.length === 1 && child_optin_template.length === 0) {
+        let original: any = parent_optin_template[0]
+        await axios.post(`https://graph.facebook.com/v17.0/${teamData.facebookBusinessId}/message_templates`, {
+          name: original.name,
+          category: original.category,
+          language: original.language,
+          components: original.components
+        }, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+      }
+
+
+    }
   } catch (error) {
     // @ts-ignore
     console.log((error as AxiosError).response.data)
