@@ -77,7 +77,7 @@ const handleCohortSchedule: Processor<{ cohortId: string }> = async (job: Job<{ 
   }
 }
 
-const handleInactivityReminders: Processor<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }> = async (job: Job<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>) => {
+const handleInactivityReminders: Processor<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string, team: string }> = async (job: Job<{ studentId: string, courseId: string, team: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>) => {
   try {
     if (AppConfig.server !== "test") {
       const data = job.attrs.data
@@ -88,7 +88,7 @@ const handleInactivityReminders: Processor<{ studentId: string, courseId: string
   }
 }
 
-const handleShortInactivityReminders: Processor<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }> = async (job: Job<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>) => {
+const handleShortInactivityReminders: Processor<{ studentId: string, courseId: string, team: string, slackToken: string, slackChannel?: string, phoneNumber?: string }> = async (job: Job<{ studentId: string, courseId: string, team: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>) => {
   try {
     if (AppConfig.server !== "test") {
       const data = job.attrs.data
@@ -169,8 +169,8 @@ module.exports = (agenda: Agenda) => {
   agenda.define<{ cohortId: string }>(COHORT_SCHEDULE, handleCohortSchedule)
   agenda.define(REMIND_ME, handleRemindMe)
   agenda.define<{ cohortId: string, studentId: string }>(COHORT_SCHEDULE_STUDENT, handleCohortScheduleStudent)
-  agenda.define<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>(INACTIVITY_REMINDER, handleInactivityReminders)
-  agenda.define<{ studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>(INACTIVITY_REMINDER_SHORT, handleShortInactivityReminders)
+  agenda.define<{ studentId: string, courseId: string, team: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>(INACTIVITY_REMINDER, handleInactivityReminders)
+  agenda.define<{ studentId: string, courseId: string, team: string, slackToken: string, slackChannel?: string, phoneNumber?: string }>(INACTIVITY_REMINDER_SHORT, handleShortInactivityReminders)
   agenda.define<{ enrollment: CourseEnrollment, phoneNumber?: string, messageId: string, channelId?: string }>(RESUME_TOMORROW, handleContinueTomorrow)
 
   // subscriptions
