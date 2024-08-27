@@ -89,6 +89,7 @@ export interface Message {
     link: string
   },
   template?: Template
+  team?: string
 }
 
 export interface CourseEnrollment {

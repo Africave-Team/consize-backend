@@ -8,6 +8,8 @@ import { sendCourseCertificate, sendCourseCertificateSlack, sendCourseLeaderboar
 import { SendSlackMessagePayload, SendSlackModalPayload, SendSlackResponsePayload } from '../../slack/interfaces.slack'
 import { sendSlackMessage, sendSlackModalMessage, sendSlackResponseMessage } from '../../slack/slack.services'
 import { AxiosError } from 'axios'
+import { TeamsInterface } from '../../teams/interfaces.teams'
+import { teamService } from '../../teams'
 
 export interface SEND_VERIFICATION_MESSAGE {
   email: string
@@ -80,7 +82,15 @@ const handleTeamInviteEmail: Processor<SEND_VERIFICATION_MESSAGE> = async (job: 
 const handleSendWhatsappMessage: Processor<Message> = async (job: Job<Message>) => {
   try {
     if (AppConfig.server !== "test") {
-      await sendMessage(job.attrs.data)
+      const { team, ...rest } = job.attrs.data
+      let teamData: TeamsInterface | undefined = undefined
+      if (team) {
+        let dt = await teamService.fetchTeamById(team)
+        if (dt) {
+          teamData = dt
+        }
+      }
+      await sendMessage(rest, teamData)
     }
   } catch (error) {
     console.log(error, "error send message")

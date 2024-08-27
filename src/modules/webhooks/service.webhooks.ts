@@ -29,6 +29,7 @@ import { COURSE_STATS } from '../rtdb/nodes'
 import { StudentCourseStats, StudentInterface } from '../students/interface.students'
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
 import Students from '../students/model.students'
+import { TeamsInterface } from '../teams/interfaces.teams'
 // import Teams from '../teams/model.teams'
 // import { convertTo24Hour } from '../utils'
 // import { convertTo24Hour } from '../utils'
@@ -357,12 +358,14 @@ export const generateCourseFlow = async function (courseId: string) {
 
 }
 
-export const sendMessage = async function (message: Message) {
+export const sendMessage = async function (message: Message, team?: TeamsInterface) {
+  let token = team && team.facebookToken ? team.facebookToken : config.whatsapp.token
+  let phoneId = team && team.facebookPhoneNumberId ? team.facebookPhoneNumberId : config.whatsapp.phoneNumberId
   try {
     console.log("starting to send a message")
-    const result = await axios.post(`https://graph.facebook.com/v19.0/${config.whatsapp.phoneNumberId}/messages`, message, {
+    const result = await axios.post(`https://graph.facebook.com/v19.0/${phoneId}/messages`, message, {
       headers: {
-        "Authorization": `Bearer ${config.whatsapp.token}`,
+        "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json"
       }
     })
@@ -372,7 +375,7 @@ export const sendMessage = async function (message: Message) {
   }
 }
 
-export const sendInactivityMessage = async (payload: { studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }) => {
+export const sendInactivityMessage = async (payload: { studentId: string, courseId: string, slackToken: string, team: string, slackChannel?: string, phoneNumber?: string }) => {
   const jobs = await agenda.jobs({
     name: RESUME_TOMORROW,
     'data.enrollment.student': payload.studentId,
@@ -397,6 +400,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
           agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
             to: payload.phoneNumber,
             type: "interactive",
+            team: payload.team,
             messaging_product: "whatsapp",
             recipient_type: "individual",
             interactive: {
@@ -467,7 +471,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
 
 }
 
-export const sendShortInactivityMessage = async (payload: { studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string }) => {
+export const sendShortInactivityMessage = async (payload: { studentId: string, courseId: string, slackToken: string, slackChannel?: string, phoneNumber?: string, team: string }) => {
   const jobs = await agenda.jobs({
     name: RESUME_TOMORROW,
     'data.enrollment.student': payload.studentId,
@@ -492,6 +496,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
           console.log("sending a message")
           agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
             to: payload.phoneNumber,
+            team: payload.team,
             type: "interactive",
             messaging_product: "whatsapp",
             recipient_type: "individual",
@@ -635,7 +640,7 @@ export const handleRemindMeTrigger = async function () {
   }
 }
 
-export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string, messageId: string): Promise<void> => {
+export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
     let buttons: ReplyButton[] = []
     if (data.type === CourseFlowMessageType.BLOCK) {
@@ -666,6 +671,7 @@ export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string
     }
     let payload: Message = {
       to: phoneNumber,
+      team,
       type: "interactive",
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -908,10 +914,11 @@ export async function fetchEnrollments (phoneNumber: string): Promise<CourseEnro
 }
 
 
-export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messageId: string): Promise<void> => {
+export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
+      team,
       type: "interactive",
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -952,11 +959,12 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
   }
 }
 
-export const sendMultiSurvey = async (item: CourseFlowItem, phoneNumber: string, messageId: string): Promise<void> => {
+export const sendMultiSurvey = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
     if (item.surveyQuestion) {
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
         to: phoneNumber,
+        team,
         type: "interactive",
         messaging_product: "whatsapp",
         recipient_type: "individual",
@@ -984,11 +992,12 @@ export const sendMultiSurvey = async (item: CourseFlowItem, phoneNumber: string,
   }
 }
 
-export const sendFreeformSurvey = async (item: CourseFlowItem, phoneNumber: string, _: string): Promise<void> => {
+export const sendFreeformSurvey = async (item: CourseFlowItem, phoneNumber: string, team: string): Promise<void> => {
   try {
     if (item.surveyQuestion) {
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
         to: phoneNumber,
+        team,
         type: "text",
         messaging_product: "whatsapp",
         recipient_type: "individual",
@@ -1002,9 +1011,10 @@ export const sendFreeformSurvey = async (item: CourseFlowItem, phoneNumber: stri
   }
 }
 
-export const sendWelcome = async (phoneNumber: string): Promise<void> => {
+export const sendWelcome = async (phoneNumber: string, team: string): Promise<void> => {
   try {
     let payload: Message = {
+      team,
       "messaging_product": "whatsapp",
       "recipient_type": "individual",
       "to": phoneNumber,
@@ -1096,6 +1106,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           case CourseFlowMessageType.STARTQUIZ:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
+              team: data.team,
               type: "interactive",
               messaging_product: "whatsapp",
               recipient_type: "individual",
@@ -1149,6 +1160,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             const rank = rankings.findIndex(e => e.phoneNumber === phoneNumber)
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
+              team: data.team,
               type: "text",
               messaging_product: "whatsapp",
               recipient_type: "individual",
@@ -1169,6 +1181,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               if (updatedData.totalBlocks - updatedData.nextBlock < 4) {
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                   to: phoneNumber,
+                  team: data.team,
                   type: 'text',
                   messaging_product: 'whatsapp',
                   recipient_type: 'individual',
@@ -1209,6 +1222,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
                     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                       to: phoneNumber,
+                      team: data.team,
                       type: 'interactive',
                       messaging_product: 'whatsapp',
                       recipient_type: 'individual',
@@ -1236,6 +1250,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                       to: phoneNumber,
                       type: 'interactive',
+                      team: data.team,
                       messaging_product: 'whatsapp',
                       recipient_type: 'individual',
                       interactive: {
@@ -1276,6 +1291,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                     to: phoneNumber,
                     type: 'interactive',
+                    team: data.team,
                     messaging_product: 'whatsapp',
                     recipient_type: 'individual',
                     interactive: {
@@ -1310,6 +1326,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: phoneNumber,
                 type: 'text',
+                team: data.team,
                 messaging_product: 'whatsapp',
                 recipient_type: 'individual',
                 text: {
@@ -1333,6 +1350,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
               type: "text",
+              team: data.team,
               messaging_product: "whatsapp",
               recipient_type: "individual",
               text: {
@@ -1371,6 +1389,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                   to: phoneNumber,
+                  team: data.team,
                   type: "interactive",
                   messaging_product: "whatsapp",
                   recipient_type: "individual",
@@ -1399,6 +1418,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                   to: phoneNumber,
+                  team: data.team,
                   type: "interactive",
                   messaging_product: "whatsapp",
                   recipient_type: "individual",
@@ -1443,6 +1463,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               })
               agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                 to: phoneNumber,
+                team: data.team,
                 type: "interactive",
                 messaging_product: "whatsapp",
                 recipient_type: "individual",
@@ -1477,7 +1498,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.QUIZ:
-            await sendQuiz(item, phoneNumber, messageId)
+            await sendQuiz(item, phoneNumber, messageId, data.team)
             updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
@@ -1510,6 +1531,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             }
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
+              team: data.team,
               type: "interactive",
               messaging_product: "whatsapp",
               recipient_type: "individual",
@@ -1519,17 +1541,17 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             break
           case CourseFlowMessageType.BLOCK:
           case CourseFlowMessageType.BLOCKWITHQUIZ:
-            await sendBlockContent(item, phoneNumber, messageId)
+            await sendBlockContent(item, phoneNumber, messageId, data.team)
             updatedData = { ...updatedData, blockStartTime: new Date().toISOString() }
             console.log(updatedData)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.SURVEY_MULTI_CHOICE:
-            await sendMultiSurvey(item, phoneNumber, messageId)
+            await sendMultiSurvey(item, phoneNumber, messageId, data.team)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.SURVEY_FREE_FORM:
-            await sendFreeformSurvey(item, phoneNumber, messageId)
+            await sendFreeformSurvey(item, phoneNumber, data.team)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
 
@@ -1537,6 +1559,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
               type: "text",
+              team: data.team,
               messaging_product: "whatsapp",
               recipient_type: "individual",
               text: {
@@ -1572,6 +1595,7 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ph
     const item = courseFlowData[data.currentBlock]
     let payload: Message = {
       to: phoneNumber,
+      team: data.team,
       type: "interactive",
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -1629,6 +1653,7 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
     const item = courseFlowData[data.currentBlock]
     let payload: Message = {
       to: phoneNumber,
+      team: data.team,
       type: "interactive",
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -1775,11 +1800,11 @@ export const handleSurveyMulti = async (answer: number, data: CourseEnrollment, 
             if (nextBlock.type === CourseFlowMessageType.SURVEY_MULTI_CHOICE) {
               // if it is multi, send multi survey
               console.log("sending multi choice")
-              sendMultiSurvey(nextBlock, phoneNumber, messageId)
+              sendMultiSurvey(nextBlock, phoneNumber, messageId, data.team)
             } else {
               console.log("sending freeform")
               // else send freeform
-              sendFreeformSurvey(nextBlock, phoneNumber, messageId)
+              sendFreeformSurvey(nextBlock, phoneNumber, data.team)
             }
             // update redis and rtdb
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
@@ -1827,10 +1852,10 @@ export const handleSurveyFreeform = async (answer: string, data: CourseEnrollmen
           // if next block is survey, check if it is multi-choice survey or freeform
           if (nextBlock.type === CourseFlowMessageType.SURVEY_MULTI_CHOICE) {
             // if it is multi, send multi survey
-            sendMultiSurvey(nextBlock, phoneNumber, messageId)
+            sendMultiSurvey(nextBlock, phoneNumber, messageId, data.team)
           } else {
             // else send freeform
-            sendFreeformSurvey(nextBlock, phoneNumber, messageId)
+            sendFreeformSurvey(nextBlock, phoneNumber, data.team)
           }
           // update redis and rtdb
           saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
@@ -1882,6 +1907,7 @@ export const sendResumptionOptions = async (phoneNumber: string, key: string, da
     let msgId = v4()
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
+      team: data.team,
       type: "interactive",
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -1929,6 +1955,7 @@ export const sendResumptionMessage = async (phoneNumber: string, _: string, data
     // let msgId = v4()
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
+      team: data.team,
       type: "interactive",
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -1960,11 +1987,12 @@ export const sendResumptionMessage = async (phoneNumber: string, _: string, data
   }
 }
 
-export const sendScheduleAcknowledgement = async (phoneNumber: string, time: string): Promise<void> => {
+export const sendScheduleAcknowledgement = async (phoneNumber: string, time: string, team: string): Promise<void> => {
   try {
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
       type: "text",
+      team,
       messaging_product: "whatsapp",
       recipient_type: "individual",
       text: {
