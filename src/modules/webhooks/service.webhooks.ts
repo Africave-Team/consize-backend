@@ -52,6 +52,8 @@ export enum CourseFlowMessageType {
   START_SURVEY = "start-survey",
   END_SURVEY = 'end-survey',
   END_OF_BUNDLE = 'end-of-bundle',
+  STARTASSESSMENT = 'start-of-assessment',
+  ENDASSESSMENT = 'end-of-assessment',
   ASSESSMENT = 'end-of-course-assessment'
 }
 
@@ -1138,6 +1140,32 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
 
         switch (item.type) {
+          case CourseFlowMessageType.STARTASSESSMENT:
+            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: phoneNumber,
+              type: "interactive",
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              interactive: {
+                body: {
+                  text: item.content
+                },
+                type: "button",
+                action: {
+                  buttons: [
+                    {
+                      type: "reply",
+                      reply: {
+                        id: CONTINUE,
+                        title: "Continue"
+                      }
+                    }
+                  ]
+                }
+              }
+            })
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            break
           case CourseFlowMessageType.STARTQUIZ:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
