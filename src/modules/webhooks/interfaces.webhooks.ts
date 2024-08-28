@@ -119,6 +119,7 @@ export interface CourseEnrollment {
   blockStartTime?: string | null
   bundle?: boolean
   completed?: boolean
+  assessmentScore?: number
   courses?: {
     key: string
     status: "completed" | "pending" | "progress"
@@ -138,6 +139,9 @@ export const QUIZ_NO = "f36d317d-ec1c-42a4-b09f-1978d6c8f7c5"
 export const QUIZ_A = "1024f5a2-9ed7-4a1f-bd66-9e4ee755ea51"
 export const QUIZ_B = "c8a50741-b333-4447-b057-89f41779d8a5"
 export const QUIZ_C = "9e72aee7-ffcd-407a-b198-9b12758ce903"
+export const QUIZA_A = "1024f5a2-9ed7-5a1f-bd66-9e4ee755ea51"
+export const QUIZA_B = "c8a50741-b333-5447-b057-89f41779d8a5"
+export const QUIZA_C = "9e72aee7-ffcd-507a-b198-9b12758ce903"
 export const START = "/start"
 export const STATS = "/stats"
 export const CERTIFICATES = "/certificates"

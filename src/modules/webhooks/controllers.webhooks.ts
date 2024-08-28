@@ -4,8 +4,8 @@ import { Request, Response } from 'express'
 import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { ENROLL_STUDENT_DEFAULT_DATE, RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
-import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow, RESUME_COURSE_TOMORROW } from './interfaces.webhooks'
-import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement } from "./service.webhooks"
+import { CONTINUE, QUIZA_A, QUIZA_B, QUIZA_C,QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow, RESUME_COURSE_TOMORROW } from './interfaces.webhooks'
+import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz,handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
@@ -166,6 +166,20 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const msgId = v4()
               console.log(enrollment)
               await handleLessonQuiz(answerResponse, enrollment, destination, msgId)
+              // schedule inactivity message
+              scheduleInactivityMessage(enrollment, destination)
+            }
+            break
+          case QUIZA_A:
+          case QUIZA_B:
+          case QUIZA_C:
+            let choice = 0
+            if (btnId === QUIZA_B) answerResponse = 1
+            if (btnId === QUIZA_C) answerResponse = 2
+            if (enrollment) {
+              const msgId = v4()
+              console.log(enrollment)
+              await handleAssessment(choice, enrollment, destination, msgId)
               // schedule inactivity message
               scheduleInactivityMessage(enrollment, destination)
             }
