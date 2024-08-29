@@ -55,7 +55,7 @@ export enum CourseFlowMessageType {
   END_OF_BUNDLE = 'end-of-bundle',
   STARTASSESSMENT = 'start-of-assessment',
   ENDASSESSMENT = 'end-of-assessment',
-  ASSESSMENT = 'end-of-course-assessment'
+  ASSESSMENT = 'assessment'
 }
 
 export interface CourseFlowItem {
@@ -70,6 +70,7 @@ export interface CourseFlowItem {
   quiz?: QuizInterface
   surveyQuestion?: Question
   surveyId?: string
+  assessment?: any
 }
 
 // interface UserTracker {
@@ -1904,14 +1905,14 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
         }
       }
     }
-    if (item && item.quiz) {
+    if (item && item.assessment) {
       const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data.id}`
       let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId }
       // let duration = 0, retakes = 0, saveStats = false, score = 0
       if (payload.interactive) {
-        if (item.quiz.correctAnswerIndex === answer) {
+        if (item.assessment.correctAnswerIndex === answer) {
           // send correct answer context
-          payload.interactive['body'].text = `That is correct!. ${convertToWhatsAppString(he.decode(item.quiz.correctAnswerContext))}`
+          payload.interactive['body'].text = `That is correct!. ${convertToWhatsAppString(he.decode(item.assessment.correctAnswerContext))}`
           // update stats(retakes and duration)
           // retakes = data.quizAttempts
           // saveStats = true
