@@ -364,7 +364,7 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
   if (!course.bundle) {
     await generateCourseFlow(courseId)
     await startCourse(student.phoneNumber, courseId, student.id)
-    await sendWelcome(student.phoneNumber)
+    await sendWelcome(student.phoneNumber, course.owner)
 
   } else {
     const courses = course.courses
@@ -374,7 +374,7 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
       await Promise.all(courseFlowPromises)
 
       await startBundle(student.phoneNumber, courseId, student.id)
-      await sendWelcome(student.phoneNumber)
+      await sendWelcome(student.phoneNumber, course.owner)
 
     } else {
       throw new ApiError(httpStatus.NOT_FOUND, "No course in this course bundle, please add course")
@@ -703,7 +703,7 @@ export const testCourseWhatsapp = async (phoneNumber: string, courseId: string, 
   }
   await generateCourseFlow(courseId)
   await startCourse(phoneNumber, courseId, student.id)
-  await sendWelcome(phoneNumber)
+  await sendWelcome(phoneNumber, course.owner)
 
 }
 

@@ -13,6 +13,8 @@ interface Lesson {
 export interface CreateLessonPayload {
   title: string
   description?: string
+  blocks?: string[]
+  quizzes?: string[]
 }
 
 export interface LessonInterface extends Lesson, Document {

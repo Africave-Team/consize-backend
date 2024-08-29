@@ -21,6 +21,7 @@ const createCourseRequest: Record<keyof CreateCoursePayload, any> = {
   status: Joi.string().optional().valid(...Object.values(CourseStatus)),
   currentCohort: Joi.string().optional(),
   survey: Joi.string().optional(),
+  lessons: Joi.array().items(Joi.string()).optional(),
   courses: Joi.when('bundle', {
     is: true,
     then: Joi.array().items(Joi.string()).required(),
@@ -81,7 +82,8 @@ export const updateCourse = {
       is: true,
       then: Joi.array().items(Joi.string()).min(2).required(),
       otherwise: Joi.array().items(Joi.string()).optional()
-    })
+    }),
+    lessons: Joi.array().items(Joi.string()).min(0).optional()
   }).unknown(true),
   params: Joi.object().keys({
     course: Joi.string().required()
@@ -101,7 +103,9 @@ export const createLesson = {
 export const updateLesson = {
   body: Joi.object<CreateLessonPayload>().keys({
     title: Joi.string().required(),
-    description: Joi.string().optional().allow("")
+    description: Joi.string().optional().allow(""),
+    blocks: Joi.array().items(Joi.string()).min(0).optional(),
+    quizzes: Joi.array().items(Joi.string()).min(0).optional()
   }),
   params: Joi.object().keys({
     course: Joi.string().required(),

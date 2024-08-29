@@ -264,7 +264,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const now = moment.tz(enrollment.tz)
               const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
               agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
-              sendScheduleAcknowledgement(destination, "9:00am")
+              sendScheduleAcknowledgement(destination, "9:00am", enrollment.team)
             }
             break
           case AFTERNOON:
@@ -274,7 +274,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const now = moment.tz(enrollment.tz)
               const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
               agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
-              sendScheduleAcknowledgement(destination, "3:00pm")
+              sendScheduleAcknowledgement(destination, "3:00pm", enrollment.team)
             }
             break
           case EVENING:
@@ -284,7 +284,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const now = moment.tz(enrollment.tz)
               const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
               agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
-              sendScheduleAcknowledgement(destination, "8:00pm")
+              sendScheduleAcknowledgement(destination, "8:00pm", enrollment.team)
             }
             break
           case SCHEDULE_RESUMPTION:
