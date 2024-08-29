@@ -83,11 +83,7 @@ export const updateCourse = {
       then: Joi.array().items(Joi.string()).min(2).required(),
       otherwise: Joi.array().items(Joi.string()).optional()
     }),
-    lessons: Joi.when('bundle', {
-      is: false,
-      then: Joi.array().items(Joi.string()).min(2).required(),
-      otherwise: Joi.array().items(Joi.string()).optional()
-    })
+    lessons: Joi.array().items(Joi.string()).min(0).optional()
   }).unknown(true),
   params: Joi.object().keys({
     course: Joi.string().required()
