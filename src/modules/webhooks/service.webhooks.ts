@@ -2,7 +2,7 @@ import httpStatus from 'http-status'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
+import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C,QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -55,7 +55,7 @@ export enum CourseFlowMessageType {
   END_OF_BUNDLE = 'end-of-bundle',
   STARTASSESSMENT = 'start-of-assessment',
   ENDASSESSMENT = 'end-of-assessment',
-  ASSESSMENT = 'end-of-course-assessment'
+  ASSESSMENT = 'assessment'
 }
 
 export interface CourseFlowItem {
@@ -70,6 +70,7 @@ export interface CourseFlowItem {
   quiz?: QuizInterface
   surveyQuestion?: Question
   surveyId?: string
+  assessment?: any
 }
 
 // interface UserTracker {
@@ -962,10 +963,11 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
   }
 }
 
-export const sendAssessment = async (item: CourseFlowItem, phoneNumber: string, messageId: string): Promise<void> => {
+export const sendAssessment = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
+      team,
       type: "interactive",
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -979,21 +981,21 @@ export const sendAssessment = async (item: CourseFlowItem, phoneNumber: string, 
             {
               type: "reply",
               reply: {
-                id: QUIZ_A + `|${messageId}`,
+                id: QUIZA_A + `|${messageId}`,
                 title: "A"
               }
             },
             {
               type: "reply",
               reply: {
-                id: QUIZ_B + `|${messageId}`,
+                id: QUIZA_B + `|${messageId}`,
                 title: "B"
               }
             },
             {
               type: "reply",
               reply: {
-                id: QUIZ_C + `|${messageId}`,
+                id: QUIZA_C + `|${messageId}`,
                 title: "C"
               }
             }
@@ -1602,7 +1604,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.ASSESSMENT:
-            await sendAssessment(item, phoneNumber, messageId)
+            await sendAssessment(item, phoneNumber, messageId,data.team)
             updatedData = { ...updatedData, assessmentScore: 0, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
@@ -1904,14 +1906,14 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
         }
       }
     }
-    if (item && item.quiz) {
+    if (item && item.assessment) {
       const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data.id}`
       let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId }
       // let duration = 0, retakes = 0, saveStats = false, score = 0
       if (payload.interactive) {
-        if (item.quiz.correctAnswerIndex === answer) {
+        if (item.assessment.correctAnswerIndex === answer) {
           // send correct answer context
-          payload.interactive['body'].text = `That is correct!. ${convertToWhatsAppString(he.decode(item.quiz.correctAnswerContext))}`
+          payload.interactive['body'].text = `That is correct!. ${convertToWhatsAppString(he.decode(item.assessment.correctAnswerContext))}`
           // update stats(retakes and duration)
           // retakes = data.quizAttempts
           // saveStats = true
