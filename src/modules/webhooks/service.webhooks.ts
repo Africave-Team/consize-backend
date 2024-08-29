@@ -1890,7 +1890,7 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
       recipient_type: "individual",
       interactive: {
         body: {
-          text: `click continue to get the next question`
+          text: "click continue to get the next question"
         },
         type: "button",
         action: {
