@@ -1890,7 +1890,7 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
       recipient_type: "individual",
       interactive: {
         body: {
-          text: ``
+          text: `click continue to get the next question`
         },
         type: "button",
         action: {
@@ -1913,7 +1913,7 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
       if (payload.interactive) {
         if (item.assessment.correctAnswerIndex === answer) {
           // send correct answer context
-          payload.interactive['body'].text = `That is correct!. ${convertToWhatsAppString(he.decode(item.assessment.correctAnswerContext))}`
+          // payload.interactive['body'].text = `That is correct!. ${convertToWhatsAppString(he.decode(item.assessment.correctAnswerContext))}`
           // update stats(retakes and duration)
           // retakes = data.quizAttempts
           // saveStats = true
@@ -1935,6 +1935,7 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
       // if (saveStats) {
       //   saveQuizDuration(data.team, data.student, updatedData.id, duration, score, retakes, item.lesson, item.quiz)
       // }
+      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
     }
   }
 }
