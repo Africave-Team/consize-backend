@@ -52,7 +52,10 @@ export enum CourseFlowMessageType {
   SURVEY_FREE_FORM = 'survey-free-form',
   START_SURVEY = "start-survey",
   END_SURVEY = 'end-survey',
-  END_OF_BUNDLE = 'end-of-bundle'
+  END_OF_BUNDLE = 'end-of-bundle',
+  STARTASSESSMENT = 'start-of-assessment',
+  ENDASSESSMENT = 'end-of-assessment',
+  ASSESSMENT = 'end-of-course-assessment'
 }
 
 export interface CourseFlowItem {
@@ -959,6 +962,50 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
   }
 }
 
+export const sendAssessment = async (item: CourseFlowItem, phoneNumber: string, messageId: string): Promise<void> => {
+  try {
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: phoneNumber,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        body: {
+          text: item.content
+        },
+        type: "button",
+        action: {
+          buttons: [
+            {
+              type: "reply",
+              reply: {
+                id: QUIZ_A + `|${messageId}`,
+                title: "A"
+              }
+            },
+            {
+              type: "reply",
+              reply: {
+                id: QUIZ_B + `|${messageId}`,
+                title: "B"
+              }
+            },
+            {
+              type: "reply",
+              reply: {
+                id: QUIZ_C + `|${messageId}`,
+                title: "C"
+              }
+            }
+          ]
+        }
+      }
+    })
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+  }
+}
+
 export const sendMultiSurvey = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
     if (item.surveyQuestion) {
@@ -1103,6 +1150,58 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
 
 
         switch (item.type) {
+          case CourseFlowMessageType.STARTASSESSMENT:
+            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: phoneNumber,
+              type: "interactive",
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              interactive: {
+                body: {
+                  text: item.content
+                },
+                type: "button",
+                action: {
+                  buttons: [
+                    {
+                      type: "reply",
+                      reply: {
+                        id: CONTINUE,
+                        title: "Continue"
+                      }
+                    }
+                  ]
+                }
+              }
+            })
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            break
+          case CourseFlowMessageType.ENDASSESSMENT:
+            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: phoneNumber,
+              type: "interactive",
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              interactive: {
+                body: {
+                  text: item.content
+                },
+                type: "button",
+                action: {
+                  buttons: [
+                    {
+                      type: "reply",
+                      reply: {
+                        id: CONTINUE,
+                        title: "Continue"
+                      }
+                    }
+                  ]
+                }
+              }
+            })
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            break
           case CourseFlowMessageType.STARTQUIZ:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
@@ -1502,6 +1601,11 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
+          case CourseFlowMessageType.ASSESSMENT:
+            await sendAssessment(item, phoneNumber, messageId)
+            updatedData = { ...updatedData, assessmentScore: 0, blockStartTime: new Date().toISOString() }
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            break
           case CourseFlowMessageType.INTRO:
             let interactive: InteractiveMessage["interactive"] = {
               header: {
@@ -1767,6 +1871,68 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
         saveQuizDuration(data.team, data.student, updatedData.id, duration, score, retakes, item.lesson, item.quiz)
       }
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
+    }
+  }
+}
+
+export const handleAssessment = async (answer: number, data: CourseEnrollment, phoneNumber: string, messageId: string): Promise<void> => {
+  const courseKey = `${config.redisBaseKey}courses:${data.id}`
+  const courseFlow = await redisClient.get(courseKey)
+  if (courseFlow) {
+    const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
+    const item = courseFlowData[data.currentBlock]
+    let payload: Message = {
+      to: phoneNumber,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        body: {
+          text: ``
+        },
+        type: "button",
+        action: {
+          buttons: [
+            {
+              type: "reply",
+              reply: {
+                id: CONTINUE,
+                title: "Continue"
+              }
+            }
+          ]
+        }
+      }
+    }
+    if (item && item.quiz) {
+      const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data.id}`
+      let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId }
+      // let duration = 0, retakes = 0, saveStats = false, score = 0
+      if (payload.interactive) {
+        if (item.quiz.correctAnswerIndex === answer) {
+          // send correct answer context
+          payload.interactive['body'].text = `That is correct!. ${convertToWhatsAppString(he.decode(item.quiz.correctAnswerContext))}`
+          // update stats(retakes and duration)
+          // retakes = data.quizAttempts
+          // saveStats = true
+          if (data.blockStartTime) {
+            let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+            if (diffInSeconds > 250) {
+              diffInSeconds = 250
+            }
+            // duration = diffInSeconds
+            updatedData = { ...updatedData, blockStartTime: null, assessmentScore: (updatedData.assessmentScore || 0) + 1 }
+          }
+          // score = 1
+          // compute the score
+        }
+        
+      }
+      
+      await redisClient.set(key, JSON.stringify(updatedData))
+      // if (saveStats) {
+      //   saveQuizDuration(data.team, data.student, updatedData.id, duration, score, retakes, item.lesson, item.quiz)
+      // }
     }
   }
 }

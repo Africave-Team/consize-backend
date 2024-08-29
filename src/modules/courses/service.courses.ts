@@ -33,6 +33,8 @@ import { sessionService } from '../sessions'
 import { generatorService } from '../generators'
 import { teamService } from '../teams'
 import { handleExport, RowData } from '../utils/generateExcelSheet'
+import { QuestionGroupsInterface, QuestionGroupsPayload } from './interfaces.question-group'
+import QuestionGroup from './model.question-group'
 import Enrollments from '../sessions/model'
 
 interface SessionStudent extends StudentCourseStats {
@@ -519,6 +521,12 @@ export const fetchSingleLessonBlock = async ({ block }: { block: string }): Prom
 }
 
 // Quizzes
+export const addQuiz = async (quizPayload: CreateQuizPayload, course: string): Promise<QuizInterface> => {
+  const quiz = new Quizzes({ ...quizPayload, course })
+  await quiz.save()
+  return quiz
+}
+
 export const addLessonQuiz = async (quizPayload: CreateQuizPayload, lesson: string, course: string): Promise<QuizInterface> => {
   const quiz = new Quizzes({ ...quizPayload, lesson, course })
   await Lessons.findByIdAndUpdate(lesson, { $push: { quizzes: quiz.id } })
@@ -550,6 +558,38 @@ export const deleteQuizFromBlock = async (block: string, quiz: string): Promise<
 export const deleteQuizFromLesson = async (lesson: string, quiz: string): Promise<void> => {
   await Lessons.findByIdAndUpdate(lesson, { $pull: { quizzes: quiz } }, { new: true })
   await Quizzes.findByIdAndDelete(quiz)
+}
+
+export const fetchCourseQuestions = async ({ course, questionType}:{ course: string, questionType: any }): Promise<QuizInterface[]> => {
+  const query:any = {
+      course: course
+    };
+    
+    if (questionType) {
+      query.questionType = { $regex: new RegExp(questionType, 'i') };
+    }
+
+    const quizzes = await Quizzes.find(query).exec();
+    return quizzes;
+}
+
+export const addQuestionGroup = async (questionGroupPayload: QuestionGroupsPayload,course: string ): Promise<QuestionGroupsInterface> => {
+  const questionGroup = new QuestionGroup({ ...questionGroupPayload, course })
+  await questionGroup.save()
+  return questionGroup
+}
+
+export const fetchCourseQuestionGroups = async ({ course, type}:{ course: string, type: any }): Promise<QuestionGroupsInterface[]> => {
+  const query:any = {
+      course: course
+    };
+    
+    if (type) {
+      query.type = { $regex: new RegExp(type, 'i') };
+    }
+
+    const questionGroup = await QuestionGroup.find(query).exec();
+    return questionGroup;
 }
 
 // settings
