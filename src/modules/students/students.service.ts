@@ -24,6 +24,8 @@ import { subscriptionService } from '../subscriptions'
 import { sessionService } from '../sessions'
 import { MAX_FREE_PLAN_MONTHLY_ENROLLMENTS } from '../../config/constants'
 import { statsService } from '../statistics'
+import { Cohorts } from '../cohorts'
+import { Distribution } from '../courses/interfaces.courses'
 
 export const bulkAddStudents = async (students: Student[]): Promise<string[]> => {
   try {
@@ -159,7 +161,7 @@ export const verifyOTP = async (code: string): Promise<StudentInterface> => {
 
 
 // course sessions
-export const enrollStudentToCourse = async (studentId: string, courseId: string, source: "api" | "qr", customData?: any): Promise<void> => {
+export const enrollStudentToCourse = async (studentId: string, courseId: string, source: "api" | "qr", customData?: any, cohortId?: string): Promise<void> => {
   const student = await Students.findOne({ _id: studentId })
   if (!student) {
     throw new ApiError(httpStatus.NOT_FOUND, "No student account found.")
@@ -319,15 +321,15 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
         }
       })
     } else {
-      startEnrollmentWhatsapp(studentId, courseId, source, customData)
+      startEnrollmentWhatsapp(studentId, courseId, source, customData, cohortId)
     }
   } else {
-    startEnrollmentWhatsapp(studentId, courseId, source, customData)
+    startEnrollmentWhatsapp(studentId, courseId, source, customData, cohortId)
   }
 
 }
 
-export const startEnrollmentWhatsapp = async function (studentId: string, courseId: string, source: "api" | "qr", customData?: any): Promise<void> {
+export const startEnrollmentWhatsapp = async function (studentId: string, courseId: string, source: "api" | "qr", customData?: any, cohortId?: string): Promise<void> {
   const student = await Students.findOne({ _id: studentId })
   if (!student) {
     throw new ApiError(httpStatus.NOT_FOUND, "No student account found.")
@@ -362,7 +364,7 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
   if (!course.bundle) {
     await generateCourseFlow(courseId)
     await startCourse(student.phoneNumber, courseId, student.id)
-    await sendWelcome(student.phoneNumber)
+    await sendWelcome(student.phoneNumber, course.owner)
 
   } else {
     const courses = course.courses
@@ -372,16 +374,33 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
       await Promise.all(courseFlowPromises)
 
       await startBundle(student.phoneNumber, courseId, student.id)
-      await sendWelcome(student.phoneNumber)
+      await sendWelcome(student.phoneNumber, course.owner)
 
     } else {
       throw new ApiError(httpStatus.NOT_FOUND, "No course in this course bundle, please add course")
     }
   }
   let dbRef = db.ref(COURSE_STATS).child(course.owner).child(courseId)
+
+  if (!cohortId) {
+    let cohort
+    if (source === "api") {
+      cohort = await Cohorts.findOne({ name: "Website", global: true })
+    } else {
+      cohort = await Cohorts.findOne({ name: "QR Code", global: true })
+    }
+
+    if (cohort) {
+      cohortId = cohort.id
+    }
+  }
+
   await dbRef.child("students").child(studentId).set({
     name: student.firstName + ' ' + student.otherNames,
     phoneNumber: student.phoneNumber,
+    distribution: Distribution.WHATSAPP,
+    cohortId: cohortId || "",
+    dateEnrolled: moment().format('MM-DD-YYYY'),
     progress: 0,
     studentId,
     completed: false,
@@ -394,6 +413,7 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
     courseId,
     anonymous: student.anonymous,
     teamId: course.owner,
+    distribution: Distribution.WHATSAPP,
     name: student.firstName + ' ' + student.otherNames,
     phoneNumber: student.phoneNumber,
     progress: 0,
@@ -402,7 +422,8 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
     droppedOut: false,
     scores: [],
     lessons: {},
-    custom: customData || {}
+    custom: customData || {},
+    cohortId: cohortId || ""
   })
 
   const jobs = await agenda.jobs({ 'data.courseId': courseId, name: GENERATE_COURSE_TRENDS })
@@ -682,7 +703,7 @@ export const testCourseWhatsapp = async (phoneNumber: string, courseId: string, 
   }
   await generateCourseFlow(courseId)
   await startCourse(phoneNumber, courseId, student.id)
-  await sendWelcome(phoneNumber)
+  await sendWelcome(phoneNumber, course.owner)
 
 }
 

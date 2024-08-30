@@ -5,6 +5,7 @@ const envVarsSchema = Joi.object()
   .keys({
     ENV: Joi.string().required(),
     FACEBOOK_APP_ID: Joi.string().required(),
+    WABA_ID: Joi.string().required(),
     FACEBOOK_APP_SECRET: Joi.string().required(),
     FACEBOOK_REDIRECT_URI: Joi.string().required(),
     OPENAI_API_KEY: Joi.string().required(),
@@ -54,7 +55,8 @@ const config = {
     authTemplateName: envVars.WHATSAPP_AUTH_TEMPLATE_NAME,
     subscriptionKey: envVars.FACEBOOK_SECRET,
     token: envVars.WHATSAPP_TOKEN,
-    phoneNumberId: envVars.WHATSAPP_PHONENUMBER_ID
+    phoneNumberId: envVars.WHATSAPP_PHONENUMBER_ID,
+    waba: envVars.WABA_ID
   },
   openAI: {
     key: envVars.OPENAI_API_KEY

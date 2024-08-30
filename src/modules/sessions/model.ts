@@ -8,6 +8,7 @@ const enrollmentSchema = new Schema<EnrollmentSessionInterface, EnrollmentSessio
   _id: { type: String, default: () => v4() },
   studentId: String,
   courseId: String,
+  slackId: String,
   teamId: String,
   name: String,
   phoneNumber: String,
@@ -18,6 +19,10 @@ const enrollmentSchema = new Schema<EnrollmentSessionInterface, EnrollmentSessio
   certificate: String,
   distribution: String,
   custom: Schema.Types.Mixed,
+  cohortId: {
+    type: String,
+    ref: "Cohorts"
+  },
   scores: [Number],
   lessons: Object
 }, {

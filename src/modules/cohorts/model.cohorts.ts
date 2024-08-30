@@ -18,6 +18,10 @@ const CohortSchema = new Schema<CohortsInterface, CohortsInterfaceModel>(
             type: Boolean,
             default: false
         },
+        default: {
+            type: Boolean,
+            default: false
+        },
         status: {
             type: String,
             enum: Object.values(CohortsStatus),
@@ -35,8 +39,15 @@ const CohortSchema = new Schema<CohortsInterface, CohortsInterfaceModel>(
         date: {
             type: Date,
         },
+        shortCode: {
+            type: String
+        },
         time: {
             type: String,
+        },
+        global: {
+            type: Boolean,
+            default: false
         },
 
     },

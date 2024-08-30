@@ -1,7 +1,7 @@
 import httpStatus from 'http-status'
 import { courseService } from '../courses'
 import { ApiError } from '../errors'
-import { CohortsInterface, CohortsStatus, CreateCohortInterface } from "./interface.cohorts"
+import { CohortsInterface, CohortsStatus, CreateCohortInterface, EnrollCohortInterface } from "./interface.cohorts"
 import Cohorts from "./model.cohorts"
 import { CourseStatus, Distribution } from '../courses/interfaces.courses'
 import { slackServices } from '../slack'
@@ -12,6 +12,7 @@ import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, Sl
 import { agenda } from '../scheduler'
 import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, SEND_SLACK_MESSAGE } from '../scheduler/MessageTypes'
 import moment from 'moment-timezone'
+import randomstring from "randomstring"
 import { ACCEPT_INVITATION, REJECT_INVITATION } from '../webhooks/interfaces.webhooks'
 import { sessionService } from '../sessions'
 import { MAX_FREE_PLAN_MONTHLY_ENROLLMENTS } from '../../config/constants'
@@ -39,7 +40,51 @@ const checkSubscriptionEnrollmentCount = async (count: number, teamId: string) =
     }
 }
 
-export const createCohort = async ({ courseId, distribution, name, members, channels, students, schedule, date, time }: CreateCohortInterface): Promise<CohortsInterface> => {
+export const createCohort = async ({ courseId, distribution, name }: CreateCohortInterface): Promise<CohortsInterface> => {
+    const courseInformation = await courseService.fetchSingleCourse({ courseId })
+    if (!courseInformation) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Could not resolve the provided course ID")
+    }
+    let team = await teamService.fetchTeamById(courseInformation.owner)
+    if (!team) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Could not resolve the provided team ID")
+    }
+    // resolve slack or whatsapp
+    if (distribution === Distribution.SLACK) {
+        if (!team || !team.slackToken) {
+            throw new ApiError(httpStatus.BAD_REQUEST, "Slack has not been connected to your account")
+        }
+    }
+
+    const cohort = new Cohorts({
+        name, distribution, courseId, status: CohortsStatus.PENDING, shortCode: randomstring.generate({
+            length: 5,
+            charset: "alphanumeric"
+        }).toLowerCase()
+    })
+    await cohort.save()
+    return cohort
+}
+
+export const updateCohort = async (id: string, payload: Pick<CohortsInterface, "name" | "default">): Promise<void> => {
+
+    const cohort = await Cohorts.findById(id)
+    if (cohort) {
+        if (payload.name) {
+            cohort.name = payload.name
+        }
+        if ('default' in payload) {
+            cohort.default = payload.default
+            if (payload.default) {
+                await Cohorts.updateMany({ courseId: cohort.courseId }, { $set: { default: false } })
+            }
+        }
+        await cohort.save()
+    }
+}
+
+
+export const enrollCohort = async ({ courseId, cohortId, members, channels, students, schedule, date, time }: EnrollCohortInterface): Promise<CohortsInterface> => {
     const courseInformation = await courseService.fetchSingleCourse({ courseId })
     if (!courseInformation) {
         throw new ApiError(httpStatus.BAD_REQUEST, "Could not resolve the provided course ID")
@@ -49,11 +94,16 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
         throw new ApiError(httpStatus.BAD_REQUEST, "Could not resolve the provided team ID")
     }
 
+    let cohort = await Cohorts.findById(cohortId)
+    if (!cohort) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Invalid cohort id provided")
+    }
+
     // list of student ids
     let cohortMembers: string[] = []
     let cohortMembersInfo: { id: string, tz: string }[] = []
     // resolve slack or whatsapp
-    if (distribution === Distribution.SLACK) {
+    if (cohort.distribution === Distribution.SLACK) {
         if (team && team.slackToken) {
             let slackIds: string[] = []
             if (members) {
@@ -155,7 +205,7 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
         }
     }
 
-    if (distribution === Distribution.WHATSAPP) {
+    if (cohort.distribution === Distribution.WHATSAPP) {
         if (students) {
             await checkSubscriptionEnrollmentCount(students.length, courseInformation.owner)
             const studentsData = await Promise.all(students.map(e => studentService.findStudentById(e)))
@@ -171,27 +221,51 @@ export const createCohort = async ({ courseId, distribution, name, members, chan
             })
         }
     }
-
-    const cohort = new Cohorts({ name, date, time, members: cohortMembers, schedule, distribution, courseId, status: CohortsStatus.PENDING })
-    await cohort.save()
+    // @ts-ignore
+    cohort = Cohorts.findByIdAndUpdate(cohortId, { $set: { date, time, members: cohortMembers, schedule, status: CohortsStatus.PENDING } }, { new: true })
+    if (!cohort) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Invalid cohort id provided")
+    }
     if (schedule) {
         // use agenda to schedule the event
         for (let student of cohortMembersInfo) {
             const now = moment.tz(student.tz)
             const tmi = moment(`${date} ${time}`).subtract(now.utcOffset(), 'minutes')
-            agenda.schedule<{ cohortId: string, studentId: string }>(tmi.toDate(), COHORT_SCHEDULE_STUDENT, { cohortId: cohort.id, studentId: student.id })
+            agenda.schedule<{ cohortId: string, studentId: string }>(tmi.toDate(), COHORT_SCHEDULE_STUDENT, { cohortId, studentId: student.id })
         }
     } else {
         if (courseInformation.status === CourseStatus.PUBLISHED) {
-            agenda.now<{ cohortId: string }>(COHORT_SCHEDULE, { cohortId: cohort.id })
+            agenda.now<{ cohortId: string }>(COHORT_SCHEDULE, { cohortId })
         }
     }
     return cohort
 }
 
-export const fetchCohorts = async (courseId: string): Promise<CohortsInterface[]> => {
-    const cohorts = await Cohorts.find({ courseId: courseId }).populate("members")
+export const fetchCohorts = async (courseId: string, distribution: Distribution): Promise<CohortsInterface[]> => {
+    const cohorts = await Cohorts.find({
+        courseId: courseId,
+        distribution
+    }).populate("members")
     return cohorts
+}
+
+export const fetchGeneralCohorts = async (courseId: string): Promise<CohortsInterface[]> => {
+    const cohorts = await Cohorts.find({
+        $or: [
+            {
+                courseId: courseId
+            }
+        ]
+    }).populate("members")
+    return cohorts
+}
+
+
+export const resolveCohortWithShortCode = async (code: string): Promise<CohortsInterface | null> => {
+    const cohort = await Cohorts.findOne({
+        shortCode: code
+    })
+    return cohort
 }
 
 export const deleteCohort = async (cohortId: string): Promise<void> => {
@@ -208,11 +282,11 @@ export const initiateCourseForCohort = async function (cohortId: string) {
     if (cohort) {
         if (cohort.distribution === Distribution.SLACK) {
             await Promise.all(cohort.members.map(async (student) => {
-                await slackServices.enrollStudentToCourseSlack(student, cohort.courseId)
+                await slackServices.enrollStudentToCourseSlack(student, cohort.courseId, cohort.id)
             }))
         } else {
             await Promise.all(cohort.members.map(async (student: string) => {
-                await studentService.enrollStudentToCourse(student, cohort.courseId, "api")
+                await studentService.enrollStudentToCourse(student, cohort.courseId, "api", {}, cohort.id)
             }))
         }
 

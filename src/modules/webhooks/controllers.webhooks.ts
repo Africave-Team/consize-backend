@@ -4,8 +4,8 @@ import { Request, Response } from 'express'
 import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { ENROLL_STUDENT_DEFAULT_DATE, RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
-import { CONTINUE, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow, RESUME_COURSE_TOMORROW } from './interfaces.webhooks'
-import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement } from "./service.webhooks"
+import { CONTINUE, QUIZA_A, QUIZA_B, QUIZA_C,QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow, RESUME_COURSE_TOMORROW } from './interfaces.webhooks'
+import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz,handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
@@ -17,6 +17,7 @@ import Students from '../students/model.students'
 import Courses from '../courses/model.courses'
 import { courseService } from '../courses'
 import { teamService } from '../teams'
+import { resolveCohortWithShortCode } from '../cohorts/service.cohorts'
 // import { logger } from '../logger'
 
 const timezones = [
@@ -169,6 +170,20 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               scheduleInactivityMessage(enrollment, destination)
             }
             break
+          case QUIZA_A:
+          case QUIZA_B:
+          case QUIZA_C:
+            let choice = 0
+            if (btnId === QUIZA_B) choice = 1
+            if (btnId === QUIZA_C) choice = 2
+            if (enrollment) {
+              const msgId = v4()
+              console.log(enrollment)
+              await handleAssessment(choice, enrollment, destination, msgId)
+              // schedule inactivity message
+              scheduleInactivityMessage(enrollment, destination)
+            }
+            break
           case STATS:
 
             break
@@ -249,7 +264,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const now = moment.tz(enrollment.tz)
               const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
               agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
-              sendScheduleAcknowledgement(destination, "9:00am")
+              sendScheduleAcknowledgement(destination, "9:00am", enrollment.team)
             }
             break
           case AFTERNOON:
@@ -259,7 +274,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const now = moment.tz(enrollment.tz)
               const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
               agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
-              sendScheduleAcknowledgement(destination, "3:00pm")
+              sendScheduleAcknowledgement(destination, "3:00pm", enrollment.team)
             }
             break
           case EVENING:
@@ -269,7 +284,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const now = moment.tz(enrollment.tz)
               const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
               agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
-              sendScheduleAcknowledgement(destination, "8:00pm")
+              sendScheduleAcknowledgement(destination, "8:00pm", enrollment.team)
             }
             break
           case SCHEDULE_RESUMPTION:
@@ -672,85 +687,124 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             redisClient.del(keySelected)
             if (teamCourses) {
               // get the course short code
-              let contents = response.split('(id: _')
-              let length = contents.length
-              let code = contents[length - 1].replaceAll('_)', '')
-              const { name, courses } = await resolveTeamCourseWithShortcode(code)
-              const key = `${config.redisBaseKey}last_request:${destination}`
-              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                to: destination,
-                type: "text",
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                "text": {
-                  "body": `These are courses published by *${name}*\n\nSend the corresponding number as a text message to enroll in that particular course\n${courses.map((course, index) => `\n${index + 1}. *${course.title.trim()}*`).join('.')}`
+              const extractId = function (text: string) {
+                const startIdIndex = text.indexOf('(id: _')
+                const endIdIndex = text.indexOf('_)', startIdIndex)
+
+                if (startIdIndex !== -1 && endIdIndex !== -1) {
+                  const shortCode = text.substring(startIdIndex + 5, endIdIndex).replace("_", "")
+                  console.log(shortCode)
+                  return [shortCode]
+                } else {
+                  console.log("no deuce")
+                  return undefined
                 }
-              })
-              await redisClient.set(key, JSON.stringify(courses.map(e => e.id)))
-            }
-            if (singleCourse) {
-              // get the course short code
-              let contents = response.split('(id: _')
-              let length = contents.length
-              let code = contents[length - 1].replaceAll('_)', '')
-              const course = await resolveCourseWithShortcode(code)
-              if (!course) {
+              }
+              const match = extractId(response)
+              if (match && match[0]) {
+                let code = match[0]
+                const { name, courses } = await resolveTeamCourseWithShortcode(code)
+                const key = `${config.redisBaseKey}last_request:${destination}`
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                   to: destination,
                   type: "text",
                   messaging_product: "whatsapp",
                   recipient_type: "individual",
-                  text: {
-                    body: "We could not find any course for this organization with that identifier"
+                  "text": {
+                    "body": `These are courses published by *${name}*\n\nSend the corresponding number as a text message to enroll in that particular course\n${courses.map((course, index) => `\n${index + 1}. *${course.title.trim()}*`).join('.')}`
                   }
                 })
-              } else {
-                // check max enrollment
-                let maxReached = await maxEnrollmentReached(course.settings, course.id, course.owner)
-                if (maxReached) {
+                await redisClient.set(key, JSON.stringify(courses.map(e => e.id)))
+              }
+            }
+            if (singleCourse) {
+              // get the course short code
+              const extractGroupAndId = function (text: string) {
+                const startIdIndex = text.indexOf('(id: _')
+                const endIdIndex = text.indexOf('_)', startIdIndex)
+                const startGroupIndex = text.indexOf('(group: _')
+                const endGroupIndex = text.indexOf('_)', startGroupIndex)
+
+                if (startIdIndex !== -1 && endIdIndex !== -1 && startGroupIndex !== -1 && endGroupIndex !== -1) {
+                  const shortCode = text.substring(startIdIndex + 5, endIdIndex).replace("_", "")
+                  const cohort = text.substring(startGroupIndex + 8, endGroupIndex).replace("_", "")
+                  console.log(cohort, shortCode)
+                  return [shortCode, cohort]
+                } else {
+                  console.log("no deuce")
+                  return undefined
+                }
+              }
+              const match = extractGroupAndId(response)
+              if (match && match[0]) {
+                let code = match[0]
+                let group = match[1]
+                const course = await resolveCourseWithShortcode(code)
+                let cohort
+                if (group) {
+                  cohort = await resolveCohortWithShortCode(group)
+                }
+                if (!course) {
                   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                     to: destination,
                     type: "text",
                     messaging_product: "whatsapp",
                     recipient_type: "individual",
                     text: {
-                      body: "Sorry, the maximum learner limit has been reached for this course"
+                      body: "We could not find any course for this organization with that identifier"
                     }
                   })
                 } else {
-                  const student = await Students.findOne({ phoneNumber: destination })
-                  if (student) {
-                    await studentService.enrollStudentToCourse(student.id, course.id, "qr")
+                  // check max enrollment
+                  let maxReached = await maxEnrollmentReached(course.settings, course.id, course.owner)
+                  if (maxReached) {
+                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                      to: destination,
+                      type: "text",
+                      messaging_product: "whatsapp",
+                      recipient_type: "individual",
+                      text: {
+                        body: "Sorry, the maximum learner limit has been reached for this course"
+                      }
+                    })
                   } else {
-                    const fields = [{
-                      question: `What is your full name?`,
-                      field: "name",
-                      done: false
-                    }]
-                    if (fields[0]) {
-                      fields.push({
-                        question: `Please select your time zone.\nIt shall help us send you course reminders at the right time\n\n`,
-                        field: "tz",
+                    const student = await Students.findOne({ phoneNumber: destination })
+                    if (student) {
+                      await studentService.enrollStudentToCourse(student.id, course.id, "qr", {}, cohort ? cohort.id : null)
+                    } else {
+                      const fields = [{
+                        question: `What is your full name?`,
+                        field: "name",
                         done: false
-                      })
-                      // create the student
-                      await Students.create({
-                        phoneNumber: destination,
-                      })
-                      const keySelected = `${config.redisBaseKey}selected:${destination}`
-                      await redisClient.set(fieldKey, fields[0].field)
-                      await redisClient.set(fieldsKey, JSON.stringify(fields))
-                      await redisClient.set(keySelected, course.id)
-                      // send the question for fields[0]
-                      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                        to: destination,
-                        type: "text",
-                        messaging_product: "whatsapp",
-                        recipient_type: "individual",
-                        text: {
-                          body: `Please answer the next 2 questions to help us enroll you.\n\nQ (1/2)\n\n${fields[0].question}\n\n\Please type your response.`
+                      }]
+                      if (fields[0]) {
+                        fields.push({
+                          question: `Please select your time zone.\nIt shall help us send you course reminders at the right time\n\n`,
+                          field: "tz",
+                          done: false
+                        })
+                        // create the student
+                        await Students.create({
+                          phoneNumber: destination,
+                        })
+                        const keySelected = `${config.redisBaseKey}selected:${destination}`
+                        await redisClient.set(fieldKey, fields[0].field)
+                        await redisClient.set(fieldsKey, JSON.stringify(fields))
+                        await redisClient.set(keySelected, course.id)
+                        if (cohort) {
+                          await redisClient.set(`${config.redisBaseKey}selected_cohort:${destination}`, cohort.id)
                         }
-                      })
+                        // send the question for fields[0]
+                        agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                          to: destination,
+                          type: "text",
+                          messaging_product: "whatsapp",
+                          recipient_type: "individual",
+                          text: {
+                            body: `Please answer the next 2 questions to help us enroll you.\n\nQ (1/2)\n\n${fields[0].question}\n\n\Please type your response.`
+                          }
+                        })
+                      }
                     }
                   }
                 }
@@ -801,7 +855,8 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 const keySelected = `${config.redisBaseKey}selected:${destination}`
                 let courseId = await redisClient.get(keySelected)
                 if (courseId && student) {
-                  await studentService.enrollStudentToCourse(student.id, courseId, "qr")
+                  let cohort = await redisClient.get(`${config.redisBaseKey}selected_cohort:${destination}`)
+                  await studentService.enrollStudentToCourse(student.id, courseId, "qr", {}, cohort ? cohort : undefined)
                 }
               }
             }
