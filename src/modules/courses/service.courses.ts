@@ -560,36 +560,36 @@ export const deleteQuizFromLesson = async (lesson: string, quiz: string): Promis
   await Quizzes.findByIdAndDelete(quiz)
 }
 
-export const fetchCourseQuestions = async ({ course, questionType}:{ course: string, questionType: any }): Promise<QuizInterface[]> => {
-  const query:any = {
-      course: course
-    };
-    
-    if (questionType) {
-      query.questionType = { $regex: new RegExp(questionType, 'i') };
-    }
+export const fetchCourseQuestions = async ({ course, questionType }: { course: string, questionType: any }): Promise<QuizInterface[]> => {
+  const query: any = {
+    course: course
+  }
 
-    const quizzes = await Quizzes.find(query).exec();
-    return quizzes;
+  if (questionType) {
+    query.questionType = { $regex: new RegExp(questionType, 'i') }
+  }
+
+  const quizzes = await Quizzes.find(query).exec()
+  return quizzes
 }
 
-export const addQuestionGroup = async (questionGroupPayload: QuestionGroupsPayload,course: string ): Promise<QuestionGroupsInterface> => {
+export const addQuestionGroup = async (questionGroupPayload: QuestionGroupsPayload, course: string): Promise<QuestionGroupsInterface> => {
   const questionGroup = new QuestionGroup({ ...questionGroupPayload, course })
   await questionGroup.save()
   return questionGroup
 }
 
-export const fetchCourseQuestionGroups = async ({ course, type}:{ course: string, type: any }): Promise<QuestionGroupsInterface[]> => {
-  const query:any = {
-      course: course
-    };
-    
-    if (type) {
-      query.type = { $regex: new RegExp(type, 'i') };
-    }
+export const fetchCourseQuestionGroups = async ({ course, type }: { course: string, type: any }): Promise<QuestionGroupsInterface[]> => {
+  const query: any = {
+    course: course
+  }
 
-    const questionGroup = await QuestionGroup.find(query).exec();
-    return questionGroup;
+  if (type) {
+    query.type = { $regex: new RegExp(type, 'i') }
+  }
+
+  const questionGroup = await QuestionGroup.find(query).exec()
+  return questionGroup
 }
 
 // settings
@@ -1031,7 +1031,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
     })
   ]
   const path = await handleExport({
-    name: name.replace(" ", "-"),
+    name: name.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, '-').toLowerCase(),
     statsData,
     tableData
   })
