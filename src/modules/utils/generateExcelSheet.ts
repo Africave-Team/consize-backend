@@ -120,6 +120,7 @@ export const handleExport = async ({ name, statsData, tableData }: ExportHandler
     return filePath
   } catch (error) {
     console.log("write excel error =>", error)
+    return (error as Error).message
   }
 }
 
