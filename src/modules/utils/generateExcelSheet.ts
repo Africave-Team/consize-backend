@@ -115,7 +115,11 @@ export const handleExport = async ({ name, statsData, tableData }: ExportHandler
   const workbook = createWorkbook({ statsData, tableData })
   const filePath = path.join(projectRoot, ".temp", `${name}.xlsx`)
   // Save the workbook to a file
-  await XLSX.writeFile(workbook, filePath)
+  try {
+    await XLSX.writeFile(workbook, filePath)
+  } catch (error) {
+    console.log("write error=>", error)
+  }
   return filePath
 }
 

@@ -6,7 +6,7 @@ import httpStatus from 'http-status'
 import { CourseInterface } from './interfaces.courses'
 import { QueryResult } from '../paginate/paginate'
 // import { agenda } from '../scheduler'
-import { unlinkSync } from "fs"
+// import { unlinkSync } from "fs"
 
 export const createCourseManually = catchAsync(async (req: Request, res: Response) => {
   const createdCourse = await courseService.createCourse(req.body, req.user.team)
@@ -345,7 +345,7 @@ export const exportStats = catchAsync(async (req: Request, res: Response) => {
     const { file, filename } = await courseService.exportCourseStats(course)
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition')
     return res.download(file, filename, (err) => {
-      unlinkSync(file)
+      // unlinkSync(file)
       console.log(err)
     })
   } else {
@@ -411,7 +411,7 @@ export const generateCourseHeader = catchAsync(async (req: Request, res: Respons
 
 export const fetchQuestion = catchAsync(async (req: Request, res: Response) => {
   const { course } = req.params
-  const { questionType } = req.query 
+  const { questionType } = req.query
   let questions
   if (course) {
     questions = await courseService.fetchCourseQuestions({ course, questionType })
@@ -423,14 +423,14 @@ export const createQuestionsGroup = catchAsync(async (req: Request, res: Respons
   const { course } = req.params
   let questionGroup
   if (course) {
-    questionGroup = await courseService.addQuestionGroup ( req.body, course )
+    questionGroup = await courseService.addQuestionGroup(req.body, course)
   }
   res.status(200).send({ message: "questions group created", questionGroup })
 })
 
 export const fetchQuestionGroups = catchAsync(async (req: Request, res: Response) => {
   const { course } = req.params
-  const { type } = req.query 
+  const { type } = req.query
   let questionsGroups
   if (course) {
     questionsGroups = await courseService.fetchCourseQuestionGroups({ course, type })
