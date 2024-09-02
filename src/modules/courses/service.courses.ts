@@ -1031,7 +1031,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
     })
   ]
   const path = await handleExport({
-    name: name.replace(" ", "-"),
+    name: name.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, '-').toLowerCase(),
     statsData,
     tableData
   })
