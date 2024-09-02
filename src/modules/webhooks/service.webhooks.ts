@@ -30,6 +30,7 @@ import { StudentCourseStats, StudentInterface } from '../students/interface.stud
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
 import Students from '../students/model.students'
 import { TeamsInterface } from '../teams/interfaces.teams'
+import { studentService } from '../students'
 // import Teams from '../teams/model.teams'
 // import { convertTo24Hour } from '../utils'
 // import { convertTo24Hour } from '../utils'
@@ -71,6 +72,7 @@ export interface CourseFlowItem {
   surveyQuestion?: Question
   surveyId?: string
   assessment?: any
+  assessmentId?: string
 }
 
 // interface UserTracker {
@@ -1176,6 +1178,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 }
               }
             })
+            updatedData = { ...updatedData, assessmentId: item.assessmentId || ''}
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.ENDASSESSMENT:
@@ -1202,6 +1205,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 }
               }
             })
+            studentService.saveAssessmentScore(data.team, data.id, data.student, updatedData.assessmentId || '', updatedData.assessmentScore || 0)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.STARTQUIZ:

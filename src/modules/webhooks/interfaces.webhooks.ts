@@ -120,6 +120,7 @@ export interface CourseEnrollment {
   blockStartTime?: string | null
   bundle?: boolean
   completed?: boolean
+  assessmentId?: string
   assessmentScore?: number
   courses?: {
     key: string

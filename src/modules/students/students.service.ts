@@ -26,6 +26,7 @@ import { MAX_FREE_PLAN_MONTHLY_ENROLLMENTS } from '../../config/constants'
 import { statsService } from '../statistics'
 import { Cohorts } from '../cohorts'
 import { Distribution } from '../courses/interfaces.courses'
+import Assessment from '../statistics/assessment.model'
 
 export const bulkAddStudents = async (students: Student[]): Promise<string[]> => {
   try {
@@ -728,3 +729,11 @@ export const getStudentsByCourseId = async (courseId: string, page: number = 1):
   return students
 }
 
+export const saveAssessmentScore = async (teamId: string, courseId: string, studentId: string, assessmentId: string, score: number): Promise<void> => {
+   // Find the record with courseId, assessmentId, and studentId
+    await Assessment.findOneAndUpdate(
+      { courseId, assessmentId, studentId,teamId },
+      { $set: { score } }, // Update the score if found
+      { new: true, upsert: true } // Create a new record if not found
+    );
+}
