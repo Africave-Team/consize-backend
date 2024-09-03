@@ -10,4 +10,5 @@ router.post('/enroll', validate(companyValidators.enroll), companyControllers.en
 
 router.route('/:teamId')
   .patch(companyControllers.resendOnboardEmail)
+  .post(companyControllers.transferCompanyOwnership)
 export default router
