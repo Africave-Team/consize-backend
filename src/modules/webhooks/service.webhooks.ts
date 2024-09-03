@@ -2,7 +2,7 @@ import httpStatus from 'http-status'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C,QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
+import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -31,6 +31,7 @@ import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, Sl
 import Students from '../students/model.students'
 import { TeamsInterface } from '../teams/interfaces.teams'
 import { studentService } from '../students'
+import Subscriptions from '../subscriptions/subscriptions.models'
 // import Teams from '../teams/model.teams'
 // import { convertTo24Hour } from '../utils'
 // import { convertTo24Hour } from '../utils'
@@ -365,8 +366,20 @@ export const generateCourseFlow = async function (courseId: string) {
 }
 
 export const sendMessage = async function (message: Message, team?: TeamsInterface) {
-  let token = team && team.facebookToken ? team.facebookToken : config.whatsapp.token
-  let phoneId = team && team.facebookPhoneNumberId ? team.facebookPhoneNumberId : config.whatsapp.phoneNumberId
+  const subscription = await Subscriptions.findOne({ owner: team?.id }).populate("plan")
+  let token = config.whatsapp.token
+  let phoneId = config.whatsapp.phoneNumberId
+
+  if (subscription && typeof subscription.plan !== "string") {
+    const value = subscription.plan.price
+
+    if (value > 0) {
+      token = team?.facebookToken || config.whatsapp.token
+      phoneId = team?.facebookPhoneNumberId || config.whatsapp.phoneNumberId
+    }
+  }
+
+
   try {
     console.log("starting to send a message")
     const result = await axios.post(`https://graph.facebook.com/v19.0/${phoneId}/messages`, message, {
@@ -1178,7 +1191,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 }
               }
             })
-            updatedData = { ...updatedData, assessmentId: item.assessmentId || ''}
+            updatedData = { ...updatedData, assessmentId: item.assessmentId || '' }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.ENDASSESSMENT:
@@ -1608,7 +1621,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.ASSESSMENT:
-            await sendAssessment(item, phoneNumber, messageId,data.team)
+            await sendAssessment(item, phoneNumber, messageId, data.team)
             updatedData = { ...updatedData, assessmentScore: 0, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
@@ -1932,9 +1945,9 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
           // score = 1
           // compute the score
         }
-        
+
       }
-      
+
       await redisClient.set(key, JSON.stringify(updatedData))
       // if (saveStats) {
       //   saveQuizDuration(data.team, data.student, updatedData.id, duration, score, retakes, item.lesson, item.quiz)

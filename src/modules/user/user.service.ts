@@ -72,3 +72,29 @@ export const deleteUserById = async (userId: string): Promise<IUserDoc | null> =
   await user.deleteOne()
   return user
 }
+
+
+/**
+ * Update user password
+ * @param {mongoose.Types.ObjectId} userId
+ * @param {UpdateUserBody} updateBody
+ * @returns {Promise<IUserDoc | null>}
+ */
+export const updateUserPassword = async (
+  userId: string,
+  updateBody: {
+    newPassword: string,
+    oldPassword: string
+  }
+): Promise<IUserDoc | null> => {
+  const user = await getUserById(userId)
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found')
+  }
+  if (!(await user.isPasswordMatch(updateBody.oldPassword))) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Incorrect password provided')
+  }
+  user.password = updateBody.newPassword
+  await user.save()
+  return user
+}
