@@ -933,6 +933,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
       let lessons = Object.entries(enrollment.lessons)
       let scores = enrollment.scores
       let student = students.find((e) => e.id === enrollment.studentId)
+      console.log(student)
       let total = scores.reduce((a, b) => a + b, 0)
       return [
         {
