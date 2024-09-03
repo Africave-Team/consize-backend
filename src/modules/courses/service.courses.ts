@@ -706,8 +706,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
 
   const enrollments = await Enrollments.find({ courseId })
   const ids = enrollments.map(e => e.studentId)
-
-  const students = await Students.find({ id: { $in: ids } })
+  const students = await Students.find({ '_id': { $in: ids } })
 
   let quizes = 0
   const scores = enrollments.reduce((acc, curr) => {
