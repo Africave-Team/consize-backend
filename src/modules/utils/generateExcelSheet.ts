@@ -113,7 +113,7 @@ export const handleExport = async ({ name, statsData, tableData }: ExportHandler
   // Create the workbook
   const projectRoot = process.cwd()
   const workbook = createWorkbook({ statsData, tableData })
-  const filePath = path.join(projectRoot, ".temp", `${name}.xlsx`)
+  const filePath = path.join(projectRoot, "generated-files", `${name}.xlsx`)
   // Save the workbook to a file
   try {
     await XLSX.writeFile(workbook, filePath)

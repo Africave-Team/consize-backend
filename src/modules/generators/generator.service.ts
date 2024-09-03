@@ -28,8 +28,8 @@ import Courses from '../courses/model.courses'
 import Settings from '../courses/model.settings'
 
 const projectRoot = process.cwd()
-const localVideoPath = path.join(projectRoot, '.temp')
-const localThumbnailPath = path.join(projectRoot, ".temp")
+const localVideoPath = path.join(projectRoot, 'generated-files')
+const localThumbnailPath = path.join(projectRoot, "generated-files")
 
 
 export function delay (ms: number) {
