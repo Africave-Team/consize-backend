@@ -822,7 +822,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
     }
   }, 0)
   stats.averageBlockDurationMinutes = isNaN(blockDuration / blockCount) ? 0 : blockDuration / blockCount
-
+  console.log(students)
   const statsData: RowData[][] = [
     [
       {
