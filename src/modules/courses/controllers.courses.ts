@@ -5,6 +5,7 @@ import httpStatus from 'http-status'
 // import { redisClient } from '../redis'
 import { CourseInterface } from './interfaces.courses'
 import { QueryResult } from '../paginate/paginate'
+import { unlinkSync } from 'fs'
 // import { agenda } from '../scheduler'
 // import { unlinkSync } from "fs"
 

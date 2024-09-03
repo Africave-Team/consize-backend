@@ -705,6 +705,8 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
   }
 
   const enrollments = await Enrollments.find({ courseId })
+  const ids = enrollments.map(e => e.studentId)
+  const students = await Students.find({ '_id': { $in: ids } })
 
   let quizes = 0
   const scores = enrollments.reduce((acc, curr) => {
@@ -819,7 +821,6 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
     }
   }, 0)
   stats.averageBlockDurationMinutes = isNaN(blockDuration / blockCount) ? 0 : blockDuration / blockCount
-
   const statsData: RowData[][] = [
     [
       {
@@ -929,6 +930,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
     ...enrollments.map((enrollment) => {
       let lessons = Object.entries(enrollment.lessons)
       let scores = enrollment.scores
+      let student = students.find((e) => e.id === enrollment.studentId)
       let total = scores.reduce((a, b) => a + b, 0)
       return [
         {
@@ -941,7 +943,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
           }
         },
         {
-          v: enrollment.distribution || Distribution.WHATSAPP,
+          v: student?.slackId && student?.slackId.length > 2 ? Distribution.SLACK : Distribution.WHATSAPP,
           t: "s",
           s: {
             font: {
@@ -950,7 +952,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
           }
         },
         {
-          v: enrollment.phoneNumber,
+          v: student?.phoneNumber || "",
           t: "s",
           s: {
             alignment: {
@@ -963,7 +965,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
           }
         },
         {
-          v: enrollment.slackId || "",
+          v: student?.slackId || "",
           t: "s",
           s: {
             alignment: {

@@ -100,6 +100,7 @@ export const acceptInvite = async (token: any, password: string): Promise<IUserD
 export const verifyEmail = async (verifyEmailToken: string, password: string): Promise<IUserDoc | null> => {
   try {
     const verifyEmailTokenDoc = await verifyToken(verifyEmailToken, tokenTypes.VERIFY_EMAIL)
+    console.log(verifyEmailTokenDoc)
     const user = await getUserById(verifyEmailTokenDoc.user)
     if (!user) {
       throw new Error()
@@ -108,6 +109,7 @@ export const verifyEmail = async (verifyEmailToken: string, password: string): P
     const updatedUser = await updateUserById(user.id, { isEmailVerified: true, password })
     return updatedUser
   } catch (error) {
+    console.log(error)
     throw new ApiError(httpStatus.BAD_REQUEST, 'Email verification failed')
   }
 }

@@ -111,17 +111,16 @@ interface ExportHandlerInterface {
 
 export const handleExport = async ({ name, statsData, tableData }: ExportHandlerInterface): Promise<string> => {
   // Create the workbook
+  const projectRoot = process.cwd()
+  const workbook = createWorkbook({ statsData, tableData })
+  const filePath = path.join(projectRoot, "generated-files", `${name}.xlsx`)
+  // Save the workbook to a file
   try {
-    const projectRoot = process.cwd()
-    const workbook = createWorkbook({ statsData, tableData })
-    const filePath = path.join(projectRoot, ".temp", `${name}.xlsx`)
-    // Save the workbook to a file
     await XLSX.writeFile(workbook, filePath)
-    return filePath
   } catch (error) {
-    console.log("write excel error =>", error)
-    return (error as Error).message
+    console.log("write error=>", error)
   }
+  return filePath
 }
 
 
