@@ -346,7 +346,7 @@ export const exportStats = catchAsync(async (req: Request, res: Response) => {
     const { file, filename } = await courseService.exportCourseStats(course)
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition')
     return res.download(file, filename, (err) => {
-      // unlinkSync(file)
+      unlinkSync(file)
       console.log(err)
     })
   } else {
