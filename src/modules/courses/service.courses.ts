@@ -945,7 +945,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
           }
         },
         {
-          v: student?.phoneNumber && student?.phoneNumber.length > 2 ? Distribution.WHATSAPP : Distribution.SLACK,
+          v: student?.slackId && student?.slackId.length > 2 ? Distribution.SLACK : Distribution.WHATSAPP,
           t: "s",
           s: {
             font: {
