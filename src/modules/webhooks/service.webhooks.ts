@@ -377,6 +377,8 @@ export const sendMessage = async function (message: Message, team?: TeamsInterfa
     }
   }
 
+  console.log(phoneId, config.whatsapp.phoneNumberId)
+
   try {
     console.log("starting to send a message")
     const result = await axios.post(`https://graph.facebook.com/v19.0/${phoneId}/messages`, message, {
