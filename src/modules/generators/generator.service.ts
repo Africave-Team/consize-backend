@@ -219,7 +219,7 @@ export const generateCourseLeaderboardURL = async (course: CourseInterface, stud
     }).map((std: StudentCourseStats, index: number) => {
       let score = 0
       if (std.scores) {
-        score = std.scores.reduce((a, b) => a + b, 0)
+        score = std.scores.slice(0, totalQuiz).reduce((a, b) => a + b, 0)
         if (score > 0) {
           score = (score * 100) / totalQuiz
         }
