@@ -1,6 +1,6 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
-import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE, ENROLL_STUDENT_DEFAULT_DATE, GENERATE_COURSE_TRENDS, HANDLE_SUBSCRIPTION_GRACE_PERIOD_TERMINATION, HANDLE_SUBSCRIPTION_TERMINATION, INACTIVITY_REMINDER, INACTIVITY_REMINDER_SHORT, REMIND_ME, RESUME_TOMORROW, SYNC_STUDENT_ENROLLMENTS } from '../MessageTypes'
+import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE, DELAYED_FACEBOOK_INTEGRATION, ENROLL_STUDENT_DEFAULT_DATE, GENERATE_COURSE_TRENDS, HANDLE_SUBSCRIPTION_GRACE_PERIOD_TERMINATION, HANDLE_SUBSCRIPTION_TERMINATION, INACTIVITY_REMINDER, INACTIVITY_REMINDER_SHORT, REMIND_ME, RESUME_TOMORROW, SYNC_STUDENT_ENROLLMENTS } from '../MessageTypes'
 import { generateCurrentCourseTrends, handleStudentSlack, handleStudentWhatsapp, initiateDailyRoutine } from '../../courses/service.courses'
 import { CourseEnrollment, DailyReminderNotificationPayload } from '../../webhooks/interfaces.webhooks'
 import config from '../../../config/config'
@@ -162,6 +162,17 @@ const syncStudentEnrollments: Processor<{ courseId: string, teamId: string }> = 
   }
 }
 
+const delayedFacebookIntegration: Processor<{ teamId: string }> = async (job: Job<{ teamId: string }>) => {
+  try {
+    if (AppConfig.server !== "test") {
+      const data = job.attrs.data
+      console.log(data)
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
 module.exports = (agenda: Agenda) => {
   agenda.define<{ courseId: string, teamId: string }>(GENERATE_COURSE_TRENDS, handleCourseTrends)
   agenda.define<any>(DAILY_ROUTINE, handleStartDailyRoutine)
@@ -180,4 +191,8 @@ module.exports = (agenda: Agenda) => {
   agenda.define<{ studentId: string, courseId: string }>(ENROLL_STUDENT_DEFAULT_DATE, handleStudentEnrollment)
 
   agenda.define<{ courseId: string, teamId: string }>(SYNC_STUDENT_ENROLLMENTS, syncStudentEnrollments)
+
+
+  // facebook integration
+  agenda.define<{ teamId: string }>(DELAYED_FACEBOOK_INTEGRATION, delayedFacebookIntegration)
 }

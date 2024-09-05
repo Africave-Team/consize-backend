@@ -58,6 +58,17 @@ export const fetchCompanies = catchAsync(async (req: Request, res: Response) => 
 })
 
 
+export const fetchCompanySubscription = catchAsync(async (req: Request, res: Response) => {
+  const { teamId } = req.params
+
+  if (teamId) {
+    const teams = await subscriptionService.fetchMyActiveSubscription(teamId)
+
+    res.status(httpStatus.OK).send({ message: "company subscription", ...teams })
+  }
+})
+
+
 export const transferCompanyOwnership = catchAsync(async (req: Request, res: Response) => {
   const { teamId } = req.params
   if (teamId) {

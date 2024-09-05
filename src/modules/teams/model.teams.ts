@@ -1,4 +1,4 @@
-import { DistributionChannel, ITeamModel, TeamsInterface } from './interfaces.teams'
+import { DistributionChannel, ITeamModel, TeamsInterface, FacebookIntegrationData } from './interfaces.teams'
 import mongoose, { Schema } from 'mongoose'
 import { v4 } from "uuid"
 import { toJSON } from '../toJSON'
@@ -14,6 +14,28 @@ const ChannelSchema = new Schema<DistributionChannel>(
         },
         enabled: {
             type: Boolean
+        },
+        token: {
+            type: String
+        }
+    },
+    {
+        _id: false
+    }
+)
+
+const FacebookDataSchema = new Schema<FacebookIntegrationData>(
+    {
+        status: {
+            type: String,
+            enum: ["PENDING", "CONFIRMED"],
+            default: "PENDING"
+        },
+        businessId: {
+            type: String
+        },
+        phoneNumberId: {
+            type: String
         },
         token: {
             type: String
@@ -51,6 +73,9 @@ export const TeamSchema = new Schema<TeamsInterface, ITeamModel>(
         },
         facebookPhoneNumberId: {
             type: Schema.Types.String
+        },
+        facebookData: {
+            type: FacebookDataSchema
         },
         owner: {
             type: String,

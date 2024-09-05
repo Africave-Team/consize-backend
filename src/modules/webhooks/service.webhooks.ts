@@ -16,7 +16,7 @@ import Lessons from '../courses/model.lessons'
 import Blocks from '../courses/model.blocks'
 import Quizzes from '../courses/model.quizzes'
 import { agenda } from '../scheduler'
-import { DAILY_ROUTINE, INACTIVITY_REMINDER, INACTIVITY_REMINDER_SHORT, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { DAILY_ROUTINE, DELAYED_FACEBOOK_INTEGRATION, INACTIVITY_REMINDER, INACTIVITY_REMINDER_SHORT, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import { logger } from '../logger'
 import moment from 'moment-timezone'
@@ -29,7 +29,7 @@ import { COURSE_STATS } from '../rtdb/nodes'
 import { StudentCourseStats, StudentInterface } from '../students/interface.students'
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
 import Students from '../students/model.students'
-import { TeamsInterface } from '../teams/interfaces.teams'
+import { FacebookIntegrationData, TeamsInterface } from '../teams/interfaces.teams'
 import { studentService } from '../students'
 import Subscriptions from '../subscriptions/subscriptions.models'
 // import Teams from '../teams/model.teams'
@@ -2192,7 +2192,7 @@ export const sendScheduleAcknowledgement = async (phoneNumber: string, time: str
 
 export const exchangeFacebookToken = async function (code: string, team: string) {
   try {
-    const result: AxiosResponse = await axios.get(`https://graph.facebook.com/v17.0/oauth/access_token`, {
+    const result: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/oauth/access_token`, {
       params: {
         'client_id': config.facebook.id,
         'client_secret': config.facebook.secret,
@@ -2201,12 +2201,12 @@ export const exchangeFacebookToken = async function (code: string, team: string)
       }
     })
     const token = result.data.access_token
-    const teamData = await teamService.updateTeamInfo(team, {
-      facebookToken: token
-    })
-    if (teamData && teamData.facebookPhoneNumberId) {
+    let teamData = await teamService.fetchTeamById(team)
+    if (teamData && teamData.facebookData) {
+      const updatePayload: FacebookIntegrationData = { ...teamData.facebookData, token }
+
       // register the phone number
-      await axios.post(`https://graph.facebook.com/v17.0/${teamData.facebookPhoneNumberId}/register`, {
+      await axios.post(`https://graph.facebook.com/v19.0/${teamData.facebookData?.phoneNumberId}/register`, {
         messaging_product: "whatsapp",
         pin: "112233"
       }, {
@@ -2216,7 +2216,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
         }
       })
       // subscribe to webhooks
-      await axios.post(`https://graph.facebook.com/v17.0/${teamData.facebookBusinessId}/subscribed_apps`, {
+      await axios.post(`https://graph.facebook.com/v19.0/${teamData.facebookData?.businessId}/subscribed_apps`, {
 
       }, {
         headers: {
@@ -2228,12 +2228,12 @@ export const exchangeFacebookToken = async function (code: string, team: string)
       // copy the auth template to the new waba from main account
       // get the auth template
 
-      const parentTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v17.0/${config.whatsapp.waba}/message_templates?fields=name,status,category,components,language`, {
+      const parentTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${config.whatsapp.waba}/message_templates?fields=name,status,category,components,language`, {
         headers: {
           Authorization: `Bearer ${config.whatsapp.token}`
         }
       })
-      const childTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v17.0/${teamData.facebookBusinessId}/message_templates?fields=name,status,category,components`, {
+      const childTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${teamData.facebookData?.businessId}/message_templates?fields=name,status,category,components`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -2243,7 +2243,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
       const child_optin_template = childTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
       if (parent_optin_template.length === 1 && child_optin_template.length === 0) {
         let original: any = parent_optin_template[0]
-        await axios.post(`https://graph.facebook.com/v17.0/${teamData.facebookBusinessId}/message_templates`, {
+        await axios.post(`https://graph.facebook.com/v19.0/${teamData.facebookData?.businessId}/message_templates`, {
           name: original.name,
           category: original.category,
           language: original.language,
@@ -2253,9 +2253,25 @@ export const exchangeFacebookToken = async function (code: string, team: string)
             Authorization: `Bearer ${token}`
           }
         })
+
+        await delay(3000)
+        const templates: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${teamData.facebookData?.businessId}/message_templates?fields=name,status,category,components`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        let optin_template = templates.data.data.find((e: any) => e.name === "successful_optin_no_variable")
+        if (!optin_template || optin_template.status !== "APPROVED") {
+          updatePayload.status = "PENDING"
+          // schedule an event in 24 hours to check again
+          agenda.schedule("in 25 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+        } else {
+          updatePayload.status = "CONFIRMED"
+        }
       }
-
-
+      teamData = await teamService.updateTeamInfo(team, {
+        facebookData: updatePayload
+      })
     }
   } catch (error) {
     // @ts-ignore
