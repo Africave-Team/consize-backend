@@ -64,8 +64,15 @@ export const fetchCompanySubscription = catchAsync(async (req: Request, res: Res
   if (teamId) {
     const teams = await subscriptionService.fetchMyActiveSubscription(teamId)
 
-    res.status(httpStatus.OK).send({ message: "company subscription", ...teams })
+    res.status(httpStatus.OK).send({ message: "company subscription", data: teams })
   }
+})
+
+
+export const subscribeClient = catchAsync(async (req: Request, res: Response) => {
+  const { numberOfMonths, planId, teamId } = req.body
+  const subscription = await subscriptionService.subscribeClient({ numberOfMonths, planId }, teamId)
+  return res.status(200).json({ message: "Your subscription was successfull", data: subscription })
 })
 
 

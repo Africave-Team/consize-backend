@@ -14,4 +14,8 @@ router.route('/:teamId')
 
 router.route('/:teamId/active-subscription')
   .get(companyControllers.fetchCompanySubscription)
+  .post(companyControllers.fetchCompanySubscription)
+
+router.route('/:teamId/activate-subscription')
+  .post(companyControllers.subscribeClient)
 export default router
