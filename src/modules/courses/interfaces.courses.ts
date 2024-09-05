@@ -1,5 +1,7 @@
 import { Document, Model } from 'mongoose'
 import { QueryResult } from '../paginate/paginate'
+import { LessonInterface } from './interfaces.lessons'
+import { QuestionGroupsInterface } from './interfaces.question-group'
 
 export enum MediaType {
     AUDIO = 'audio',
@@ -30,11 +32,18 @@ export enum Sources {
     AI = "ai"
 }
 
+export interface CourseContent {
+    lesson: string | LessonInterface | null
+    assessment: string | QuestionGroupsInterface | null
+
+}
+
 interface Course {
     title: string
     description: string
     owner: string
     lessons: string[]
+    contents: CourseContent[]
     courses: string[]
     headerMedia: Media
     status: CourseStatus
