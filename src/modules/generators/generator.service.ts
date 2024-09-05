@@ -213,8 +213,8 @@ export const generateCourseLeaderboardURL = async (course: CourseInterface, stud
   let rankings: BoardMember[] = [], finalRankings: BoardMember[] = []
   if (data) {
     rankings = Object.values(data).sort((a: StudentCourseStats, b: StudentCourseStats) => {
-      const first = a.scores ? a.scores.reduce((a, b) => a + b, 0) : 0
-      const second = b.scores ? b.scores.reduce((a, b) => a + b, 0) : 0
+      const first = a.scores ? a.scores.slice(0, totalQuiz).reduce((a, b) => a + b, 0) : 0
+      const second = b.scores ? b.scores.slice(0, totalQuiz).reduce((a, b) => a + b, 0) : 0
       return ((second * 100) / totalQuiz) - ((first * 100) / totalQuiz)
     }).map((std: StudentCourseStats, index: number) => {
       let score = 0
