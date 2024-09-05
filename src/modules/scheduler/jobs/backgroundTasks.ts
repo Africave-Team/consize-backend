@@ -4,7 +4,7 @@ import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE
 import { generateCurrentCourseTrends, handleStudentSlack, handleStudentWhatsapp, initiateDailyRoutine } from '../../courses/service.courses'
 import { CourseEnrollment, DailyReminderNotificationPayload } from '../../webhooks/interfaces.webhooks'
 import config from '../../../config/config'
-import { handleRemindMeTrigger, sendInactivityMessage, sendResumptionMessage, sendShortInactivityMessage } from '../../webhooks/service.webhooks'
+import { handleDelayedFacebookStatus, handleRemindMeTrigger, sendInactivityMessage, sendResumptionMessage, sendShortInactivityMessage } from '../../webhooks/service.webhooks'
 import { initiateCourseForCohort, initiateCourseForCohortForSingleStudent } from '../../cohorts/service.cohorts'
 import { sendResumptionMessageSlack } from '../../slack/slack.services'
 import { Distribution } from '../../courses/interfaces.courses'
@@ -166,7 +166,7 @@ const delayedFacebookIntegration: Processor<{ teamId: string }> = async (job: Jo
   try {
     if (AppConfig.server !== "test") {
       const data = job.attrs.data
-      console.log(data)
+      handleDelayedFacebookStatus(data.teamId)
     }
   } catch (error) {
     console.log(error, "error send message")

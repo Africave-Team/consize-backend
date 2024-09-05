@@ -373,9 +373,9 @@ export const sendMessage = async function (message: Message, team?: TeamsInterfa
   if (subscription && typeof subscription.plan !== "string") {
     const value = subscription.plan.price
 
-    if (value > 0) {
-      token = team?.facebookToken || config.whatsapp.token
-      phoneId = team?.facebookPhoneNumberId || config.whatsapp.phoneNumberId
+    if (value > 0 && team?.facebookData && team?.facebookData.status === "CONFIRMED") {
+      token = team.facebookData.token || config.whatsapp.token
+      phoneId = team?.facebookData.phoneNumberId || config.whatsapp.phoneNumberId
     }
   }
 
@@ -2202,11 +2202,11 @@ export const exchangeFacebookToken = async function (code: string, team: string)
     })
     const token = result.data.access_token
     let teamData = await teamService.fetchTeamById(team)
-    if (teamData && teamData.facebookData) {
-      const updatePayload: FacebookIntegrationData = { ...teamData.facebookData, token }
+    if (teamData && teamData.facebookBusinessId && teamData.facebookPhoneNumberId) {
+      const updatePayload: FacebookIntegrationData = { phoneNumberId: teamData.facebookPhoneNumberId, businessId: teamData.facebookBusinessId, status: "PENDING", token }
 
       // register the phone number
-      await axios.post(`https://graph.facebook.com/v19.0/${teamData.facebookData?.phoneNumberId}/register`, {
+      await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.phoneNumberId}/register`, {
         messaging_product: "whatsapp",
         pin: "112233"
       }, {
@@ -2216,7 +2216,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
         }
       })
       // subscribe to webhooks
-      await axios.post(`https://graph.facebook.com/v19.0/${teamData.facebookData?.businessId}/subscribed_apps`, {
+      await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/subscribed_apps`, {
 
       }, {
         headers: {
@@ -2233,7 +2233,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
           Authorization: `Bearer ${config.whatsapp.token}`
         }
       })
-      const childTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${teamData.facebookData?.businessId}/message_templates?fields=name,status,category,components`, {
+      const childTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -2243,7 +2243,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
       const child_optin_template = childTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
       if (parent_optin_template.length === 1 && child_optin_template.length === 0) {
         let original: any = parent_optin_template[0]
-        await axios.post(`https://graph.facebook.com/v19.0/${teamData.facebookData?.businessId}/message_templates`, {
+        await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates`, {
           name: original.name,
           category: original.category,
           language: original.language,
@@ -2255,7 +2255,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
         })
 
         await delay(3000)
-        const templates: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${teamData.facebookData?.businessId}/message_templates?fields=name,status,category,components`, {
+        const templates: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -2268,8 +2268,17 @@ export const exchangeFacebookToken = async function (code: string, team: string)
         } else {
           updatePayload.status = "CONFIRMED"
         }
+      } else {
+        let optin_template = child_optin_template[0]
+        if (!optin_template || optin_template.status !== "APPROVED") {
+          updatePayload.status = "PENDING"
+          // schedule an event in 24 hours to check again
+          agenda.schedule("in 25 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+        } else {
+          updatePayload.status = "CONFIRMED"
+        }
       }
-      teamData = await teamService.updateTeamInfo(team, {
+      await teamService.updateTeamInfo(team, {
         facebookData: updatePayload
       })
     }
@@ -2278,3 +2287,40 @@ export const exchangeFacebookToken = async function (code: string, team: string)
     console.log((error as AxiosError).response.data)
   }
 }
+
+
+
+export const handleDelayedFacebookStatus = async function (team: string) {
+  try {
+    let teamData = await teamService.fetchTeamById(team)
+    if (teamData && teamData.facebookData) {
+      const updatePayload: FacebookIntegrationData = { phoneNumberId: teamData.facebookData.phoneNumberId, businessId: teamData.facebookData.businessId, token: teamData.facebookData.token, status: teamData.facebookData.status }
+
+      const childTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
+        headers: {
+          Authorization: `Bearer ${updatePayload.token}`
+        }
+      })
+
+      const child_optin_template = childTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
+      if (child_optin_template.length > 0) {
+        let optin_template = child_optin_template[0]
+        if (!optin_template || optin_template.status !== "APPROVED") {
+          updatePayload.status = "PENDING"
+          // schedule an event in 24 hours to check again
+          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+        } else {
+          updatePayload.status = "CONFIRMED"
+        }
+      }
+      await teamService.updateTeamInfo(team, {
+        facebookData: updatePayload
+      })
+    }
+  } catch (error) {
+    // @ts-ignore
+    console.log((error as AxiosError).response.data)
+  }
+}
+
+

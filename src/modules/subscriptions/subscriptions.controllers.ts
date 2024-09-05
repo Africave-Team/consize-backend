@@ -16,11 +16,8 @@ export const fetchPlans = catchAsync(async (_: Request, res: Response) => {
 
 
 export const myActiveSubscription = catchAsync(async (req: Request, res: Response) => {
-  const { teamId } = req.params
   let subscription = null
-  if (teamId) {
-    subscription = await subscriptionService.fetchMyActiveSubscription(teamId)
-  }
+  subscription = await subscriptionService.fetchMyActiveSubscription(req.user.team)
   return res.status(200).json({ message: "Your active subscription", data: subscription })
 })
 
