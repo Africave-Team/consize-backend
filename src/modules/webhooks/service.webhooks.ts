@@ -2204,7 +2204,9 @@ export const exchangeFacebookToken = async function (code: string, team: string)
     let teamData = await teamService.fetchTeamById(team)
     if (teamData && teamData.facebookBusinessId && teamData.facebookPhoneNumberId) {
       const updatePayload: FacebookIntegrationData = { phoneNumberId: teamData.facebookPhoneNumberId, businessId: teamData.facebookBusinessId, status: "PENDING", token }
-
+      await teamService.updateTeamInfo(team, {
+        facebookData: updatePayload
+      })
       // register the phone number
       await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.phoneNumberId}/register`, {
         messaging_product: "whatsapp",
