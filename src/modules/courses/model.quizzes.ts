@@ -1,4 +1,4 @@
-import { QuizInterface, QuizInterfaceModel } from './interfaces.quizzes'
+import { QuestionTypes, QuizInterface, QuizInterfaceModel } from './interfaces.quizzes'
 import mongoose, { Schema } from 'mongoose'
 import { v4 } from "uuid"
 import { toJSON } from '../toJSON'
@@ -10,7 +10,9 @@ const QuizSchema = new Schema<QuizInterface, QuizInterfaceModel>(
     _id: { type: String, default: () => v4() },
     questionType: {
       type: String,
-      required: true
+      required: true,
+      enum: Object.values(QuestionTypes),
+      default: QuestionTypes.OBJECTIVE
     },
     question: {
       type: String,
@@ -39,8 +41,11 @@ const QuizSchema = new Schema<QuizInterface, QuizInterfaceModel>(
     },
     lesson: {
       type: String,
-      required: true,
       ref: "Lessons"
+    },
+    assessment: {
+      type: String,
+      ref: "QuestionGroups"
     },
     block: {
       type: String,

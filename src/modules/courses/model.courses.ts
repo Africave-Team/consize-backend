@@ -19,6 +19,8 @@ const CourseContentSchema = new Schema<CourseContent>({
         type: String,
         ref: "QuestionGroups"
     },
+}, {
+    _id: false, timestamps: false
 })
 
 const CourseSchema = new Schema<CourseInterface, CourseInterfaceModel>(

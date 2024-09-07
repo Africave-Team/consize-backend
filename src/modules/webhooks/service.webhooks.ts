@@ -1252,7 +1252,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             const progress = (data.currentBlock / data.totalBlocks) * 100
             let score = '0'
             let currentItem = flowData[data.currentBlock]
-            if (currentItem && currentItem.quiz && data.lessons) {
+            if (currentItem && currentItem.quiz && currentItem.quiz.lesson && data.lessons) {
               let scores = data.lessons[currentItem.quiz.lesson]?.scores
               if (scores) {
                 score = ((scores.reduce((a, b) => a + b, 0) / scores.length) * 100).toFixed(0)
@@ -1869,20 +1869,22 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
           payload.interactive['body'].text = textBody
         }
       }
-      if (!updatedData.lessons) {
-        updatedData.lessons = {
-          [item.quiz.lesson]: {
+      if (item.quiz.lesson) {
+        if (!updatedData.lessons) {
+          updatedData.lessons = {
+            [item.quiz.lesson]: {
+              scores: [score]
+            }
+          }
+        } else if (updatedData.lessons && (!updatedData.lessons[item.quiz.lesson] || !updatedData.lessons[item.quiz.lesson]?.scores)) {
+          updatedData.lessons[item.quiz.lesson] = {
             scores: [score]
           }
-        }
-      } else if (updatedData.lessons && (!updatedData.lessons[item.quiz.lesson] || !updatedData.lessons[item.quiz.lesson]?.scores)) {
-        updatedData.lessons[item.quiz.lesson] = {
-          scores: [score]
-        }
-      } else if (data.lessons && data.lessons[item.quiz.lesson] && updatedData.lessons[item.quiz.lesson]?.scores) {
-        let lessonNode = data.lessons[item.quiz.lesson]
-        if (lessonNode) {
-          lessonNode.scores.push(score)
+        } else if (data.lessons && data.lessons[item.quiz.lesson] && updatedData.lessons[item.quiz.lesson]?.scores) {
+          let lessonNode = data.lessons[item.quiz.lesson]
+          if (lessonNode) {
+            lessonNode.scores.push(score)
+          }
         }
       }
       await redisClient.set(key, JSON.stringify(updatedData))

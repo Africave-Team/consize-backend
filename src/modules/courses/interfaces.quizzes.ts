@@ -2,8 +2,8 @@ import { Document, Model } from 'mongoose'
 import { QueryResult } from '../paginate/paginate'
 
 export enum QuestionTypes {
-    OBJECTIVE = "objectives",
-    SUBJECTIVE = "subjective"
+  OBJECTIVE = "objectives",
+  SUBJECTIVE = "subjective"
 }
 
 interface Quiz {
@@ -16,7 +16,8 @@ interface Quiz {
   revisitChunk: string
   hint?: string
   block?: string
-  lesson: string
+  lesson?: string
+  assessment?: string
   course: string
 }
 

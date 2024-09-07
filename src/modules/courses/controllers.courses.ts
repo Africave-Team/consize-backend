@@ -6,6 +6,7 @@ import httpStatus from 'http-status'
 import { CourseInterface } from './interfaces.courses'
 import { QueryResult } from '../paginate/paginate'
 import { unlinkSync } from 'fs'
+import { QuizInterface } from './interfaces.quizzes'
 // import { agenda } from '../scheduler'
 // import { unlinkSync } from "fs"
 
@@ -277,6 +278,16 @@ export const createQuiz = catchAsync(async (req: Request, res: Response) => {
   }
 })
 
+
+export const createAssessmentQuiz = catchAsync(async (req: Request, res: Response) => {
+  const { assessmentId, course } = req.params
+
+  if (assessmentId && course) {
+    const quiz = await courseService.addAssessmentQuiz(req.body, assessmentId, course)
+    res.status(httpStatus.CREATED).send({ data: quiz, message: "Your quiz has been created successfully" })
+  }
+})
+
 export const updateQuiz = catchAsync(async (req: Request, res: Response) => {
   const { quiz } = req.params
 
@@ -429,6 +440,43 @@ export const createQuestionsGroup = catchAsync(async (req: Request, res: Respons
   res.status(200).send({ message: "questions group created", questionGroup })
 })
 
+export const singleQuestionsGroup = catchAsync(async (req: Request, res: Response) => {
+  const { assessmentId } = req.params
+  let questionGroup
+  if (assessmentId) {
+    questionGroup = await courseService.fetchSingleQuestionGroup({ assessmentId })
+  }
+  res.status(200).send({ message: "question group found", data: questionGroup })
+})
+
+export const deleteQuestionsGroup = catchAsync(async (req: Request, res: Response) => {
+  const { assessmentId } = req.params
+  if (assessmentId) {
+    await courseService.deleteQuestionGroup({ assessmentId })
+  }
+  res.status(200).send({ message: "question group deleted" })
+})
+
+
+export const updateQuestionsGroup = catchAsync(async (req: Request, res: Response) => {
+  const { assessmentId } = req.params
+  let questionGroup
+  if (assessmentId) {
+    questionGroup = await courseService.updateQuestionGroup({ assessmentId, ...req.body })
+  }
+  res.status(200).send({ message: "question group updated", data: questionGroup })
+})
+
+
+export const fetchQuizQuestionsByCourseId = catchAsync(async (req: Request, res: Response) => {
+  const { course, assessment } = req.params
+  let questions: QuizInterface[] = []
+  if (course && assessment) {
+    questions = await courseService.fetchQuestionsByCourseId({ course, assessment })
+  }
+  res.status(200).send({ message: "questions retrieved", data: questions })
+})
+
 export const fetchQuestionGroups = catchAsync(async (req: Request, res: Response) => {
   const { course } = req.params
   const { type } = req.query
@@ -436,5 +484,5 @@ export const fetchQuestionGroups = catchAsync(async (req: Request, res: Response
   if (course) {
     questionsGroups = await courseService.fetchCourseQuestionGroups({ course, type })
   }
-  res.status(200).send({ message: "questions retrieved", questionsGroups })
+  res.status(200).send({ message: "questions retrieved", data: questionsGroups })
 })
