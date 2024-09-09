@@ -675,7 +675,10 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
         if (currentItem && (currentItem.type === CourseFlowMessageType.BLOCK || currentItem.type === CourseFlowMessageType.BLOCKWITHQUIZ)) {
           // calculate the elapsed time and update stats service
           if (data.blockStartTime) {
-            const diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+            let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+            if (diffInSeconds > 250) {
+              diffInSeconds = 200
+            }
             saveBlockDuration(data.team, data.student, diffInSeconds, currentItem.lesson, currentItem.block)
             updatedData = { ...updatedData, blockStartTime: null, lastActivity: new Date().toISOString() }
           }
@@ -733,10 +736,17 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
             if (rtdb) {
               let stds: StudentCourseStats[] = Object.values(rtdb)
               if (stds.length > 1) {
-                rankings = stds.sort((a: StudentCourseStats, b: StudentCourseStats) => {
-                  const first = a.scores ? a.scores.reduce((a, b) => a + b, 0) : 0
-                  const second = b.scores ? b.scores.reduce((a, b) => a + b, 0) : 0
-                  return second - first
+                rankings = stds.map(student => {
+                  // Calculate the total score across all lessons and quizzes
+                  const totalScore = Object.values(student.lessons).reduce((lessonAcc, lesson) => {
+                    const quizScoreSum = Object.values(lesson.quizzes).reduce((quizAcc, quiz) => quizAcc + quiz.score, 0)
+                    return lessonAcc + quizScoreSum
+                  }, 0)
+
+                  // Attach the total score to the student object
+                  return { ...student, totalScore }
+                }).sort((a: StudentCourseStats, b: StudentCourseStats) => {
+                  return (b.totalScore || 0) - (a.totalScore || 0)
                 })
               } else {
                 rankings = stds
