@@ -560,7 +560,7 @@ export const addAssessmentQuiz = async (quizPayload: CreateQuizPayload, assessme
 
 
 export const fetchQuestionsByCourseId = async ({ course, assessment }: { course: string, assessment: string }): Promise<QuizInterface[]> => {
-  const questions = await Quizzes.find({ course, assessment: { $ne: assessment } })
+  const questions = await Quizzes.find({ course, assessment: { $ne: assessment }, choices: { $size: 3 } })
   return questions
 }
 
