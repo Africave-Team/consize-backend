@@ -32,6 +32,8 @@ import Students from '../students/model.students'
 import { FacebookIntegrationData, TeamsInterface } from '../teams/interfaces.teams'
 import { studentService } from '../students'
 import Subscriptions from '../subscriptions/subscriptions.models'
+import QuestionGroup from '../courses/model.question-group'
+import { QuestionGroupsInterface } from '../courses/interfaces.question-group'
 // import Teams from '../teams/model.teams'
 // import { convertTo24Hour } from '../utils'
 // import { convertTo24Hour } from '../utils'
@@ -72,7 +74,8 @@ export interface CourseFlowItem {
   quiz?: QuizInterface
   surveyQuestion?: Question
   surveyId?: string
-  assessment?: any
+  assessment?: QuizInterface
+  questionGroup?: QuestionGroupsInterface
   assessmentId?: string
 }
 
@@ -172,30 +175,72 @@ export const generateCourseFlow = async function (courseId: string) {
 
     // blocks
     let lessonIndex = 0
-    for (let lesson of course.lessons) {
-      let lessonData = await Lessons.findById(lesson)
-      if (lessonData) {
-        let blockIndex = 0
-        for (let blockId of lessonData.blocks) {
-          let content = ``
-          if (blockIndex === 0) {
-            content = `*Lesson ${lessonIndex + 1}: ${lessonData.title.trim()}*`
-          }
-          const blockData = await Blocks.findById(blockId)
-          if (blockData) {
-            content += ` \n\n*Section ${blockIndex + 1}: ${blockData.title.trim()}* \n\n${convertToWhatsAppString(he.decode(blockData.content))}`
-            if (blockData.quiz) {
-              const quiz = await Quizzes.findById(blockData.quiz)
-              if (quiz) {
-                content += `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
+    for (let content of course.contents) {
+      if (content.lesson) {
+        let lessonData = await Lessons.findById(content.lesson)
+        if (lessonData) {
+          let blockIndex = 0
+          for (let blockId of lessonData.blocks) {
+            let content = ``
+            if (blockIndex === 0) {
+              content = `*Lesson ${lessonIndex + 1}: ${lessonData.title.trim()}*`
+            }
+            const blockData = await Blocks.findById(blockId)
+            if (blockData) {
+              content += ` \n\n*Section ${blockIndex + 1}: ${blockData.title.trim()}* \n\n${convertToWhatsAppString(he.decode(blockData.content))}`
+              if (blockData.quiz) {
+                const quiz = await Quizzes.findById(blockData.quiz)
+                if (quiz) {
+                  content += `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
+                  let flo: CourseFlowItem = {
+                    type: CourseFlowMessageType.BLOCKWITHQUIZ,
+                    content,
+                    block: blockData,
+                    lesson: lessonData,
+                    quiz,
+                  }
+                  if (blockData.bodyMedia && blockData.bodyMedia.url && blockData.bodyMedia.url.length > 10) {
+                    flo.mediaType = blockData.bodyMedia.mediaType
+                    flo.mediaUrl = blockData.bodyMedia.url
+                    if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
+                      flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
+                      flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
+                    }
+                  }
+                  if (content.length > 1024) {
+                    let chunks = splitStringIntoChunks(content)
+                    for (let index = 0; index < chunks.length; index++) {
+                      let copy = { ...flo }
+                      const element = chunks[index]
+                      if (element) {
+                        if (index === 0) {
+                          copy.type = CourseFlowMessageType.BLOCK
+                          copy.content = element
+                          delete copy.quiz
+                          flow.push(copy)
+                        } else {
+                          copy = { ...flo }
+                          copy.content = element
+                          delete copy.mediaType
+                          delete copy.mediaUrl
+                          delete copy.thumbnailUrl
+                          flow.push(copy)
+                        }
+                      }
+
+                    }
+                  } else {
+                    flow.push(flo)
+                  }
+                }
+              } else {
                 let flo: CourseFlowItem = {
-                  type: CourseFlowMessageType.BLOCKWITHQUIZ,
+                  type: CourseFlowMessageType.BLOCK,
                   content,
                   block: blockData,
-                  lesson: lessonData,
-                  quiz,
+                  lesson: lessonData
                 }
-                if (blockData.bodyMedia && blockData.bodyMedia.url && blockData.bodyMedia.url.length > 10) {
+                if (blockData.bodyMedia && blockData.bodyMedia.url) {
                   flo.mediaType = blockData.bodyMedia.mediaType
                   flo.mediaUrl = blockData.bodyMedia.url
                   if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
@@ -203,6 +248,7 @@ export const generateCourseFlow = async function (courseId: string) {
                     flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
                   }
                 }
+
                 if (content.length > 1024) {
                   let chunks = splitStringIntoChunks(content)
                   for (let index = 0; index < chunks.length; index++) {
@@ -229,96 +275,91 @@ export const generateCourseFlow = async function (courseId: string) {
                   flow.push(flo)
                 }
               }
-            } else {
-              let flo: CourseFlowItem = {
-                type: CourseFlowMessageType.BLOCK,
+            }
+            blockIndex++
+          }
+          if (lessonData.quizzes.length > 0) {
+            let payload: CourseFlowItem = {
+              type: CourseFlowMessageType.STARTQUIZ,
+              content: `Congratulations 👏\n\nWe are done with the lesson 🙌. \n\nIt’s time to answer a few questions and test your understanding with a short quiz 🧠
+          `
+            }
+            flow.push(payload)
+          }
+          let quizIndex = 0
+          for (let quizId of lessonData.quizzes) {
+            const quizData = await Quizzes.findById(quizId)
+            if (quizData) {
+              let content = `End of lesson quiz ${quizIndex + 1}/${lessonData.quizzes.length}\n\nQuestion:\n${convertToWhatsAppString(he.decode(quizData.question))}\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]} \n\nC: ${quizData.choices[2]}`
+              flow.push({
+                type: CourseFlowMessageType.QUIZ,
                 content,
-                block: blockData,
-                lesson: lessonData
-              }
-              if (blockData.bodyMedia && blockData.bodyMedia.url) {
-                flo.mediaType = blockData.bodyMedia.mediaType
-                flo.mediaUrl = blockData.bodyMedia.url
-                if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
-                  flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
-                  flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
-                }
-              }
+                lesson: lessonData,
+                quiz: quizData
+              })
+            }
 
-              if (content.length > 1024) {
-                let chunks = splitStringIntoChunks(content)
-                for (let index = 0; index < chunks.length; index++) {
-                  let copy = { ...flo }
-                  const element = chunks[index]
-                  if (element) {
-                    if (index === 0) {
-                      copy.type = CourseFlowMessageType.BLOCK
-                      copy.content = element
-                      delete copy.quiz
-                      flow.push(copy)
-                    } else {
-                      copy = { ...flo }
-                      copy.content = element
-                      delete copy.mediaType
-                      delete copy.mediaUrl
-                      delete copy.thumbnailUrl
-                      flow.push(copy)
-                    }
-                  }
-
-                }
-              } else {
-                flow.push(flo)
-              }
+            quizIndex++
+          }
+          // add score card for the quizes
+          if (lessonData.quizzes.length > 0) {
+            flow.push({
+              type: CourseFlowMessageType.ENDQUIZ,
+              content: `Congratulations on finishing the assessment 🥳! Let’s see how well you did 🌚\n\nYou scored: {score}% in this lesson 🏆\nYou are currently ranked #{course_rank} in this course 🏅\nYour course progress: {progress}% ⏱\n\nIn a few seconds, you will see a leaderboard showing the top performers in this course.
+          `
+            })
+          }
+          // add intro to the next lesson
+          const nextLesson = course.lessons[lessonIndex + 1]
+          if (nextLesson) {
+            lessonData = await Lessons.findById(nextLesson)
+            if (lessonData) {
+              flow.push({
+                type: CourseFlowMessageType.ENDLESSON,
+                content: `*Next lesson*: ${lessonData.title}\n\n➡️ Tap 'Continue Now' when you're ready to start.\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.
+            `
+              })
             }
           }
-          blockIndex++
         }
-        if (lessonData.quizzes.length > 0) {
-          let payload: CourseFlowItem = {
-            type: CourseFlowMessageType.STARTQUIZ,
-            content: `Congratulations 👏\n\nWe are done with the lesson 🙌. \n\nIt’s time to answer a few questions and test your understanding with a short quiz 🧠
-          `
-          }
-          flow.push(payload)
-        }
-        let quizIndex = 0
-        for (let quizId of lessonData.quizzes) {
-          const quizData = await Quizzes.findById(quizId)
-          if (quizData) {
-            let content = `End of lesson quiz ${quizIndex + 1}/${lessonData.quizzes.length}\n\nQuestion:\n${convertToWhatsAppString(he.decode(quizData.question))}\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]} \n\nC: ${quizData.choices[2]}`
+        lessonIndex++
+      }
+      if (content.assessment) {
+        const assessmentData = await QuestionGroup.findById(content.assessment)
+        if (assessmentData) {
+          if (assessmentData.questions.length > 0) {
             flow.push({
-              type: CourseFlowMessageType.QUIZ,
-              content,
-              lesson: lessonData,
-              quiz: quizData
+              type: CourseFlowMessageType.STARTASSESSMENT,
+              content: `${assessmentData.message}`,
+              assessmentId: assessmentData._id
             })
-          }
+            let quizIndex = 0
+            for (let quizId of assessmentData.questions) {
+              const quizData = await Quizzes.findById(quizId)
+              if (quizData) {
+                let contentString = `${assessmentData.title} ${quizIndex + 1}/${assessmentData.questions.length}\n\nQuestion:\n${convertToWhatsAppString(he.decode(quizData.question))}\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]} \n\nC: ${quizData.choices[2]}`
+                flow.push({
+                  type: CourseFlowMessageType.ASSESSMENT,
+                  content: contentString,
+                  assessment: quizData,
+                  questionGroup: assessmentData,
+                  assessmentId: assessmentData._id
+                })
+              }
 
-          quizIndex++
-        }
-        // add score card for the quizes
-        if (lessonData.quizzes.length > 0) {
-          flow.push({
-            type: CourseFlowMessageType.ENDQUIZ,
-            content: `Congratulations on finishing the assessment 🥳! Let’s see how well you did 🌚\n\nYou scored: {score}% in this lesson 🏆\nYou are currently ranked #{course_rank} in this course 🏅\nYour course progress: {progress}% ⏱\n\nIn a few seconds, you will see a leaderboard showing the top performers in this course.
-          `
-          })
-        }
-        // add intro to the next lesson
-        const nextLesson = course.lessons[lessonIndex + 1]
-        if (nextLesson) {
-          lessonData = await Lessons.findById(nextLesson)
-          if (lessonData) {
-            flow.push({
-              type: CourseFlowMessageType.ENDLESSON,
-              content: `*Next lesson*: ${lessonData.title}\n\n➡️ Tap 'Continue Now' when you're ready to start.\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.
-            `
-            })
+              quizIndex++
+            }
+            // add score card for the quizes
+            if (assessmentData.questions.length === quizIndex) {
+              flow.push({
+                type: CourseFlowMessageType.ENDASSESSMENT,
+                content: `Congratulations on finishing the assessment 🥳! Click continue to continue with the rest of the course.`,
+                assessmentId: assessmentData._id
+              })
+            }
           }
         }
       }
-      lessonIndex++
     }
     let load = {
       type: CourseFlowMessageType.ENDCOURSE,
