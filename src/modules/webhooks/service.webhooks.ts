@@ -1240,31 +1240,32 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.ENDASSESSMENT:
-            // agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-            //   to: phoneNumber,
-            //   type: "interactive",
-            //   messaging_product: "whatsapp",
-            //   recipient_type: "individual",
-            //   interactive: {
-            //     body: {
-            //       text: item.content
-            //     },
-            //     type: "button",
-            //     action: {
-            //       buttons: [
-            //         {
-            //           type: "reply",
-            //           reply: {
-            //             id: CONTINUE,
-            //             title: "Continue"
-            //           }
-            //         }
-            //       ]
-            //     }
-            //   }
-            // })
+            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: phoneNumber,
+              type: "interactive",
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              interactive: {
+                body: {
+                  text: item.content
+                },
+                type: "button",
+                action: {
+                  buttons: [
+                    {
+                      type: "reply",
+                      reply: {
+                        id: CONTINUE,
+                        title: "Continue"
+                      }
+                    }
+                  ]
+                }
+              }
+            })
             studentService.saveAssessmentScore(data.team, data.id, data.student, updatedData.assessmentId || '', updatedData.assessmentScore || 0)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            // handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
             break
           case CourseFlowMessageType.STARTQUIZ:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -1957,10 +1958,6 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
     const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
     const item = courseFlowData[data.currentBlock]
     let message: string = "Answer received, continue to the next question"
-    if(courseFlowData[data.currentBlock + 1]?.content && courseFlowData[data.currentBlock + 1]?.type == "end-of-assessment"){
-      message = courseFlowData[data.currentBlock + 1]?.content || ""
-      // updatedData = { ...updatedData, currentBlock: data.currentBlock + 1 }
-    }
     let payload: Message = {
       to: phoneNumber,
       type: "interactive",
@@ -2013,7 +2010,13 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
       // if (saveStats) {
       //   saveQuizDuration(data.team, data.student, updatedData.id, duration, score, retakes, item.lesson, item.quiz)
       // }
-      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
+      if(courseFlowData[data.currentBlock + 1]?.content && courseFlowData[data.currentBlock + 1]?.type == "end-of-assessment"){
+      message = courseFlowData[data.currentBlock + 1]?.content || ""
+      // updatedData = { ...updatedData, currentBlock: data.currentBlock + 1 }
+      handleContinue(data.currentBlock + 1, courseKey, phoneNumber, v4(), updatedData)
+      }else{
+        agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
+      }
     }
   }
 }
