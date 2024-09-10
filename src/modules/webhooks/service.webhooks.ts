@@ -1240,29 +1240,29 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.ENDASSESSMENT:
-            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              to: phoneNumber,
-              type: "interactive",
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              interactive: {
-                body: {
-                  text: item.content
-                },
-                type: "button",
-                action: {
-                  buttons: [
-                    {
-                      type: "reply",
-                      reply: {
-                        id: CONTINUE,
-                        title: "Continue"
-                      }
-                    }
-                  ]
-                }
-              }
-            })
+            // agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+            //   to: phoneNumber,
+            //   type: "interactive",
+            //   messaging_product: "whatsapp",
+            //   recipient_type: "individual",
+            //   interactive: {
+            //     body: {
+            //       text: item.content
+            //     },
+            //     type: "button",
+            //     action: {
+            //       buttons: [
+            //         {
+            //           type: "reply",
+            //           reply: {
+            //             id: CONTINUE,
+            //             title: "Continue"
+            //           }
+            //         }
+            //       ]
+            //     }
+            //   }
+            // })
             studentService.saveAssessmentScore(data.team, data.id, data.student, updatedData.assessmentId || '', updatedData.assessmentScore || 0)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
@@ -1951,12 +1951,15 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
 export const handleAssessment = async (answer: number, data: CourseEnrollment, phoneNumber: string, messageId: string): Promise<void> => {
   const courseKey = `${config.redisBaseKey}courses:${data.id}`
   const courseFlow = await redisClient.get(courseKey)
+  let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId }
+
   if (courseFlow) {
     const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
     const item = courseFlowData[data.currentBlock]
     let message: string = "Answer received, continue to the next question"
     if(courseFlowData[data.currentBlock + 1]?.content && courseFlowData[data.currentBlock + 1]?.type == "end-of-assessment"){
       message = courseFlowData[data.currentBlock + 1]?.content || ""
+      // updatedData = { ...updatedData, currentBlock: data.currentBlock + 1 }
     }
     let payload: Message = {
       to: phoneNumber,
@@ -1983,7 +1986,7 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
     }
     if (item && item.assessment) {
       const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data.id}`
-      let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId }
+      updatedData = { ...updatedData, lastMessageId: messageId }
       // let duration = 0, retakes = 0, saveStats = false, score = 0
       if (payload.interactive) {
         if (item.assessment.correctAnswerIndex === answer) {
