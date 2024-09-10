@@ -93,14 +93,27 @@ export const fetchSubscriptionPlans = async (): Promise<SubscriptionPlanInterfac
 export const fetchSubscriptionPlanById = async (id: string) => SubscriptionPlans.findById(id)
 
 export const fetchMyActiveSubscription = async function (owner: string): Promise<SubscriptionInterface | null> {
-  const subscription = await Subscriptions.findOne({
+  let subscription = await Subscriptions.findOne({
     owner,
     $or: [{ status: SubscriptionStatus.ACTIVE }, { status: SubscriptionStatus.GRACE }]
   }).populate('plan')
+  if (!subscription) {
+    const plans = await SubscriptionPlans.find({})
+    let free = plans.find(e => e.price === 0)
+    await subscribeClient({
+      planId: free?.id,
+      numberOfMonths: 24
+    }, owner)
+    subscription = await Subscriptions.findOne({
+      owner,
+      $or: [{ status: SubscriptionStatus.ACTIVE }, { status: SubscriptionStatus.GRACE }]
+    }).populate('plan')
+  }
   return subscription
 }
 
 export const subscribeClient = async function (payload: SubscribePayload, owner: string): Promise<SubscriptionInterface> {
+  const previous = await Subscriptions.findOne({ owner })
   const plan = await SubscriptionPlans.findById(payload.planId)
   if (!plan) {
     throw new ApiError(httpStatus.NOT_FOUND, "Could not find this plan and so we could not create your subscription")
@@ -113,6 +126,15 @@ export const subscribeClient = async function (payload: SubscribePayload, owner:
     }
   }
   const expiration = moment().add(payload.numberOfMonths, "months").endOf("day")
+  if (previous) {
+    const jobs = await agenda.jobs({ name: HANDLE_SUBSCRIPTION_TERMINATION, 'data.subscriptionId': previous.id })
+    // Check if the job exists
+    for (let job of jobs) {
+      await job.remove()
+    }
+
+    await Subscriptions.deleteOne({ '_id': previous.id })
+  }
   const subscription = await Subscriptions.create({
     owner,
     plan: payload.planId,

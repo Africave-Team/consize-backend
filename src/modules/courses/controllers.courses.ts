@@ -5,9 +5,11 @@ import httpStatus from 'http-status'
 // import { redisClient } from '../redis'
 import { CourseInterface } from './interfaces.courses'
 import { QueryResult } from '../paginate/paginate'
-// import { agenda } from '../scheduler'
-import { unlinkSync } from "fs"
+import { unlinkSync } from 'fs'
+import { QuizInterface } from './interfaces.quizzes'
 import Assessment from '../statistics/assessment.model'
+// import { agenda } from '../scheduler'
+// import { unlinkSync } from "fs"
 
 export const createCourseManually = catchAsync(async (req: Request, res: Response) => {
   const createdCourse = await courseService.createCourse(req.body, req.user.team)
@@ -277,6 +279,16 @@ export const createQuiz = catchAsync(async (req: Request, res: Response) => {
   }
 })
 
+
+export const createAssessmentQuiz = catchAsync(async (req: Request, res: Response) => {
+  const { assessmentId, course } = req.params
+
+  if (assessmentId && course) {
+    const quiz = await courseService.addAssessmentQuiz(req.body, assessmentId, course)
+    res.status(httpStatus.CREATED).send({ data: quiz, message: "Your quiz has been created successfully" })
+  }
+})
+
 export const updateQuiz = catchAsync(async (req: Request, res: Response) => {
   const { quiz } = req.params
 
@@ -412,7 +424,7 @@ export const generateCourseHeader = catchAsync(async (req: Request, res: Respons
 
 export const fetchQuestion = catchAsync(async (req: Request, res: Response) => {
   const { course } = req.params
-  const { questionType } = req.query 
+  const { questionType } = req.query
   let questions
   if (course) {
     questions = await courseService.fetchCourseQuestions({ course, questionType })
@@ -424,19 +436,56 @@ export const createQuestionsGroup = catchAsync(async (req: Request, res: Respons
   const { course } = req.params
   let questionGroup
   if (course) {
-    questionGroup = await courseService.addQuestionGroup ( req.body, course )
+    questionGroup = await courseService.addQuestionGroup(req.body, course)
   }
   res.status(200).send({ message: "questions group created", questionGroup })
 })
 
+export const singleQuestionsGroup = catchAsync(async (req: Request, res: Response) => {
+  const { assessmentId } = req.params
+  let questionGroup
+  if (assessmentId) {
+    questionGroup = await courseService.fetchSingleQuestionGroup({ assessmentId })
+  }
+  res.status(200).send({ message: "question group found", data: questionGroup })
+})
+
+export const deleteQuestionsGroup = catchAsync(async (req: Request, res: Response) => {
+  const { assessmentId } = req.params
+  if (assessmentId) {
+    await courseService.deleteQuestionGroup({ assessmentId })
+  }
+  res.status(200).send({ message: "question group deleted" })
+})
+
+
+export const updateQuestionsGroup = catchAsync(async (req: Request, res: Response) => {
+  const { assessmentId } = req.params
+  let questionGroup
+  if (assessmentId) {
+    questionGroup = await courseService.updateQuestionGroup({ assessmentId, ...req.body })
+  }
+  res.status(200).send({ message: "question group updated", data: questionGroup })
+})
+
+
+export const fetchQuizQuestionsByCourseId = catchAsync(async (req: Request, res: Response) => {
+  const { course, assessment } = req.params
+  let questions: QuizInterface[] = []
+  if (course && assessment) {
+    questions = await courseService.fetchQuestionsByCourseId({ course, assessment })
+  }
+  res.status(200).send({ message: "questions retrieved", data: questions })
+})
+
 export const fetchQuestionGroups = catchAsync(async (req: Request, res: Response) => {
   const { course } = req.params
-  const { type } = req.query 
+  const { type } = req.query
   let questionsGroups
   if (course) {
     questionsGroups = await courseService.fetchCourseQuestionGroups({ course, type })
   }
-  res.status(200).send({ message: "questions retrieved", questionsGroups })
+  res.status(200).send({ message: "questions retrieved", data: questionsGroups })
 })
 
 export const fetchAssessment = catchAsync(async (req: Request, res: Response) => {

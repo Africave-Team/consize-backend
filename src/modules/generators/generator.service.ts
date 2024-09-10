@@ -28,8 +28,8 @@ import Courses from '../courses/model.courses'
 import Settings from '../courses/model.settings'
 
 const projectRoot = process.cwd()
-const localVideoPath = path.join(projectRoot, '.temp')
-const localThumbnailPath = path.join(projectRoot, ".temp")
+const localVideoPath = path.join(projectRoot, 'generated-files')
+const localThumbnailPath = path.join(projectRoot, "generated-files")
 
 
 export function delay (ms: number) {
@@ -212,14 +212,21 @@ export const generateCourseLeaderboardURL = async (course: CourseInterface, stud
   let data: { [id: string]: StudentCourseStats } | null = snapshot.val()
   let rankings: BoardMember[] = [], finalRankings: BoardMember[] = []
   if (data) {
-    rankings = Object.values(data).sort((a: StudentCourseStats, b: StudentCourseStats) => {
-      const first = a.scores ? a.scores.reduce((a, b) => a + b, 0) : 0
-      const second = b.scores ? b.scores.reduce((a, b) => a + b, 0) : 0
-      return ((second * 100) / totalQuiz) - ((first * 100) / totalQuiz)
+    rankings = Object.values(data).map(student => {
+      // Calculate the total score across all lessons and quizzes
+      const totalScore = Object.values(student.lessons).reduce((lessonAcc, lesson) => {
+        const quizScoreSum = Object.values(lesson.quizzes).reduce((quizAcc, quiz) => quizAcc + quiz.score, 0)
+        return lessonAcc + quizScoreSum
+      }, 0)
+
+      // Attach the total score to the student object
+      return { ...student, totalScore }
+    }).sort((a: StudentCourseStats, b: StudentCourseStats) => {
+      return (((b.totalScore || 0) * 100) / totalQuiz) - (((a.totalScore || 0) * 100) / totalQuiz)
     }).map((std: StudentCourseStats, index: number) => {
       let score = 0
-      if (std.scores) {
-        score = std.scores.reduce((a, b) => a + b, 0)
+      if (std.totalScore) {
+        score = std.totalScore
         if (score > 0) {
           score = (score * 100) / totalQuiz
         }

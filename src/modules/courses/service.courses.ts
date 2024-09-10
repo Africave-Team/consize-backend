@@ -36,6 +36,7 @@ import { handleExport, RowData } from '../utils/generateExcelSheet'
 import { QuestionGroupsInterface, QuestionGroupsPayload } from './interfaces.question-group'
 import QuestionGroup from './model.question-group'
 import Enrollments from '../sessions/model'
+import Courses from './model.courses'
 
 interface SessionStudent extends StudentCourseStats {
   id: string
@@ -215,7 +216,7 @@ export const fetchTeamCourses = async ({ teamId, page, pageSize, filter }: { tea
         break
     }
   }
-  return Course.paginate(q, { page, limit: pageSize, populate: 'lessons,courses', sortBy: 'updatedAt:desc' })
+  return Course.paginate(q, { page, limit: pageSize, populate: 'lessons,courses,contents.lesson,contents.assessment', sortBy: 'updatedAt:desc' })
 
 }
 
@@ -319,6 +320,16 @@ export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: stri
       populate: {
         path: "quizzes",
       }
+    }
+  }).populate({
+    path: "contents.lesson",
+    populate: {
+      path: 'quizzes' // Populating quizzes at the lesson level
+    }
+  }).populate({
+    path: "contents.assessment",
+    populate: {
+      path: 'questions' // Populating quizzes at the lesson level
     }
   }).lean()
   if (course) {
@@ -454,7 +465,7 @@ export const duplicateCourse = async ({ courseId, title, headerMediaUrl, descrip
 
 export const createLesson = async (lessonPayload: CreateLessonPayload, course: string): Promise<LessonInterface> => {
   const lesson = new Lessons({ ...lessonPayload, course })
-  await Course.findByIdAndUpdate(course, { $push: { lessons: lesson.id } })
+  await Course.findByIdAndUpdate(course, { $push: { lessons: lesson.id, contents: { lesson: lesson.id, assessment: null } } })
   await lesson.save()
   return lesson
 }
@@ -534,6 +545,25 @@ export const addLessonQuiz = async (quizPayload: CreateQuizPayload, lesson: stri
   return quiz
 }
 
+
+export const addAssessmentQuiz = async (quizPayload: CreateQuizPayload, assessment: string, course: string): Promise<QuizInterface> => {
+  const quiz = new Quizzes({ ...quizPayload, assessment, course })
+  const courseData = await Courses.find({ contents: { $exists: false } })
+  for (let co of courseData) {
+    co.contents = co.lessons.map((e) => ({ lesson: e, assessment: null }))
+    await co.save()
+  }
+  await QuestionGroup.findByIdAndUpdate(assessment, { $push: { questions: quiz.id } })
+  await quiz.save()
+  return quiz
+}
+
+
+export const fetchQuestionsByCourseId = async ({ course, assessment }: { course: string, assessment: string }): Promise<QuizInterface[]> => {
+  const questions = await Quizzes.find({ course, assessment: { $ne: assessment }, choices: { $size: 3 } })
+  return questions
+}
+
 export const addBlockQuiz = async (quizPayload: CreateQuizPayload, lesson: string, course: string, block: string): Promise<QuizInterface> => {
   const quiz = new Quizzes({ ...quizPayload, lesson, course, block })
   await Blocks.findByIdAndUpdate(block, { $set: { quiz: quiz.id } })
@@ -560,36 +590,52 @@ export const deleteQuizFromLesson = async (lesson: string, quiz: string): Promis
   await Quizzes.findByIdAndDelete(quiz)
 }
 
-export const fetchCourseQuestions = async ({ course, questionType}:{ course: string, questionType: any }): Promise<QuizInterface[]> => {
-  const query:any = {
-      course: course
-    };
-    
-    if (questionType) {
-      query.questionType = { $regex: new RegExp(questionType, 'i') };
-    }
+export const fetchCourseQuestions = async ({ course, questionType }: { course: string, questionType: any }): Promise<QuizInterface[]> => {
+  const query: any = {
+    course: course
+  }
 
-    const quizzes = await Quizzes.find(query).exec();
-    return quizzes;
+  if (questionType) {
+    query.questionType = { $regex: new RegExp(questionType, 'i') }
+  }
+
+  const quizzes = await Quizzes.find(query).exec()
+  return quizzes
 }
 
-export const addQuestionGroup = async (questionGroupPayload: QuestionGroupsPayload,course: string ): Promise<QuestionGroupsInterface> => {
+export const addQuestionGroup = async (questionGroupPayload: QuestionGroupsPayload, course: string): Promise<QuestionGroupsInterface> => {
   const questionGroup = new QuestionGroup({ ...questionGroupPayload, course })
+  await Course.findByIdAndUpdate(course, { $push: { contents: { lesson: null, assessment: questionGroup.id } } })
   await questionGroup.save()
   return questionGroup
 }
 
-export const fetchCourseQuestionGroups = async ({ course, type}:{ course: string, type: any }): Promise<QuestionGroupsInterface[]> => {
-  const query:any = {
-      course: course
-    };
-    
-    if (type) {
-      query.type = { $regex: new RegExp(type, 'i') };
-    }
+export const fetchCourseQuestionGroups = async ({ course, type }: { course: string, type: any }): Promise<QuestionGroupsInterface[]> => {
+  const query: any = {
+    course: course
+  }
 
-    const questionGroup = await QuestionGroup.find(query).exec();
-    return questionGroup;
+  if (type) {
+    query.type = { $regex: new RegExp(type, 'i') }
+  }
+
+  const questionGroup = await QuestionGroup.find(query).exec()
+  return questionGroup
+}
+
+
+export const fetchSingleQuestionGroup = async ({ assessmentId }: { assessmentId: string }): Promise<QuestionGroupsInterface | null> => {
+  const questionGroup = await QuestionGroup.findById(assessmentId).populate("questions")
+  return questionGroup
+}
+
+export const deleteQuestionGroup = async ({ assessmentId }: { assessmentId: string }): Promise<void> => {
+  await QuestionGroup.findByIdAndDelete(assessmentId)
+}
+
+export const updateQuestionGroup = async ({ assessmentId, title, questions, message }: { assessmentId: string, title?: string, questions?: string[], message?: string }): Promise<QuestionGroupsInterface | null> => {
+  const questionGroup = await QuestionGroup.findByIdAndUpdate(assessmentId, { $set: { title, questions, message } }, { new: true })
+  return questionGroup
 }
 
 // settings
@@ -705,6 +751,8 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
   }
 
   const enrollments = await Enrollments.find({ courseId })
+  const ids = enrollments.map(e => e.studentId)
+  const students = await Students.find({ '_id': { $in: ids } })
 
   let quizes = 0
   const scores = enrollments.reduce((acc, curr) => {
@@ -819,7 +867,6 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
     }
   }, 0)
   stats.averageBlockDurationMinutes = isNaN(blockDuration / blockCount) ? 0 : blockDuration / blockCount
-
   const statsData: RowData[][] = [
     [
       {
@@ -929,6 +976,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
     ...enrollments.map((enrollment) => {
       let lessons = Object.entries(enrollment.lessons)
       let scores = enrollment.scores
+      let student = students.find((e) => e.id === enrollment.studentId)
       let total = scores.reduce((a, b) => a + b, 0)
       return [
         {
@@ -941,7 +989,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
           }
         },
         {
-          v: enrollment.distribution || Distribution.WHATSAPP,
+          v: student?.slackId && student?.slackId.length > 2 ? Distribution.SLACK : Distribution.WHATSAPP,
           t: "s",
           s: {
             font: {
@@ -950,7 +998,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
           }
         },
         {
-          v: enrollment.phoneNumber,
+          v: student?.phoneNumber || "",
           t: "s",
           s: {
             alignment: {
@@ -963,7 +1011,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
           }
         },
         {
-          v: enrollment.slackId || "",
+          v: student?.slackId || "",
           t: "s",
           s: {
             alignment: {
@@ -1031,7 +1079,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
     })
   ]
   const path = await handleExport({
-    name,
+    name: name.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, '-').toLowerCase(),
     statsData,
     tableData
   })

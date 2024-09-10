@@ -10,7 +10,7 @@ router.post("/seed", subscriptionControllers.seedPlans)
 router.get('/plans', subscriptionControllers.fetchPlans)
 router.use(auth())
 router.post('/subscribe', subscriptionControllers.subscribeClient)
-router.get("/active", subscriptionControllers.myActiveSubscription)
+router.get("/active/", subscriptionControllers.myActiveSubscription)
 
 
 export default router

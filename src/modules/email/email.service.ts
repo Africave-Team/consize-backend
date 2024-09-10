@@ -61,7 +61,7 @@ export const sendEmail = async ({ to, template, templateVariables, subject }: Me
           {
             From: {
               Email: config.email.from,
-              Name: "Charles from Consize"
+              Name: "Consize"
             },
             To: [
               {

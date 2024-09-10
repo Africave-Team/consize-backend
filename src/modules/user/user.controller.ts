@@ -17,6 +17,11 @@ export const updateProfileInfo = catchAsync(async (req: Request, res: Response) 
   res.status(httpStatus.NO_CONTENT).send()
 })
 
+export const updateUserPassword = catchAsync(async (req: Request, res: Response) => {
+  await userService.updateUserPassword(req.user.id, req.body)
+  res.status(httpStatus.NO_CONTENT).send()
+})
+
 
 export const getProfileInfo = catchAsync(async (req: Request, res: Response) => {
   res.status(200).json(req.user)
