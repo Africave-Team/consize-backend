@@ -1955,8 +1955,8 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
     const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
     const item = courseFlowData[data.currentBlock]
     let message: string = "Answer received, continue to the next question"
-    if(courseFlowData[data.currentBlock + 1]?.type == "end-of-assessment"){
-      message = "Answer received, this is the last question. continue with the rest of the course"
+    if(courseFlowData[data.currentBlock + 1]?.content && courseFlowData[data.currentBlock + 1]?.type == "end-of-assessment"){
+      message = courseFlowData[data.currentBlock + 1]?.content || ""
     }
     let payload: Message = {
       to: phoneNumber,
