@@ -1265,6 +1265,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             })
             studentService.saveAssessmentScore(data.team, data.id, data.student, updatedData.assessmentId || '', updatedData.assessmentScore || 0)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            updatedData = { ...updatedData, assessmentScore: 0 }
             // handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
             break
           case CourseFlowMessageType.STARTQUIZ:
