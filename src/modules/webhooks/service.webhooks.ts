@@ -1674,7 +1674,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             break
           case CourseFlowMessageType.ASSESSMENT:
             await sendAssessment(item, phoneNumber, messageId, data.team)
-            updatedData = { ...updatedData, assessmentScore: 0, blockStartTime: new Date().toISOString() }
+            updatedData = { ...updatedData, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.INTRO:
@@ -1954,6 +1954,10 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
   if (courseFlow) {
     const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
     const item = courseFlowData[data.currentBlock]
+    let message: string = "Answer received, continue to the next question"
+    if(courseFlowData[data.currentBlock + 1]?.type == "end-of-assessment"){
+      message = "Answer received, this is the last question. continue with the rest of the course"
+    }
     let payload: Message = {
       to: phoneNumber,
       type: "interactive",
@@ -1961,7 +1965,7 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
       recipient_type: "individual",
       interactive: {
         body: {
-          text: "click continue to get the next question"
+          text: message
         },
         type: "button",
         action: {

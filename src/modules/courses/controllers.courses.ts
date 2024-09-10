@@ -485,7 +485,7 @@ export const fetchQuestionGroups = catchAsync(async (req: Request, res: Response
   if (course) {
     questionsGroups = await courseService.fetchCourseQuestionGroups({ course, type })
   }
-  res.status(200).send({ message: "questions retrieved", data: questionsGroups })
+  res.status(200).send({ message: "questions group retrieved", data: questionsGroups })
 })
 
 export const fetchAssessment = catchAsync(async (req: Request, res: Response) => {
