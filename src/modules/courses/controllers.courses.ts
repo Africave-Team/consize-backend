@@ -7,6 +7,7 @@ import { CourseInterface } from './interfaces.courses'
 import { QueryResult } from '../paginate/paginate'
 // import { agenda } from '../scheduler'
 import { unlinkSync } from "fs"
+import Assessment from '../statistics/assessment.model'
 
 export const createCourseManually = catchAsync(async (req: Request, res: Response) => {
   const createdCourse = await courseService.createCourse(req.body, req.user.team)
@@ -436,4 +437,13 @@ export const fetchQuestionGroups = catchAsync(async (req: Request, res: Response
     questionsGroups = await courseService.fetchCourseQuestionGroups({ course, type })
   }
   res.status(200).send({ message: "questions retrieved", questionsGroups })
+})
+
+export const fetchAssessment = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+  let assessment
+  if (course) {
+    assessment = await Assessment.find({ courseId:course });
+  }
+  res.status(200).send({ message: "assessment retrieved", assessment: assessment })
 })
