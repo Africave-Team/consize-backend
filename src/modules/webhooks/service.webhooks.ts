@@ -1303,49 +1303,54 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 score = ((scores.reduce((a, b) => a + b, 0) / scores.length) * 100).toFixed(0)
               }
             }
-            const dbRef = db.ref(COURSE_STATS).child(data.team).child(data.id).child("students")
-            // get existing data
-            const snapshot = await dbRef.once('value')
-            let rtdb: { [id: string]: StudentCourseStats } | null = snapshot.val()
-            let rankings: StudentCourseStats[] = []
-            if (rtdb) {
-              let stds: StudentCourseStats[] = Object.values(rtdb)
-              if (stds.length > 1) {
-                rankings = stds.map(student => {
-                  // Calculate the total score across all lessons and quizzes
-                  const totalScore = Object.values(student.lessons).reduce((lessonAcc, lesson) => {
-                    const quizScoreSum = Object.values(lesson.quizzes).reduce((quizAcc, quiz) => quizAcc + quiz.score, 0)
-                    return lessonAcc + quizScoreSum
-                  }, 0)
+            try {
+              const dbRef = db.ref(COURSE_STATS).child(data.team).child(data.id).child("students")
+              // get existing data
+              const snapshot = await dbRef.once('value')
+              let rtdb: { [id: string]: StudentCourseStats } | null = snapshot.val()
+              let rankings: StudentCourseStats[] = []
+              if (rtdb) {
+                let stds: StudentCourseStats[] = Object.values(rtdb)
+                if (stds.length > 1) {
+                  rankings = stds.map(student => {
+                    // Calculate the total score across all lessons and quizzes
+                    const totalScore = Object.values(student.lessons).reduce((lessonAcc, lesson) => {
+                      const quizScoreSum = Object.values(lesson.quizzes).reduce((quizAcc, quiz) => quizAcc + quiz.score, 0)
+                      return lessonAcc + quizScoreSum
+                    }, 0)
 
-                  // Attach the total score to the student object
-                  return { ...student, totalScore }
-                }).sort((a: StudentCourseStats, b: StudentCourseStats) => {
-                  return (b.totalScore || 0) - (a.totalScore || 0)
-                })
-              } else {
-                rankings = stds
+                    // Attach the total score to the student object
+                    return { ...student, totalScore }
+                  }).sort((a: StudentCourseStats, b: StudentCourseStats) => {
+                    return (b.totalScore || 0) - (a.totalScore || 0)
+                  })
+                } else {
+                  rankings = stds
+                }
               }
+              const rank = rankings.findIndex(e => e.phoneNumber === phoneNumber)
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: phoneNumber,
+                team: data.team,
+                type: "text",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                text: {
+                  body: item.content.replace('{progress}', Math.ceil(progress).toString()).replace('{score}', score).replace('{course_rank}', (rank >= 0 ? rank + 1 : 1).toString())
+                }
+              })
+              await delay(10000)
+              agenda.now<CourseEnrollment>(SEND_LEADERBOARD, {
+                ...updatedData
+              })
+              updatedData.lastLessonCompleted = new Date().toISOString()
+              saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+              break
+            } catch (error) {
+              console.log(error)
             }
-            const rank = rankings.findIndex(e => e.phoneNumber === phoneNumber)
-            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              to: phoneNumber,
-              team: data.team,
-              type: "text",
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              text: {
-                body: item.content.replace('{progress}', Math.ceil(progress).toString()).replace('{score}', score).replace('{course_rank}', (rank >= 0 ? rank + 1 : 1).toString())
-              }
-            })
-            await delay(10000)
-            agenda.now<CourseEnrollment>(SEND_LEADERBOARD, {
-              ...updatedData
-            })
-            updatedData.lastLessonCompleted = new Date().toISOString()
-            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
-            break
 
+            break
           case CourseFlowMessageType.ENDCOURSE:
             if (data.bundle) {
               if (updatedData.totalBlocks - updatedData.nextBlock < 4) {
