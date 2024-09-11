@@ -215,10 +215,17 @@ export const generateCourseLeaderboardURL = async (course: CourseInterface, stud
   if (data) {
     rankings = Object.values(data).map(student => {
       // Calculate the total score across all lessons and quizzes
-      const totalScore = Object.values(student.lessons).reduce((lessonAcc, lesson) => {
-        const quizScoreSum = Object.values(lesson.quizzes).reduce((quizAcc, quiz) => quizAcc + quiz.score, 0)
-        return lessonAcc + quizScoreSum
-      }, 0)
+      let totalScore = 0
+      if (student.lessons) {
+        totalScore = Object.values(student.lessons).reduce((lessonAcc, lesson) => {
+          let quizScoreSum = 0
+          if (lesson.quizzes) {
+            quizScoreSum = Object.values(lesson.quizzes).reduce((quizAcc, quiz) => quizAcc + quiz.score, 0)
+          }
+          return lessonAcc + quizScoreSum
+        }, 0)
+      }
+
 
       // Attach the total score to the student object
       return { ...student, totalScore }
