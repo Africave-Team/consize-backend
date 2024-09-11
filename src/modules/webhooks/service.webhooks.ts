@@ -1316,10 +1316,16 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 if (stds.length > 1) {
                   rankings = stds.map(student => {
                     // Calculate the total score across all lessons and quizzes
-                    const totalScore = Object.values(student.lessons).reduce((lessonAcc, lesson) => {
-                      const quizScoreSum = Object.values(lesson.quizzes).reduce((quizAcc, quiz) => quizAcc + quiz.score, 0)
-                      return lessonAcc + quizScoreSum
-                    }, 0)
+                    let totalScore = 0
+                    if (student.lessons) {
+                      totalScore = Object.values(student.lessons).reduce((lessonAcc, lesson) => {
+                        let quizScoreSum = 0
+                        if (lesson.quizzes) {
+                          quizScoreSum = Object.values(lesson.quizzes).reduce((quizAcc, quiz) => quizAcc + quiz.score, 0)
+                        }
+                        return lessonAcc + quizScoreSum
+                      }, 0)
+                    }
 
                     // Attach the total score to the student object
                     return { ...student, totalScore }
@@ -2016,11 +2022,11 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
       // if (saveStats) {
       //   saveQuizDuration(data.team, data.student, updatedData.id, duration, score, retakes, item.lesson, item.quiz)
       // }
-      if(courseFlowData[data.currentBlock + 1]?.content && courseFlowData[data.currentBlock + 1]?.type == "end-of-assessment"){
-      message = courseFlowData[data.currentBlock + 1]?.content || ""
-      // updatedData = { ...updatedData, currentBlock: data.currentBlock + 1 }
-      handleContinue(data.currentBlock + 1, courseKey, phoneNumber, v4(), updatedData)
-      }else{
+      if (courseFlowData[data.currentBlock + 1]?.content && courseFlowData[data.currentBlock + 1]?.type == "end-of-assessment") {
+        message = courseFlowData[data.currentBlock + 1]?.content || ""
+        // updatedData = { ...updatedData, currentBlock: data.currentBlock + 1 }
+        handleContinue(data.currentBlock + 1, courseKey, phoneNumber, v4(), updatedData)
+      } else {
         agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
       }
     }
