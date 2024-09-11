@@ -13,7 +13,7 @@ import { GENERATE_COURSE_TRENDS, SEND_CERTIFICATE_SLACK, SEND_LEADERBOARD_SLACK,
 import { CourseInterface, Distribution } from '../courses/interfaces.courses'
 import Courses from '../courses/model.courses'
 import { v4 } from 'uuid'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, MORNING, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, SCHEDULE_RESUMPTION, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from '../webhooks/interfaces.webhooks'
+import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, MORNING, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, QUIZA_A, QUIZA_B, QUIZA_C, RESUME_COURSE_TOMORROW, SCHEDULE_RESUMPTION, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from '../webhooks/interfaces.webhooks'
 import Students from '../students/model.students'
 import Teams from '../teams/model.teams'
 import { COURSE_STATS } from '../rtdb/nodes'
@@ -27,6 +27,7 @@ import Surveys from '../surveys/survey.model'
 import Settings from '../courses/model.settings'
 import { sessionService } from '../sessions'
 import { Cohorts } from '../cohorts'
+import { studentService } from '../students'
 
 export const handleSlackWebhook = async function () { }
 
@@ -655,6 +656,141 @@ export const sendQuiz = async (item: CourseFlowItem, url: string, messageId: str
   }
 }
 
+export const sendAssessment = async (item: CourseFlowItem, url: string, messageId: string): Promise<void> => {
+  try {
+    let buttons: SlackActionBlock[] = [
+      {
+        type: SlackActionType.BUTTON,
+        style: MessageActionButtonStyle.PRIMARY,
+        text: {
+          text: "A",
+          type: SlackTextMessageTypes.PLAINTEXT,
+          emoji: true
+        },
+        value: QUIZA_A + `|${messageId}`
+      },
+      {
+        type: SlackActionType.BUTTON,
+        style: MessageActionButtonStyle.PRIMARY,
+        text: {
+          text: "B",
+          type: SlackTextMessageTypes.PLAINTEXT,
+          emoji: true
+        },
+        value: QUIZA_B + `|${messageId}`,
+      },
+      {
+        type: SlackActionType.BUTTON,
+        style: MessageActionButtonStyle.PRIMARY,
+        text: {
+          text: "C",
+          type: SlackTextMessageTypes.PLAINTEXT,
+          emoji: true
+        },
+        value: QUIZA_C + `|${messageId}`,
+      }
+    ]
+
+    let blocks: SlackMessageBlock[] = []
+
+
+    blocks.push({
+      type: MessageBlockType.SECTION,
+      text: {
+        type: SlackTextMessageTypes.MARKDOWN,
+        text: item.content
+      },
+    }, {
+      type: MessageBlockType.ACTIONS,
+      elements: buttons
+    })
+
+
+    agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
+      url,
+      message: {
+        blocks
+      }
+    })
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+  }
+}
+
+export const handleAssessment = async (answer: number, data: CourseEnrollment, url: string, channel: string, messageId: string): Promise<void> => {
+  const courseKey = `${config.redisBaseKey}courses:${data.id}`
+  const courseFlow = await redisClient.get(courseKey)
+  let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId }
+
+  if (courseFlow) {
+    const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
+    const item = courseFlowData[data.currentBlock]
+    let message: string = "Answer received, continue to the next question"
+    if (item && item.assessment) {
+      const key = `${config.redisBaseKey}enrollments:slack:${channel}:${data.id}`
+      updatedData = { ...updatedData, lastMessageId: messageId }
+
+      if (item.assessment.correctAnswerIndex === answer) {
+        // send correct answer context
+        // payload.interactive['body'].text = `That is correct!. ${convertToWhatsAppString(he.decode(item.assessment.correctAnswerContext))}`
+        // update stats(retakes and duration)
+        // retakes = data.quizAttempts
+        // saveStats = true
+        if (data.blockStartTime) {
+          let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+          if (diffInSeconds > 250) {
+            diffInSeconds = 250
+          }
+          // duration = diffInSeconds
+          updatedData = { ...updatedData, blockStartTime: null, assessmentScore: (updatedData.assessmentScore || 0) + 1 }
+        }
+        // score = 1
+        // compute the score
+      }
+
+      await redisClient.set(key, JSON.stringify(updatedData))
+      // if (saveStats) {
+      //   saveQuizDuration(data.team, data.student, updatedData.id, duration, score, retakes, item.lesson, item.quiz)
+      // }
+      if (courseFlowData[data.currentBlock + 1]?.content && courseFlowData[data.currentBlock + 1]?.type == "end-of-assessment") {
+        message = courseFlowData[data.currentBlock + 1]?.content || ""
+        // updatedData = { ...updatedData, currentBlock: data.currentBlock + 1 }
+        handleContinueSlack(data.currentBlock + 1, courseKey, channel, url, v4(), updatedData)
+      } else {
+        agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
+          url,
+          message: {
+            blocks: [
+              {
+                type: MessageBlockType.SECTION,
+                text: {
+                  type: SlackTextMessageTypes.MARKDOWN,
+                  text: message
+                },
+              },
+              {
+                type: MessageBlockType.ACTIONS,
+                elements: [
+                  {
+                    type: SlackActionType.BUTTON,
+                    value: CONTINUE + `|${messageId}`,
+                    text: {
+                      type: SlackTextMessageTypes.PLAINTEXT,
+                      emoji: true,
+                      text: "Continue"
+                    },
+                    style: MessageActionButtonStyle.PRIMARY
+                  }
+                ]
+              }
+            ]
+          }
+        })
+      }
+    }
+  }
+}
+
 
 
 export const handleContinueSlack = async (nextIndex: number, courseKey: string, channel: string, url: string, messageId: string, data: CourseEnrollment): Promise<void> => {
@@ -686,6 +822,79 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
 
 
         switch (item.type) {
+          case CourseFlowMessageType.STARTASSESSMENT:
+            agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
+              url,
+              message: {
+                blocks: [
+                  {
+                    type: MessageBlockType.SECTION,
+                    text: {
+                      type: SlackTextMessageTypes.MARKDOWN,
+                      text: item.content
+                    },
+                  },
+                  {
+                    type: MessageBlockType.ACTIONS,
+                    elements: [
+                      {
+                        type: SlackActionType.BUTTON,
+                        value: CONTINUE + `|${messageId}`,
+                        text: {
+                          type: SlackTextMessageTypes.PLAINTEXT,
+                          emoji: true,
+                          text: "Continue"
+                        },
+                        style: MessageActionButtonStyle.PRIMARY
+                      }
+                    ]
+                  }
+                ]
+              }
+            })
+            updatedData = { ...updatedData, assessmentId: item.assessmentId || '' }
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            break
+          case CourseFlowMessageType.ENDASSESSMENT:
+            agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
+              url,
+              message: {
+                blocks: [
+                  {
+                    type: MessageBlockType.SECTION,
+                    text: {
+                      type: SlackTextMessageTypes.MARKDOWN,
+                      text: item.content
+                    },
+                  },
+                  {
+                    type: MessageBlockType.ACTIONS,
+                    elements: [
+                      {
+                        type: SlackActionType.BUTTON,
+                        value: CONTINUE + `|${messageId}`,
+                        text: {
+                          type: SlackTextMessageTypes.PLAINTEXT,
+                          emoji: true,
+                          text: "Continue"
+                        },
+                        style: MessageActionButtonStyle.PRIMARY
+                      }
+                    ]
+                  }
+                ]
+              }
+            })
+            studentService.saveAssessmentScore(data.team, data.id, data.student, updatedData.assessmentId || '', updatedData.assessmentScore || 0)
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            updatedData = { ...updatedData, assessmentScore: 0 }
+            // handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
+            break
+          case CourseFlowMessageType.ASSESSMENT:
+            await sendAssessment(item, url, messageId)
+            updatedData = { ...updatedData, blockStartTime: new Date().toISOString() }
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            break
           case CourseFlowMessageType.STARTQUIZ:
             agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
               url,
