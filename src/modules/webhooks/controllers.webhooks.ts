@@ -507,44 +507,84 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       let fieldsRaw: string | null
       switch (response) {
         case "/sos":
-          agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-            to: destination,
-            team: enrollment ? enrollment.team : "",
-            type: "interactive",
-            messaging_product: "whatsapp",
-            recipient_type: "individual",
-            interactive: {
-              body: {
-                text: "Use any one of these options to recover your history"
-              },
-              type: "button",
-              action: {
-                buttons: [
-                  {
-                    type: "reply",
-                    reply: {
-                      id: COURSES,
-                      title: "My courses"
+          if (enrollment) {
+            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: destination,
+              team: enrollment.team,
+              type: "interactive",
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              interactive: {
+                body: {
+                  text: "Use any one of these options to recover your history"
+                },
+                type: "button",
+                action: {
+                  buttons: [
+                    {
+                      type: "reply",
+                      reply: {
+                        id: COURSES,
+                        title: "My courses"
+                      }
+                    },
+                    {
+                      type: "reply",
+                      reply: {
+                        id: STATS,
+                        title: "My stats"
+                      }
+                    },
+                    {
+                      type: "reply",
+                      reply: {
+                        id: CERTIFICATES,
+                        title: "My certificates"
+                      }
                     }
-                  },
-                  {
-                    type: "reply",
-                    reply: {
-                      id: STATS,
-                      title: "My stats"
-                    }
-                  },
-                  {
-                    type: "reply",
-                    reply: {
-                      id: CERTIFICATES,
-                      title: "My certificates"
-                    }
-                  }
-                ]
+                  ]
+                }
               }
-            }
-          })
+            })
+          } else {
+            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: destination,
+              type: "interactive",
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              interactive: {
+                body: {
+                  text: "Use any one of these options to recover your history"
+                },
+                type: "button",
+                action: {
+                  buttons: [
+                    {
+                      type: "reply",
+                      reply: {
+                        id: COURSES,
+                        title: "My courses"
+                      }
+                    },
+                    {
+                      type: "reply",
+                      reply: {
+                        id: STATS,
+                        title: "My stats"
+                      }
+                    },
+                    {
+                      type: "reply",
+                      reply: {
+                        id: CERTIFICATES,
+                        title: "My certificates"
+                      }
+                    }
+                  ]
+                }
+              }
+            })
+          }
           break
         case "1":
         case "2":
