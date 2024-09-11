@@ -7,6 +7,8 @@ import { CourseInterface } from './interfaces.courses'
 import { QueryResult } from '../paginate/paginate'
 import { unlinkSync } from 'fs'
 import { QuizInterface } from './interfaces.quizzes'
+import Assessment from '../statistics/assessment.model'
+import QuestionGroup from './model.question-group'
 // import { agenda } from '../scheduler'
 // import { unlinkSync } from "fs"
 
@@ -484,5 +486,81 @@ export const fetchQuestionGroups = catchAsync(async (req: Request, res: Response
   if (course) {
     questionsGroups = await courseService.fetchCourseQuestionGroups({ course, type })
   }
-  res.status(200).send({ message: "questions retrieved", data: questionsGroups })
+  res.status(200).send({ message: "questions group retrieved", data: questionsGroups })
+})
+
+export const fetchAssessmentScore = catchAsync(async (req: Request, res: Response) => {
+  const { assessment } = req.params
+  let assessments
+  if (assessment) {
+    assessments = await Assessment.aggregate([
+      {
+        $match: { _id: assessment }  // Match the given assessment ID
+      },
+      {
+        $lookup: {
+          from: 'students',  // Join with students collection
+          localField: 'studentId',  // Field from assessments collection
+          foreignField: '_id',  // Field from students collection
+          as: 'studentDetails'  // Output field
+        }
+      },
+      {
+        $unwind: '$studentDetails'  // Unwind the studentDetails array
+      },
+      {
+        $project: {
+          _id: 1,
+          studentId: 1,
+          courseId: 1,
+          teamId: 1,
+          assessmentId: 1,
+          score: 1,
+          'studentDetails.firstName': 1,
+          'studentDetails.otherNames': 1  // Only include required student fields
+        }
+      }
+    ]);
+  }
+  res.status(200).send({ message: "assessment retrieved", assessments: assessments })
+})
+
+export const fetchAssessment = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+  let assessment
+  if (course) {
+    assessment = await QuestionGroup.aggregate([
+    {
+      // Match the question groups by courseId
+      $match: { course: course }
+    },
+    {
+      // Lookup the assessments for each question group
+      $lookup: {
+        from: 'assessments',
+        localField: '_id',
+        foreignField: 'assessmentId',
+        as: 'assessments'
+      }
+    },
+    {
+      // Calculate the average score and total number of submissions per assessment
+      $addFields: {
+        averageScore: { $avg: '$assessments.score' },
+        totalSubmissions: { $size: '$assessments' }
+      }
+    },
+    {
+      // Project the desired fields: question group name, average score, total submissions
+      $project: {
+        _id: 1,
+        title: 1,
+        averageScore: 1,
+        totalSubmissions: 1
+      }
+    }
+  ]);
+
+  }
+  res.status(200).send({ message: "assessment retrieved", assessment: assessment })
 })

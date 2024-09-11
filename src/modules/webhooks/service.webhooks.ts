@@ -1265,6 +1265,8 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             })
             studentService.saveAssessmentScore(data.team, data.id, data.student, updatedData.assessmentId || '', updatedData.assessmentScore || 0)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            updatedData = { ...updatedData, assessmentScore: 0 }
+            // handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
             break
           case CourseFlowMessageType.STARTQUIZ:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -1679,7 +1681,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             break
           case CourseFlowMessageType.ASSESSMENT:
             await sendAssessment(item, phoneNumber, messageId, data.team)
-            updatedData = { ...updatedData, assessmentScore: 0, blockStartTime: new Date().toISOString() }
+            updatedData = { ...updatedData, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.INTRO:
@@ -1956,9 +1958,12 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
 export const handleAssessment = async (answer: number, data: CourseEnrollment, phoneNumber: string, messageId: string): Promise<void> => {
   const courseKey = `${config.redisBaseKey}courses:${data.id}`
   const courseFlow = await redisClient.get(courseKey)
+  let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId }
+
   if (courseFlow) {
     const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
     const item = courseFlowData[data.currentBlock]
+    let message: string = "Answer received, continue to the next question"
     let payload: Message = {
       to: phoneNumber,
       type: "interactive",
@@ -1966,7 +1971,7 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
       recipient_type: "individual",
       interactive: {
         body: {
-          text: "click continue to get the next question"
+          text: message
         },
         type: "button",
         action: {
@@ -1984,7 +1989,7 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
     }
     if (item && item.assessment) {
       const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data.id}`
-      let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId }
+      updatedData = { ...updatedData, lastMessageId: messageId }
       // let duration = 0, retakes = 0, saveStats = false, score = 0
       if (payload.interactive) {
         if (item.assessment.correctAnswerIndex === answer) {
@@ -2011,7 +2016,13 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
       // if (saveStats) {
       //   saveQuizDuration(data.team, data.student, updatedData.id, duration, score, retakes, item.lesson, item.quiz)
       // }
-      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
+      if(courseFlowData[data.currentBlock + 1]?.content && courseFlowData[data.currentBlock + 1]?.type == "end-of-assessment"){
+      message = courseFlowData[data.currentBlock + 1]?.content || ""
+      // updatedData = { ...updatedData, currentBlock: data.currentBlock + 1 }
+      handleContinue(data.currentBlock + 1, courseKey, phoneNumber, v4(), updatedData)
+      }else{
+        agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
+      }
     }
   }
 }
