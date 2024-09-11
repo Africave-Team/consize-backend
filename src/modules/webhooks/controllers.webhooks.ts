@@ -199,43 +199,42 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 }
               })
             } else {
-              // agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              //   to: destination,
-              //   type: "text",
-              //   messaging_product: "whatsapp",
-              //   recipient_type: "individual",
-              //   text: {
-              //     body: "The following message would include your ongoing course enrollments. Click the continue of any one of them to resume that course"
-              //   }
-              // })
-            }
-            for (let enrollment of enrollments) {
-              let progress = (enrollment.nextBlock / enrollment.totalBlocks) * 100
-              if (progress < 100) {
-                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                  to: destination,
-                  team: enrollment.team,
-                  type: "interactive",
-                  messaging_product: "whatsapp",
-                  recipient_type: "individual",
-                  interactive: {
-                    body: {
-                      text: `*${enrollment.title}*\n\n${enrollment.description}\n\n*Progress*: ${progress.toFixed(0)}%`
-                    },
-                    type: "button",
-                    action: {
-                      buttons: [
-                        {
-                          type: "reply",
-                          reply: {
-                            id: `continue_${enrollment.id}`,
-                            title: "Continue"
-                          }
+              if (enrollment && enrollment.team) {
+                const team = await teamService.fetchTeamById(enrollment.team)
+                let list = enrollments
+                if (team && team.facebookData) {
+                  list = enrollments.filter(e => e.team === enrollment.team)
+                }
+
+                for (let data of list) {
+                  let progress = (data.nextBlock / data.totalBlocks) * 100
+                  if (progress < 100) {
+                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                      to: destination,
+                      team: data.team,
+                      type: "interactive",
+                      messaging_product: "whatsapp",
+                      recipient_type: "individual",
+                      interactive: {
+                        body: {
+                          text: `*${data.title}*\n\n${data.description}\n\n*Progress*: ${progress.toFixed(0)}%`
+                        },
+                        type: "button",
+                        action: {
+                          buttons: [
+                            {
+                              type: "reply",
+                              reply: {
+                                id: `continue_${data.id}`,
+                                title: "Continue"
+                              }
+                            }
+                          ]
                         }
-                      ]
-                    }
+                      }
+                    })
                   }
-                })
+                }
               }
             }
             break
