@@ -1215,6 +1215,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           case CourseFlowMessageType.STARTASSESSMENT:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
+              team: data.team,
               type: "interactive",
               messaging_product: "whatsapp",
               recipient_type: "individual",
@@ -1242,6 +1243,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           case CourseFlowMessageType.ENDASSESSMENT:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
+              team: data.team,
               type: "interactive",
               messaging_product: "whatsapp",
               recipient_type: "individual",

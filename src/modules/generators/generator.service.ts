@@ -49,6 +49,7 @@ export const sendCourseLeaderboard = async (courseId: string, studentId: string,
         // send media message with continue button
         agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
           to: student.phoneNumber,
+          team: enrollment.team,
           type: "image",
           messaging_product: "whatsapp",
           recipient_type: "individual",
@@ -302,6 +303,7 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
         // send media message with continue button
         agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
           to: student.phoneNumber,
+          team: course.owner,
           type: "image",
           messaging_product: "whatsapp",
           recipient_type: "individual",
@@ -316,6 +318,7 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
         if (settings.courseMaterials.length > 0) {
           agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
             to: student.phoneNumber,
+            team: course.owner,
             type: "text",
             messaging_product: "whatsapp",
             recipient_type: "individual",
