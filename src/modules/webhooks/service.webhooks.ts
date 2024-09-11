@@ -1974,6 +1974,7 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
     let message: string = "Answer received, continue to the next question"
     let payload: Message = {
       to: phoneNumber,
+      team: data.team,
       type: "interactive",
       messaging_product: "whatsapp",
       recipient_type: "individual",

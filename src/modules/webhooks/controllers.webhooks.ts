@@ -214,6 +214,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               if (progress < 100) {
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                   to: destination,
+                  team: enrollment.team,
                   type: "interactive",
                   messaging_product: "whatsapp",
                   recipient_type: "individual",
