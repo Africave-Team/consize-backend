@@ -203,7 +203,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 const team = await teamService.fetchTeamById(enrollment.team)
                 let list = enrollments
                 if (team && team.facebookData) {
-                  list = enrollments.filter(e => e.team === enrollment.team)
+                  list = enrollments.filter(e => e.team === team.id)
                 }
 
                 for (let data of list) {
