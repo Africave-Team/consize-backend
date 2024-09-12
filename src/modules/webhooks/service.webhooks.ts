@@ -1563,116 +1563,42 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
             }
 
-            if(flowData[nextIndex + 1]?.type == CourseFlowMessageType.STARTASSESSMENT){
-                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                  to: phoneNumber,
-                  team: data.team,
-                  type: "interactive",
-                  messaging_product: "whatsapp",
-                  recipient_type: "individual",
-                  interactive: {
-                    body: {
-                      text: 'Well done on completing the last lesson! 🙌🏽 \n Please click continue to proceed with the rest of the course'
-                    },
-                    type: "button",
-                    action: {
-                      buttons: [
-                        {
-                          type: "reply",
-                          reply: {
-                            id: CONTINUE + `|${messageId}`,
-                            title: "Continue"
-                          }
-                        },
-
-                      ]
-                    }
-                  }
-                })
-            }else{
-                let message = item.content + `\nWell done on completing the last lesson! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nWe're rooting for you!`.toString()
-
-                if (updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount > 0) {
-                  if (updatedData.minLessonsPerDay - updatedData.dailyLessonsCount > 0) {
-                    const stringToRemove = ["\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.", "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
-                    stringToRemove.forEach(substring => {
-                      message = message.replace(new RegExp(substring, 'g'), '')
-                    })
-
-                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                      to: phoneNumber,
-                      team: data.team,
-                      type: "interactive",
-                      messaging_product: "whatsapp",
-                      recipient_type: "individual",
-                      interactive: {
-                        body: {
-                          text: message
-                        },
-                        type: "button",
-                        action: {
-                          buttons: [
-                            {
-                              type: "reply",
-                              reply: {
-                                id: CONTINUE + `|${messageId}`,
-                                title: "Continue Now"
-                              }
-                            },
-
-                          ]
+            if (flowData[nextIndex + 1]?.type == CourseFlowMessageType.STARTASSESSMENT) {
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: phoneNumber,
+                team: data.team,
+                type: "interactive",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                interactive: {
+                  body: {
+                    text: 'Well done on completing the last lesson! 🙌🏽 \n Please click continue to proceed with the rest of the course'
+                  },
+                  type: "button",
+                  action: {
+                    buttons: [
+                      {
+                        type: "reply",
+                        reply: {
+                          id: CONTINUE + `|${messageId}`,
+                          title: "Continue"
                         }
-                      }
-                    })
+                      },
 
-                  } else {
-                    message = item.content + `\nCongratulations! 🎉 You've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today`.toString()
-
-                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                      to: phoneNumber,
-                      team: data.team,
-                      type: "interactive",
-                      messaging_product: "whatsapp",
-                      recipient_type: "individual",
-                      interactive: {
-                        body: {
-                          text: message
-                        },
-                        type: "button",
-                        action: {
-                          buttons: [
-                            {
-                              type: "reply",
-                              reply: {
-                                id: CONTINUE + `|${messageId}`,
-                                title: "Continue Now"
-                              }
-                            },
-                            {
-                              type: "reply",
-                              reply: {
-                                id: TOMORROW + `|${messageId}`,
-                                title: "Continue Tomorrow"
-                              }
-                            },
-                            {
-                              type: "reply",
-                              reply: {
-                                id: SCHEDULE_RESUMPTION + `|${messageId}`,
-                                title: "Set Resumption Time"
-                              }
-                            }
-                          ]
-                        }
-                      }
-                    })
+                    ]
                   }
-                } else {
-                  message = item.content + `\nGreat job! 🥳 You've reached the maximum lesson target for today.\nGo over what you've learnt today and come back tomorrow for more 😉`.toString()
-                  const stringToRemove = ["\n\n➡️ Tap 'Continue Now' when you're ready to start.\n"]
+                }
+              })
+            } else {
+              let message = item.content + `\nWell done on completing the last lesson! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nWe're rooting for you!`.toString()
+
+              if (updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount > 0) {
+                if (updatedData.minLessonsPerDay - updatedData.dailyLessonsCount > 0) {
+                  const stringToRemove = ["\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.", "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
                   stringToRemove.forEach(substring => {
                     message = message.replace(new RegExp(substring, 'g'), '')
                   })
+
                   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                     to: phoneNumber,
                     team: data.team,
@@ -1686,6 +1612,42 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                       type: "button",
                       action: {
                         buttons: [
+                          {
+                            type: "reply",
+                            reply: {
+                              id: CONTINUE + `|${messageId}`,
+                              title: "Continue Now"
+                            }
+                          },
+
+                        ]
+                      }
+                    }
+                  })
+
+                } else {
+                  message = item.content + `\nCongratulations! 🎉 You've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today`.toString()
+
+                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                    to: phoneNumber,
+                    team: data.team,
+                    type: "interactive",
+                    messaging_product: "whatsapp",
+                    recipient_type: "individual",
+                    interactive: {
+                      body: {
+                        text: message
+                      },
+                      type: "button",
+                      action: {
+                        buttons: [
+                          {
+                            type: "reply",
+                            reply: {
+                              id: CONTINUE + `|${messageId}`,
+                              title: "Continue Now"
+                            }
+                          },
                           {
                             type: "reply",
                             reply: {
@@ -1705,9 +1667,47 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                     }
                   })
                 }
-                updatedData.finishedLastLessonAt = new Date().getTime()
+              } else {
+                message = item.content + `\nGreat job! 🥳 You've reached the maximum lesson target for today.\nGo over what you've learnt today and come back tomorrow for more 😉`.toString()
+                const stringToRemove = ["\n\n➡️ Tap 'Continue Now' when you're ready to start.\n"]
+                stringToRemove.forEach(substring => {
+                  message = message.replace(new RegExp(substring, 'g'), '')
+                })
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: phoneNumber,
+                  team: data.team,
+                  type: "interactive",
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  interactive: {
+                    body: {
+                      text: message
+                    },
+                    type: "button",
+                    action: {
+                      buttons: [
+                        {
+                          type: "reply",
+                          reply: {
+                            id: TOMORROW + `|${messageId}`,
+                            title: "Continue Tomorrow"
+                          }
+                        },
+                        {
+                          type: "reply",
+                          reply: {
+                            id: SCHEDULE_RESUMPTION + `|${messageId}`,
+                            title: "Set Resumption Time"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                })
+              }
+              updatedData.finishedLastLessonAt = new Date().getTime()
             }
-            
+
             await redisClient.set(key, JSON.stringify({ ...updatedData }))
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
@@ -2351,39 +2351,41 @@ export const exchangeFacebookToken = async function (code: string, team: string)
 
       const parent_optin_template = parentTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
       const child_optin_template = childTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
-      if (parent_optin_template.length === 1 && child_optin_template.length === 0) {
-        let original: any = parent_optin_template[0]
-        await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates`, {
-          name: original.name,
-          category: original.category,
-          language: original.language,
-          components: original.components
-        }, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
+      if (child_optin_template.length === 0) {
+        if (parent_optin_template.length === 1) {
+          let original: any = parent_optin_template[0]
+          await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates`, {
+            name: original.name,
+            category: original.category,
+            language: original.language,
+            components: original.components
+          }, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          })
 
-        await delay(3000)
-        const templates: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
-          headers: {
-            Authorization: `Bearer ${token}`
+          await delay(3000)
+          const templates: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          })
+          let optin_template = templates.data.data.find((e: any) => e.name === "successful_optin_no_variable")
+          if (!optin_template || optin_template.status !== "APPROVED") {
+            updatePayload.status = "PENDING"
+            // schedule an event in 24 hours to check again
+            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          } else {
+            updatePayload.status = "CONFIRMED"
           }
-        })
-        let optin_template = templates.data.data.find((e: any) => e.name === "successful_optin_no_variable")
-        if (!optin_template || optin_template.status !== "APPROVED") {
-          updatePayload.status = "PENDING"
-          // schedule an event in 24 hours to check again
-          agenda.schedule("in 25 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
-        } else {
-          updatePayload.status = "CONFIRMED"
         }
       } else {
         let optin_template = child_optin_template[0]
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
           // schedule an event in 24 hours to check again
-          agenda.schedule("in 25 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -2417,7 +2419,6 @@ export const handleDelayedFacebookStatus = async function (team: string) {
         let optin_template = child_optin_template[0]
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
-          // schedule an event in 24 hours to check again
           agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
