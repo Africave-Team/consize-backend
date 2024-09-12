@@ -1308,7 +1308,10 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ur
       }
       // calculate the elapsed time and update stats service
       if (data.blockStartTime) {
-        const diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+        let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+        if (diffInSeconds > 250) {
+          diffInSeconds = 200
+        }
         saveBlockDuration(data.team, data.student, diffInSeconds, item.lesson, item.block)
         updatedData = { ...updatedData, blockStartTime: null }
       }
