@@ -1381,7 +1381,10 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, u
         retakes = data.quizAttempts
         saveStats = true
         if (data.blockStartTime) {
-          const diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+          let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+          if (diffInSeconds > 250) {
+            diffInSeconds = 200
+          }
           duration = diffInSeconds
           updatedData = { ...updatedData, blockStartTime: null }
         }
@@ -1432,7 +1435,10 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, u
           retakes = updatedData.quizAttempts
           saveStats = true
           if (data.blockStartTime) {
-            const diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+            let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
+            if (diffInSeconds > 250) {
+              diffInSeconds = 200
+            }
             duration = diffInSeconds
             updatedData = { ...updatedData, blockStartTime: null }
           }
