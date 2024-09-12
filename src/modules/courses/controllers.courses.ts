@@ -495,7 +495,7 @@ export const fetchAssessmentScore = catchAsync(async (req: Request, res: Respons
   if (assessment) {
     assessments = await Assessment.aggregate([
       {
-        $match: { _id: assessment }  // Match the given assessment ID
+        $match: { assessmentId: assessment }  // Match the given assessment ID
       },
       {
         $lookup: {
