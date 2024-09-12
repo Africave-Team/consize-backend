@@ -564,3 +564,16 @@ export const fetchAssessment = catchAsync(async (req: Request, res: Response) =>
   }
   res.status(200).send({ message: "assessment retrieved", assessment: assessment })
 })
+
+export const fetchStudentAssessmentScoreByCourse = catchAsync(async (req: Request, res: Response) => {
+  const { course, student } = req.params
+  let assessments:any = []
+  if (course && student) {
+    assessments = await Assessment.find({
+      studentId: student,  // Match the given student ID
+      courseId: course     // Match the given course ID
+    });
+
+  }
+  res.status(200).send({ message: "assessment retrieved", assessments: assessments })
+})
