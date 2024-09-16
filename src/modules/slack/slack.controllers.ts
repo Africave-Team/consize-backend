@@ -4,8 +4,8 @@ import { catchAsync } from '../utils'
 import { slackServices } from '.'
 import { teamService } from '../teams'
 import { FetchChannels, Fetchmembers, MessageBlockType, SendSlackMessagePayload, SendSlackResponsePayload, SlackResponse, SlackTextMessageTypes } from './interfaces.slack'
-import { CourseEnrollment, RESUME_COURSE, START, CONTINUE, QUIZ_NO, QUIZ_YES, QUIZ_A, QUIZ_B, QUIZ_C, STATS, COURSES, CERTIFICATES, SURVEY_B, SURVEY_C, TOMORROW, MORNING, AFTERNOON, EVENING, SCHEDULE_RESUMPTION, ACCEPT_INVITATION, REJECT_INVITATION, RESUME_COURSE_TOMORROW } from '../webhooks/interfaces.webhooks'
-import { fetchEnrollmentsSlack, handleContinueSlack, handleBlockQuiz, handleLessonQuiz, handleSurvey, sendResumptionOptions, sendScheduleAcknowledgement, handleSendSurveySlack } from './slack.services'
+import { CourseEnrollment, RESUME_COURSE, START, CONTINUE, QUIZ_NO, QUIZ_YES, QUIZ_A, QUIZ_B, QUIZ_C, STATS, COURSES, CERTIFICATES, SURVEY_B, SURVEY_C, TOMORROW, MORNING, AFTERNOON, EVENING, SCHEDULE_RESUMPTION, ACCEPT_INVITATION, REJECT_INVITATION, RESUME_COURSE_TOMORROW, QUIZA_A, QUIZA_B, QUIZA_C } from '../webhooks/interfaces.webhooks'
+import { fetchEnrollmentsSlack, handleContinueSlack, handleBlockQuiz, handleLessonQuiz, handleSurvey, sendResumptionOptions, sendScheduleAcknowledgement, handleSendSurveySlack, handleAssessment } from './slack.services'
 import { Student } from '../students'
 import { agenda } from '../scheduler'
 import { RESUME_TOMORROW, SEND_CERTIFICATE_SLACK, SEND_SLACK_MESSAGE, SEND_SLACK_RESPONSE } from '../scheduler/MessageTypes'
@@ -83,6 +83,20 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 const msgId = v4()
                 console.log("lesson quiz")
                 await handleLessonQuiz(answerResponse, enrollment, response_url, msgId, channel.id)
+                scheduleInactivityMessage(enrollment, undefined, channel.id)
+              }
+              break
+            case QUIZA_A:
+            case QUIZA_B:
+            case QUIZA_C:
+              let choice = 0
+              if (btnId === QUIZA_B) choice = 1
+              if (btnId === QUIZA_C) choice = 2
+              if (enrollment) {
+                const msgId = v4()
+                console.log(enrollment)
+                await handleAssessment(choice, enrollment, response_url, channel.id, msgId)
+                // schedule inactivity message
                 scheduleInactivityMessage(enrollment, undefined, channel.id)
               }
               break

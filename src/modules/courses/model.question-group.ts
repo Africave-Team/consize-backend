@@ -7,23 +7,19 @@ import { paginate } from '../paginate'
 const QuestionGroupSchema = new Schema<QuestionGroupsInterface, QuestionGroupsInterfaceModel>(
   {
     _id: { type: String, default: () => v4() },
-    type: {
-      type: String,
-      required: true
-    },
-    position: {
-      type: String,
-      required: true
-    },
+    message: { type: String },
+    title: { type: String },
     questions: {
       type: [String],
+      default: [],
+      ref: "Quizzes",
       required: true
     },
     course: {
       type: String,
       required: true
     }
-    
+
   },
   {
     collection: 'question-group',

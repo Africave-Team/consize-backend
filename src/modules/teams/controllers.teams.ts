@@ -57,17 +57,13 @@ export const acceptTeamInvite = catchAsync(async (req: Request, res: Response) =
 })
 
 export const updateTeamInfo = catchAsync(async (req: Request, res: Response) => {
-  if (typeof req.params['teamId'] === 'string') {
-    const team = await teamService.updateTeamInfo(req.params["teamId"], req.body)
-    res.status(httpStatus.OK).send({ data: team })
-  }
+  const team = await teamService.updateTeamInfo(req.user.team, req.body)
+  res.status(httpStatus.OK).send({ data: team })
 })
 
 export const fetchTeamInfo = catchAsync(async (req: Request, res: Response) => {
-  if (typeof req.params['teamId'] === 'string') {
-    const team = await teamService.fetchTeamInfo(req.params["teamId"])
-    res.status(httpStatus.OK).send({ data: team })
-  }
+  const team = await teamService.fetchTeamInfo(req.user.team)
+  res.status(httpStatus.OK).send({ data: team })
 })
 
 

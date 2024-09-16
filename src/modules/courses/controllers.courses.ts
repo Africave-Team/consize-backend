@@ -6,6 +6,9 @@ import httpStatus from 'http-status'
 import { CourseInterface } from './interfaces.courses'
 import { QueryResult } from '../paginate/paginate'
 import { unlinkSync } from 'fs'
+import { QuizInterface } from './interfaces.quizzes'
+import Assessment from '../statistics/assessment.model'
+import QuestionGroup from './model.question-group'
 // import { agenda } from '../scheduler'
 // import { unlinkSync } from "fs"
 
@@ -277,6 +280,16 @@ export const createQuiz = catchAsync(async (req: Request, res: Response) => {
   }
 })
 
+
+export const createAssessmentQuiz = catchAsync(async (req: Request, res: Response) => {
+  const { assessmentId, course } = req.params
+
+  if (assessmentId && course) {
+    const quiz = await courseService.addAssessmentQuiz(req.body, assessmentId, course)
+    res.status(httpStatus.CREATED).send({ data: quiz, message: "Your quiz has been created successfully" })
+  }
+})
+
 export const updateQuiz = catchAsync(async (req: Request, res: Response) => {
   const { quiz } = req.params
 
@@ -429,6 +442,43 @@ export const createQuestionsGroup = catchAsync(async (req: Request, res: Respons
   res.status(200).send({ message: "questions group created", questionGroup })
 })
 
+export const singleQuestionsGroup = catchAsync(async (req: Request, res: Response) => {
+  const { assessmentId } = req.params
+  let questionGroup
+  if (assessmentId) {
+    questionGroup = await courseService.fetchSingleQuestionGroup({ assessmentId })
+  }
+  res.status(200).send({ message: "question group found", data: questionGroup })
+})
+
+export const deleteQuestionsGroup = catchAsync(async (req: Request, res: Response) => {
+  const { assessmentId } = req.params
+  if (assessmentId) {
+    await courseService.deleteQuestionGroup({ assessmentId })
+  }
+  res.status(200).send({ message: "question group deleted" })
+})
+
+
+export const updateQuestionsGroup = catchAsync(async (req: Request, res: Response) => {
+  const { assessmentId } = req.params
+  let questionGroup
+  if (assessmentId) {
+    questionGroup = await courseService.updateQuestionGroup({ assessmentId, ...req.body })
+  }
+  res.status(200).send({ message: "question group updated", data: questionGroup })
+})
+
+
+export const fetchQuizQuestionsByCourseId = catchAsync(async (req: Request, res: Response) => {
+  const { course, assessment } = req.params
+  let questions: QuizInterface[] = []
+  if (course && assessment) {
+    questions = await courseService.fetchQuestionsByCourseId({ course, assessment })
+  }
+  res.status(200).send({ message: "questions retrieved", data: questions })
+})
+
 export const fetchQuestionGroups = catchAsync(async (req: Request, res: Response) => {
   const { course } = req.params
   const { type } = req.query
@@ -436,5 +486,94 @@ export const fetchQuestionGroups = catchAsync(async (req: Request, res: Response
   if (course) {
     questionsGroups = await courseService.fetchCourseQuestionGroups({ course, type })
   }
-  res.status(200).send({ message: "questions retrieved", questionsGroups })
+  res.status(200).send({ message: "questions group retrieved", data: questionsGroups })
+})
+
+export const fetchAssessmentScore = catchAsync(async (req: Request, res: Response) => {
+  const { assessment } = req.params
+  let assessments
+  if (assessment) {
+    assessments = await Assessment.aggregate([
+      {
+        $match: { assessmentId: assessment }  // Match the given assessment ID
+      },
+      {
+        $lookup: {
+          from: 'students',  // Join with students collection
+          localField: 'studentId',  // Field from assessments collection
+          foreignField: '_id',  // Field from students collection
+          as: 'studentDetails'  // Output field
+        }
+      },
+      {
+        $unwind: '$studentDetails'  // Unwind the studentDetails array
+      },
+      {
+        $project: {
+          _id: 1,
+          studentId: 1,
+          courseId: 1,
+          teamId: 1,
+          assessmentId: 1,
+          score: 1,
+          'studentDetails.firstName': 1,
+          'studentDetails.otherNames': 1  // Only include required student fields
+        }
+      }
+    ]);
+  }
+  res.status(200).send({ message: "assessment retrieved", assessments: assessments })
+})
+
+export const fetchAssessment = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+  let assessment
+  if (course) {
+    assessment = await QuestionGroup.aggregate([
+    {
+      // Match the question groups by courseId
+      $match: { course: course }
+    },
+    {
+      // Lookup the assessments for each question group
+      $lookup: {
+        from: 'assessments',
+        localField: '_id',
+        foreignField: 'assessmentId',
+        as: 'assessments'
+      }
+    },
+    {
+      // Calculate the average score and total number of submissions per assessment
+      $addFields: {
+        averageScore: { $avg: '$assessments.score' },
+        totalSubmissions: { $size: '$assessments' }
+      }
+    },
+    {
+      // Project the desired fields: question group name, average score, total submissions
+      $project: {
+        _id: 1,
+        title: 1,
+        averageScore: 1,
+        totalSubmissions: 1
+      }
+    }
+  ]);
+
+  }
+  res.status(200).send({ message: "assessment retrieved", assessment: assessment })
+})
+
+export const fetchStudentAssessmentScoreByCourse = catchAsync(async (req: Request, res: Response) => {
+  const { course, student } = req.params
+  let assessments:any = []
+  if (course && student) {
+    assessments = await Assessment.find({
+      studentId: student,  // Match the given student ID
+      courseId: course     // Match the given course ID
+    });
+
+  }
+  res.status(200).send({ message: "assessment retrieved", assessments: assessments })
 })

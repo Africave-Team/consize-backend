@@ -16,7 +16,7 @@ import Lessons from '../courses/model.lessons'
 import Blocks from '../courses/model.blocks'
 import Quizzes from '../courses/model.quizzes'
 import { agenda } from '../scheduler'
-import { DAILY_ROUTINE, INACTIVITY_REMINDER, INACTIVITY_REMINDER_SHORT, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
+import { DAILY_ROUTINE, DELAYED_FACEBOOK_INTEGRATION, INACTIVITY_REMINDER, INACTIVITY_REMINDER_SHORT, RESUME_TOMORROW, SEND_CERTIFICATE, SEND_LEADERBOARD, SEND_SLACK_MESSAGE, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { v4 } from 'uuid'
 import { logger } from '../logger'
 import moment from 'moment-timezone'
@@ -29,8 +29,11 @@ import { COURSE_STATS } from '../rtdb/nodes'
 import { StudentCourseStats, StudentInterface } from '../students/interface.students'
 import { MessageActionButtonStyle, MessageBlockType, SendSlackMessagePayload, SlackActionType, SlackTextMessageTypes } from '../slack/interfaces.slack'
 import Students from '../students/model.students'
-import { TeamsInterface } from '../teams/interfaces.teams'
+import { FacebookIntegrationData, TeamsInterface } from '../teams/interfaces.teams'
+import { studentService } from '../students'
 import Subscriptions from '../subscriptions/subscriptions.models'
+import QuestionGroup from '../courses/model.question-group'
+import { QuestionGroupsInterface } from '../courses/interfaces.question-group'
 // import Teams from '../teams/model.teams'
 // import { convertTo24Hour } from '../utils'
 // import { convertTo24Hour } from '../utils'
@@ -71,7 +74,9 @@ export interface CourseFlowItem {
   quiz?: QuizInterface
   surveyQuestion?: Question
   surveyId?: string
-  assessment?: any
+  assessment?: QuizInterface
+  questionGroup?: QuestionGroupsInterface
+  assessmentId?: string
 }
 
 // interface UserTracker {
@@ -157,43 +162,89 @@ export const generateCourseFlow = async function (courseId: string) {
       content: `You have successfully enrolled for the course *${course.title}* by the organization *${courseOwner?.name}*.\n\nThis is a self paced course, which means you can learn at your own speed.\n\nStart the course anytime at your convenience by tapping 'Start'.`
     })
     const description = convertToWhatsAppString(he.decode(course.description))
+
+    let message = `*Course title*: ${course.title}\n\n*Course description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total lessons in the course: ${course.lessons.length}\n⏰ Avg. time you'd spend on each lesson: ${settings?.metadata.idealLessonTime.value} ${settings?.metadata.idealLessonTime.type}\n🏁 Max lessons per day: ${settings?.metadata.maxLessonsPerDay}\n🗓 Number of days to complete: 2\n\nPlease tap 'Continue' to start your first lesson`
+    if (course.contents && course.contents[0] && course.contents[0].assessment) {
+      message = `*Course title*: ${course.title}\n\n*Course description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total lessons in the course: ${course.lessons.length}\n⏰ Avg. time you'd spend on each lesson: ${settings?.metadata.idealLessonTime.value} ${settings?.metadata.idealLessonTime.type}\n🏁 Max lessons per day: ${settings?.metadata.maxLessonsPerDay}\n🗓 Number of days to complete: 2\n\nPlease tap 'Continue' to start the initial assessment`
+    }
     // course intro
     flow.push({
       type: CourseFlowMessageType.INTRO,
       mediaType: course.headerMedia.mediaType,
       mediaUrl: course.headerMedia.url,
-      content: `*Course title*: ${course.title}\n\n*Course description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total lessons in the course: ${course.lessons.length}\n⏰ Avg. time you'd spend on each lesson: ${settings?.metadata.idealLessonTime.value} ${settings?.metadata.idealLessonTime.type}\n🏁 Max lessons per day: ${settings?.metadata.maxLessonsPerDay}\n🗓 Number of days to complete: 2\n\nPlease tap 'Continue' to start your first lesson
-        `
+      content: message
     })
 
     // assesments(if any)
 
     // blocks
     let lessonIndex = 0
-    for (let lesson of course.lessons) {
-      let lessonData = await Lessons.findById(lesson)
-      if (lessonData) {
-        let blockIndex = 0
-        for (let blockId of lessonData.blocks) {
-          let content = ``
-          if (blockIndex === 0) {
-            content = `*Lesson ${lessonIndex + 1}: ${lessonData.title.trim()}*`
-          }
-          const blockData = await Blocks.findById(blockId)
-          if (blockData) {
-            content += ` \n\n*Section ${blockIndex + 1}: ${blockData.title.trim()}* \n\n${convertToWhatsAppString(he.decode(blockData.content))}`
-            if (blockData.quiz) {
-              const quiz = await Quizzes.findById(blockData.quiz)
-              if (quiz) {
-                content += `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
+    for (let content of course.contents) {
+      if (content.lesson) {
+        let lessonData = await Lessons.findById(content.lesson)
+        if (lessonData) {
+          let blockIndex = 0
+          for (let blockId of lessonData.blocks) {
+            let content = ``
+            if (blockIndex === 0) {
+              content = `*Lesson ${lessonIndex + 1}: ${lessonData.title.trim()}*`
+            }
+            const blockData = await Blocks.findById(blockId)
+            if (blockData) {
+              content += ` \n\n*Section ${blockIndex + 1}: ${blockData.title.trim()}* \n\n${convertToWhatsAppString(he.decode(blockData.content))}`
+              if (blockData.quiz) {
+                const quiz = await Quizzes.findById(blockData.quiz)
+                if (quiz) {
+                  content += `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
+                  let flo: CourseFlowItem = {
+                    type: CourseFlowMessageType.BLOCKWITHQUIZ,
+                    content,
+                    block: blockData,
+                    lesson: lessonData,
+                    quiz,
+                  }
+                  if (blockData.bodyMedia && blockData.bodyMedia.url && blockData.bodyMedia.url.length > 10) {
+                    flo.mediaType = blockData.bodyMedia.mediaType
+                    flo.mediaUrl = blockData.bodyMedia.url
+                    if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
+                      flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
+                      flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
+                    }
+                  }
+                  if (content.length > 1024) {
+                    let chunks = splitStringIntoChunks(content)
+                    for (let index = 0; index < chunks.length; index++) {
+                      let copy = { ...flo }
+                      const element = chunks[index]
+                      if (element) {
+                        if (index === 0) {
+                          copy.type = CourseFlowMessageType.BLOCK
+                          copy.content = element
+                          delete copy.quiz
+                          flow.push(copy)
+                        } else {
+                          copy = { ...flo }
+                          copy.content = element
+                          delete copy.mediaType
+                          delete copy.mediaUrl
+                          delete copy.thumbnailUrl
+                          flow.push(copy)
+                        }
+                      }
+
+                    }
+                  } else {
+                    flow.push(flo)
+                  }
+                }
+              } else {
                 let flo: CourseFlowItem = {
-                  type: CourseFlowMessageType.BLOCKWITHQUIZ,
+                  type: CourseFlowMessageType.BLOCK,
                   content,
                   block: blockData,
-                  lesson: lessonData,
-                  quiz,
+                  lesson: lessonData
                 }
-                if (blockData.bodyMedia && blockData.bodyMedia.url && blockData.bodyMedia.url.length > 10) {
+                if (blockData.bodyMedia && blockData.bodyMedia.url) {
                   flo.mediaType = blockData.bodyMedia.mediaType
                   flo.mediaUrl = blockData.bodyMedia.url
                   if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
@@ -201,6 +252,7 @@ export const generateCourseFlow = async function (courseId: string) {
                     flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
                   }
                 }
+
                 if (content.length > 1024) {
                   let chunks = splitStringIntoChunks(content)
                   for (let index = 0; index < chunks.length; index++) {
@@ -227,96 +279,91 @@ export const generateCourseFlow = async function (courseId: string) {
                   flow.push(flo)
                 }
               }
-            } else {
-              let flo: CourseFlowItem = {
-                type: CourseFlowMessageType.BLOCK,
+            }
+            blockIndex++
+          }
+          if (lessonData.quizzes.length > 0) {
+            let payload: CourseFlowItem = {
+              type: CourseFlowMessageType.STARTQUIZ,
+              content: `Congratulations 👏\n\nWe are done with the lesson 🙌. \n\nIt’s time to answer a few questions and test your understanding with a short quiz 🧠
+          `
+            }
+            flow.push(payload)
+          }
+          let quizIndex = 0
+          for (let quizId of lessonData.quizzes) {
+            const quizData = await Quizzes.findById(quizId)
+            if (quizData) {
+              let content = `End of lesson quiz ${quizIndex + 1}/${lessonData.quizzes.length}\n\nQuestion:\n${convertToWhatsAppString(he.decode(quizData.question))}\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]} \n\nC: ${quizData.choices[2]}`
+              flow.push({
+                type: CourseFlowMessageType.QUIZ,
                 content,
-                block: blockData,
-                lesson: lessonData
-              }
-              if (blockData.bodyMedia && blockData.bodyMedia.url) {
-                flo.mediaType = blockData.bodyMedia.mediaType
-                flo.mediaUrl = blockData.bodyMedia.url
-                if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
-                  flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
-                  flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
-                }
-              }
+                lesson: lessonData,
+                quiz: quizData
+              })
+            }
 
-              if (content.length > 1024) {
-                let chunks = splitStringIntoChunks(content)
-                for (let index = 0; index < chunks.length; index++) {
-                  let copy = { ...flo }
-                  const element = chunks[index]
-                  if (element) {
-                    if (index === 0) {
-                      copy.type = CourseFlowMessageType.BLOCK
-                      copy.content = element
-                      delete copy.quiz
-                      flow.push(copy)
-                    } else {
-                      copy = { ...flo }
-                      copy.content = element
-                      delete copy.mediaType
-                      delete copy.mediaUrl
-                      delete copy.thumbnailUrl
-                      flow.push(copy)
-                    }
-                  }
-
-                }
-              } else {
-                flow.push(flo)
-              }
+            quizIndex++
+          }
+          // add score card for the quizes
+          if (lessonData.quizzes.length > 0) {
+            flow.push({
+              type: CourseFlowMessageType.ENDQUIZ,
+              content: `Congratulations on finishing the assessment 🥳! Let’s see how well you did 🌚\n\nYou scored: {score}% in this lesson 🏆\nYou are currently ranked #{course_rank} in this course 🏅\nYour course progress: {progress}% ⏱\n\nIn a few seconds, you will see a leaderboard showing the top performers in this course.
+          `
+            })
+          }
+          // add intro to the next lesson
+          const nextLesson = course.lessons[lessonIndex + 1]
+          if (nextLesson) {
+            lessonData = await Lessons.findById(nextLesson)
+            if (lessonData) {
+              flow.push({
+                type: CourseFlowMessageType.ENDLESSON,
+                content: `*Next lesson*: ${lessonData.title}\n\n➡️ Tap 'Continue Now' when you're ready to start.\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.
+            `
+              })
             }
           }
-          blockIndex++
         }
-        if (lessonData.quizzes.length > 0) {
-          let payload: CourseFlowItem = {
-            type: CourseFlowMessageType.STARTQUIZ,
-            content: `Congratulations 👏\n\nWe are done with the lesson 🙌. \n\nIt’s time to answer a few questions and test your understanding with a short quiz 🧠
-          `
-          }
-          flow.push(payload)
-        }
-        let quizIndex = 0
-        for (let quizId of lessonData.quizzes) {
-          const quizData = await Quizzes.findById(quizId)
-          if (quizData) {
-            let content = `End of lesson quiz ${quizIndex + 1}/${lessonData.quizzes.length}\n\nQuestion:\n${convertToWhatsAppString(he.decode(quizData.question))}\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]} \n\nC: ${quizData.choices[2]}`
+        lessonIndex++
+      }
+      if (content.assessment) {
+        const assessmentData = await QuestionGroup.findById(content.assessment)
+        if (assessmentData) {
+          if (assessmentData.questions.length > 0) {
             flow.push({
-              type: CourseFlowMessageType.QUIZ,
-              content,
-              lesson: lessonData,
-              quiz: quizData
+              type: CourseFlowMessageType.STARTASSESSMENT,
+              content: `${assessmentData.message}`,
+              assessmentId: assessmentData._id
             })
-          }
+            let quizIndex = 0
+            for (let quizId of assessmentData.questions) {
+              const quizData = await Quizzes.findById(quizId)
+              if (quizData) {
+                let contentString = `${assessmentData.title} ${quizIndex + 1}/${assessmentData.questions.length}\n\nQuestion:\n${convertToWhatsAppString(he.decode(quizData.question))}\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]} \n\nC: ${quizData.choices[2]}`
+                flow.push({
+                  type: CourseFlowMessageType.ASSESSMENT,
+                  content: contentString,
+                  assessment: quizData,
+                  questionGroup: assessmentData,
+                  assessmentId: assessmentData._id
+                })
+              }
 
-          quizIndex++
-        }
-        // add score card for the quizes
-        if (lessonData.quizzes.length > 0) {
-          flow.push({
-            type: CourseFlowMessageType.ENDQUIZ,
-            content: `Congratulations on finishing the assessment 🥳! Let’s see how well you did 🌚\n\nYou scored: {score}% in this lesson 🏆\nYou are currently ranked #{course_rank} in this course 🏅\nYour course progress: {progress}% ⏱\n\nIn a few seconds, you will see a leaderboard showing the top performers in this course.
-          `
-          })
-        }
-        // add intro to the next lesson
-        const nextLesson = course.lessons[lessonIndex + 1]
-        if (nextLesson) {
-          lessonData = await Lessons.findById(nextLesson)
-          if (lessonData) {
-            flow.push({
-              type: CourseFlowMessageType.ENDLESSON,
-              content: `*Next lesson*: ${lessonData.title}\n\n➡️ Tap 'Continue Now' when you're ready to start.\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.
-            `
-            })
+              quizIndex++
+            }
+            // add score card for the quizes
+            if (assessmentData.questions.length === quizIndex) {
+              flow.push({
+                type: CourseFlowMessageType.ENDASSESSMENT,
+                content: `Congratulations on finishing the assessment 🥳! Click continue to continue with the rest of the course.`,
+                assessmentId: assessmentData._id
+              })
+            }
           }
         }
       }
-      lessonIndex++
     }
     let load = {
       type: CourseFlowMessageType.ENDCOURSE,
@@ -371,13 +418,12 @@ export const sendMessage = async function (message: Message, team?: TeamsInterfa
   if (subscription && typeof subscription.plan !== "string") {
     const value = subscription.plan.price
 
-    if (value > 0) {
-      token = team?.facebookToken || config.whatsapp.token
-      phoneId = team?.facebookPhoneNumberId || config.whatsapp.phoneNumberId
+    if (value > 0 && team?.facebookData && team?.facebookData.status === "CONFIRMED") {
+      token = team.facebookData.token || config.whatsapp.token
+      phoneId = team?.facebookData.phoneNumberId || config.whatsapp.phoneNumberId
     }
   }
 
-  console.log(phoneId, config.whatsapp.phoneNumberId)
 
   try {
     console.log("starting to send a message")
@@ -1169,6 +1215,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
           case CourseFlowMessageType.STARTASSESSMENT:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
+              team: data.team,
               type: "interactive",
               messaging_product: "whatsapp",
               recipient_type: "individual",
@@ -1190,11 +1237,13 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 }
               }
             })
+            updatedData = { ...updatedData, assessmentId: item.assessmentId || '' }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.ENDASSESSMENT:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: phoneNumber,
+              team: data.team,
               type: "interactive",
               messaging_product: "whatsapp",
               recipient_type: "individual",
@@ -1216,7 +1265,10 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 }
               }
             })
+            studentService.saveAssessmentScore(data.team, data.id, data.student, updatedData.assessmentId || '', updatedData.assessmentScore || 0)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            updatedData = { ...updatedData, assessmentScore: 0 }
+            // handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
             break
           case CourseFlowMessageType.STARTQUIZ:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -1249,48 +1301,66 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             const progress = (data.currentBlock / data.totalBlocks) * 100
             let score = '0'
             let currentItem = flowData[data.currentBlock]
-            if (currentItem && currentItem.quiz && data.lessons) {
+            if (currentItem && currentItem.quiz && currentItem.quiz.lesson && data.lessons) {
               let scores = data.lessons[currentItem.quiz.lesson]?.scores
               if (scores) {
                 score = ((scores.reduce((a, b) => a + b, 0) / scores.length) * 100).toFixed(0)
               }
             }
-            const dbRef = db.ref(COURSE_STATS).child(data.team).child(data.id).child("students")
-            // get existing data
-            const snapshot = await dbRef.once('value')
-            let rtdb: { [id: string]: StudentCourseStats } | null = snapshot.val()
-            let rankings: StudentCourseStats[] = []
-            if (rtdb) {
-              let stds: StudentCourseStats[] = Object.values(rtdb)
-              if (stds.length > 1) {
-                rankings = stds.sort((a: StudentCourseStats, b: StudentCourseStats) => {
-                  const first = a.scores ? a.scores.reduce((a, b) => a + b, 0) : 0
-                  const second = b.scores ? b.scores.reduce((a, b) => a + b, 0) : 0
-                  return second - first
-                })
-              } else {
-                rankings = stds
-              }
-            }
-            const rank = rankings.findIndex(e => e.phoneNumber === phoneNumber)
-            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              to: phoneNumber,
-              team: data.team,
-              type: "text",
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              text: {
-                body: item.content.replace('{progress}', Math.ceil(progress).toString()).replace('{score}', score).replace('{course_rank}', (rank >= 0 ? rank + 1 : 1).toString())
-              }
-            })
-            await delay(10000)
-            agenda.now<CourseEnrollment>(SEND_LEADERBOARD, {
-              ...updatedData
-            })
-            updatedData.lastLessonCompleted = new Date().toISOString()
-            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
-            break
+            try {
+              const dbRef = db.ref(COURSE_STATS).child(data.team).child(data.id).child("students")
+              // get existing data
+              const snapshot = await dbRef.once('value')
+              let rtdb: { [id: string]: StudentCourseStats } | null = snapshot.val()
+              let rankings: StudentCourseStats[] = []
+              if (rtdb) {
+                let stds: StudentCourseStats[] = Object.values(rtdb)
+                if (stds.length > 1) {
+                  rankings = stds.map(student => {
+                    // Calculate the total score across all lessons and quizzes
+                    let totalScore = 0
+                    if (student.lessons) {
+                      totalScore = Object.values(student.lessons).reduce((lessonAcc, lesson) => {
+                        let quizScoreSum = 0
+                        if (lesson.quizzes) {
+                          quizScoreSum = Object.values(lesson.quizzes).reduce((quizAcc, quiz) => quizAcc + quiz.score, 0)
+                        }
+                        return lessonAcc + quizScoreSum
+                      }, 0)
+                    }
 
+                    // Attach the total score to the student object
+                    return { ...student, totalScore }
+                  }).sort((a: StudentCourseStats, b: StudentCourseStats) => {
+                    return (b.totalScore || 0) - (a.totalScore || 0)
+                  })
+                } else {
+                  rankings = stds
+                }
+              }
+              const rank = rankings.findIndex(e => e.phoneNumber === phoneNumber)
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: phoneNumber,
+                team: data.team,
+                type: "text",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                text: {
+                  body: item.content.replace('{progress}', Math.ceil(progress).toString()).replace('{score}', score).replace('{course_rank}', (rank >= 0 ? rank + 1 : 1).toString())
+                }
+              })
+              await delay(10000)
+              agenda.now<CourseEnrollment>(SEND_LEADERBOARD, {
+                ...updatedData
+              })
+              updatedData.lastLessonCompleted = new Date().toISOString()
+              saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+              break
+            } catch (error) {
+              console.log(error)
+            }
+
+            break
           case CourseFlowMessageType.ENDCOURSE:
             if (data.bundle) {
               if (updatedData.totalBlocks - updatedData.nextBlock < 4) {
@@ -1493,15 +1563,116 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
             }
 
-            let message = item.content + `\nWell done on completing the last lesson! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nWe're rooting for you!`.toString()
+            if (flowData[nextIndex + 1]?.type == CourseFlowMessageType.STARTASSESSMENT) {
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: phoneNumber,
+                team: data.team,
+                type: "interactive",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                interactive: {
+                  body: {
+                    text: 'Well done on completing the last lesson! 🙌🏽 \n Please click continue to proceed with the rest of the course'
+                  },
+                  type: "button",
+                  action: {
+                    buttons: [
+                      {
+                        type: "reply",
+                        reply: {
+                          id: CONTINUE + `|${messageId}`,
+                          title: "Continue"
+                        }
+                      },
 
-            if (updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount > 0) {
-              if (updatedData.minLessonsPerDay - updatedData.dailyLessonsCount > 0) {
-                const stringToRemove = ["\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.", "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
+                    ]
+                  }
+                }
+              })
+            } else {
+              let message = item.content + `\nWell done on completing the last lesson! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nWe're rooting for you!`.toString()
+
+              if (updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount > 0) {
+                if (updatedData.minLessonsPerDay - updatedData.dailyLessonsCount > 0) {
+                  const stringToRemove = ["\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.", "\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap", "'Set Resumption Time' to choose the time to continue tomorrow"]
+                  stringToRemove.forEach(substring => {
+                    message = message.replace(new RegExp(substring, 'g'), '')
+                  })
+
+                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                    to: phoneNumber,
+                    team: data.team,
+                    type: "interactive",
+                    messaging_product: "whatsapp",
+                    recipient_type: "individual",
+                    interactive: {
+                      body: {
+                        text: message
+                      },
+                      type: "button",
+                      action: {
+                        buttons: [
+                          {
+                            type: "reply",
+                            reply: {
+                              id: CONTINUE + `|${messageId}`,
+                              title: "Continue Now"
+                            }
+                          },
+
+                        ]
+                      }
+                    }
+                  })
+
+                } else {
+                  message = item.content + `\nCongratulations! 🎉 You've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today`.toString()
+
+                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                    to: phoneNumber,
+                    team: data.team,
+                    type: "interactive",
+                    messaging_product: "whatsapp",
+                    recipient_type: "individual",
+                    interactive: {
+                      body: {
+                        text: message
+                      },
+                      type: "button",
+                      action: {
+                        buttons: [
+                          {
+                            type: "reply",
+                            reply: {
+                              id: CONTINUE + `|${messageId}`,
+                              title: "Continue Now"
+                            }
+                          },
+                          {
+                            type: "reply",
+                            reply: {
+                              id: TOMORROW + `|${messageId}`,
+                              title: "Continue Tomorrow"
+                            }
+                          },
+                          {
+                            type: "reply",
+                            reply: {
+                              id: SCHEDULE_RESUMPTION + `|${messageId}`,
+                              title: "Set Resumption Time"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  })
+                }
+              } else {
+                message = item.content + `\nGreat job! 🥳 You've reached the maximum lesson target for today.\nGo over what you've learnt today and come back tomorrow for more 😉`.toString()
+                const stringToRemove = ["\n\n➡️ Tap 'Continue Now' when you're ready to start.\n"]
                 stringToRemove.forEach(substring => {
                   message = message.replace(new RegExp(substring, 'g'), '')
                 })
-
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                   to: phoneNumber,
                   team: data.team,
@@ -1515,42 +1686,6 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                     type: "button",
                     action: {
                       buttons: [
-                        {
-                          type: "reply",
-                          reply: {
-                            id: CONTINUE + `|${messageId}`,
-                            title: "Continue Now"
-                          }
-                        },
-
-                      ]
-                    }
-                  }
-                })
-
-              } else {
-                message = item.content + `\nCongratulations! 🎉 You've reached today's learning target!\nLessons completed today:  ${updatedData.dailyLessonsCount} \nMaximum daily lessons ${updatedData.maxLessonsPerDay}\nYou can still complete ${updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount} lessons today`.toString()
-
-                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                  to: phoneNumber,
-                  team: data.team,
-                  type: "interactive",
-                  messaging_product: "whatsapp",
-                  recipient_type: "individual",
-                  interactive: {
-                    body: {
-                      text: message
-                    },
-                    type: "button",
-                    action: {
-                      buttons: [
-                        {
-                          type: "reply",
-                          reply: {
-                            id: CONTINUE + `|${messageId}`,
-                            title: "Continue Now"
-                          }
-                        },
                         {
                           type: "reply",
                           reply: {
@@ -1570,45 +1705,9 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                   }
                 })
               }
-            } else {
-              message = item.content + `\nGreat job! 🥳 You've reached the maximum lesson target for today.\nGo over what you've learnt today and come back tomorrow for more 😉`.toString()
-              const stringToRemove = ["\n\n➡️ Tap 'Continue Now' when you're ready to start.\n"]
-              stringToRemove.forEach(substring => {
-                message = message.replace(new RegExp(substring, 'g'), '')
-              })
-              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                to: phoneNumber,
-                team: data.team,
-                type: "interactive",
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                interactive: {
-                  body: {
-                    text: message
-                  },
-                  type: "button",
-                  action: {
-                    buttons: [
-                      {
-                        type: "reply",
-                        reply: {
-                          id: TOMORROW + `|${messageId}`,
-                          title: "Continue Tomorrow"
-                        }
-                      },
-                      {
-                        type: "reply",
-                        reply: {
-                          id: SCHEDULE_RESUMPTION + `|${messageId}`,
-                          title: "Set Resumption Time"
-                        }
-                      }
-                    ]
-                  }
-                }
-              })
+              updatedData.finishedLastLessonAt = new Date().getTime()
             }
-            updatedData.finishedLastLessonAt = new Date().getTime()
+
             await redisClient.set(key, JSON.stringify({ ...updatedData }))
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
@@ -1619,7 +1718,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             break
           case CourseFlowMessageType.ASSESSMENT:
             await sendAssessment(item, phoneNumber, messageId, data.team)
-            updatedData = { ...updatedData, assessmentScore: 0, blockStartTime: new Date().toISOString() }
+            updatedData = { ...updatedData, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.INTRO:
@@ -1866,20 +1965,22 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
           payload.interactive['body'].text = textBody
         }
       }
-      if (!updatedData.lessons) {
-        updatedData.lessons = {
-          [item.quiz.lesson]: {
+      if (item.quiz.lesson) {
+        if (!updatedData.lessons) {
+          updatedData.lessons = {
+            [item.quiz.lesson]: {
+              scores: [score]
+            }
+          }
+        } else if (updatedData.lessons && (!updatedData.lessons[item.quiz.lesson] || !updatedData.lessons[item.quiz.lesson]?.scores)) {
+          updatedData.lessons[item.quiz.lesson] = {
             scores: [score]
           }
-        }
-      } else if (updatedData.lessons && (!updatedData.lessons[item.quiz.lesson] || !updatedData.lessons[item.quiz.lesson]?.scores)) {
-        updatedData.lessons[item.quiz.lesson] = {
-          scores: [score]
-        }
-      } else if (data.lessons && data.lessons[item.quiz.lesson] && updatedData.lessons[item.quiz.lesson]?.scores) {
-        let lessonNode = data.lessons[item.quiz.lesson]
-        if (lessonNode) {
-          lessonNode.scores.push(score)
+        } else if (data.lessons && data.lessons[item.quiz.lesson] && updatedData.lessons[item.quiz.lesson]?.scores) {
+          let lessonNode = data.lessons[item.quiz.lesson]
+          if (lessonNode) {
+            lessonNode.scores.push(score)
+          }
         }
       }
       await redisClient.set(key, JSON.stringify(updatedData))
@@ -1894,17 +1995,21 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
 export const handleAssessment = async (answer: number, data: CourseEnrollment, phoneNumber: string, messageId: string): Promise<void> => {
   const courseKey = `${config.redisBaseKey}courses:${data.id}`
   const courseFlow = await redisClient.get(courseKey)
+  let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId }
+
   if (courseFlow) {
     const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
     const item = courseFlowData[data.currentBlock]
+    let message: string = "Answer received, continue to the next question"
     let payload: Message = {
       to: phoneNumber,
+      team: data.team,
       type: "interactive",
       messaging_product: "whatsapp",
       recipient_type: "individual",
       interactive: {
         body: {
-          text: "click continue to get the next question"
+          text: message
         },
         type: "button",
         action: {
@@ -1922,7 +2027,7 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
     }
     if (item && item.assessment) {
       const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data.id}`
-      let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId }
+      updatedData = { ...updatedData, lastMessageId: messageId }
       // let duration = 0, retakes = 0, saveStats = false, score = 0
       if (payload.interactive) {
         if (item.assessment.correctAnswerIndex === answer) {
@@ -1949,7 +2054,13 @@ export const handleAssessment = async (answer: number, data: CourseEnrollment, p
       // if (saveStats) {
       //   saveQuizDuration(data.team, data.student, updatedData.id, duration, score, retakes, item.lesson, item.quiz)
       // }
-      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
+      if (courseFlowData[data.currentBlock + 1]?.content && courseFlowData[data.currentBlock + 1]?.type == "end-of-assessment") {
+        message = courseFlowData[data.currentBlock + 1]?.content || ""
+        // updatedData = { ...updatedData, currentBlock: data.currentBlock + 1 }
+        handleContinue(data.currentBlock + 1, courseKey, phoneNumber, v4(), updatedData)
+      } else {
+        agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
+      }
     }
   }
 }
@@ -2189,7 +2300,7 @@ export const sendScheduleAcknowledgement = async (phoneNumber: string, time: str
 
 export const exchangeFacebookToken = async function (code: string, team: string) {
   try {
-    const result: AxiosResponse = await axios.get(`https://graph.facebook.com/v17.0/oauth/access_token`, {
+    const result: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/oauth/access_token`, {
       params: {
         'client_id': config.facebook.id,
         'client_secret': config.facebook.secret,
@@ -2198,12 +2309,14 @@ export const exchangeFacebookToken = async function (code: string, team: string)
       }
     })
     const token = result.data.access_token
-    const teamData = await teamService.updateTeamInfo(team, {
-      facebookToken: token
-    })
-    if (teamData && teamData.facebookPhoneNumberId) {
+    let teamData = await teamService.fetchTeamById(team)
+    if (teamData && teamData.facebookBusinessId && teamData.facebookPhoneNumberId) {
+      const updatePayload: FacebookIntegrationData = { phoneNumberId: teamData.facebookPhoneNumberId, businessId: teamData.facebookBusinessId, status: "PENDING", token }
+      await teamService.updateTeamInfo(team, {
+        facebookData: updatePayload
+      })
       // register the phone number
-      await axios.post(`https://graph.facebook.com/v17.0/${teamData.facebookPhoneNumberId}/register`, {
+      await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.phoneNumberId}/register`, {
         messaging_product: "whatsapp",
         pin: "112233"
       }, {
@@ -2213,7 +2326,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
         }
       })
       // subscribe to webhooks
-      await axios.post(`https://graph.facebook.com/v17.0/${teamData.facebookBusinessId}/subscribed_apps`, {
+      await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/subscribed_apps`, {
 
       }, {
         headers: {
@@ -2225,12 +2338,12 @@ export const exchangeFacebookToken = async function (code: string, team: string)
       // copy the auth template to the new waba from main account
       // get the auth template
 
-      const parentTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v17.0/${config.whatsapp.waba}/message_templates?fields=name,status,category,components,language`, {
+      const parentTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${config.whatsapp.waba}/message_templates?fields=name,status,category,components,language`, {
         headers: {
           Authorization: `Bearer ${config.whatsapp.token}`
         }
       })
-      const childTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v17.0/${teamData.facebookBusinessId}/message_templates?fields=name,status,category,components`, {
+      const childTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -2238,24 +2351,87 @@ export const exchangeFacebookToken = async function (code: string, team: string)
 
       const parent_optin_template = parentTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
       const child_optin_template = childTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
-      if (parent_optin_template.length === 1 && child_optin_template.length === 0) {
-        let original: any = parent_optin_template[0]
-        await axios.post(`https://graph.facebook.com/v17.0/${teamData.facebookBusinessId}/message_templates`, {
-          name: original.name,
-          category: original.category,
-          language: original.language,
-          components: original.components
-        }, {
-          headers: {
-            Authorization: `Bearer ${token}`
+      if (child_optin_template.length === 0) {
+        if (parent_optin_template.length === 1) {
+          let original: any = parent_optin_template[0]
+          await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates`, {
+            name: original.name,
+            category: original.category,
+            language: original.language,
+            components: original.components
+          }, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          })
+
+          await delay(3000)
+          const templates: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          })
+          let optin_template = templates.data.data.find((e: any) => e.name === "successful_optin_no_variable")
+          if (!optin_template || optin_template.status !== "APPROVED") {
+            updatePayload.status = "PENDING"
+            // schedule an event in 24 hours to check again
+            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          } else {
+            updatePayload.status = "CONFIRMED"
           }
-        })
+        }
+      } else {
+        let optin_template = child_optin_template[0]
+        if (!optin_template || optin_template.status !== "APPROVED") {
+          updatePayload.status = "PENDING"
+          // schedule an event in 24 hours to check again
+          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+        } else {
+          updatePayload.status = "CONFIRMED"
+        }
       }
-
-
+      await teamService.updateTeamInfo(team, {
+        facebookData: updatePayload
+      })
     }
   } catch (error) {
     // @ts-ignore
     console.log((error as AxiosError).response.data)
   }
 }
+
+
+
+export const handleDelayedFacebookStatus = async function (team: string) {
+  try {
+    let teamData = await teamService.fetchTeamById(team)
+    if (teamData && teamData.facebookData) {
+      const updatePayload: FacebookIntegrationData = { phoneNumberId: teamData.facebookData.phoneNumberId, businessId: teamData.facebookData.businessId, token: teamData.facebookData.token, status: teamData.facebookData.status }
+
+      const childTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
+        headers: {
+          Authorization: `Bearer ${updatePayload.token}`
+        }
+      })
+
+      const child_optin_template = childTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
+      if (child_optin_template.length > 0) {
+        let optin_template = child_optin_template[0]
+        if (!optin_template || optin_template.status !== "APPROVED") {
+          updatePayload.status = "PENDING"
+          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+        } else {
+          updatePayload.status = "CONFIRMED"
+        }
+      }
+      await teamService.updateTeamInfo(team, {
+        facebookData: updatePayload
+      })
+    }
+  } catch (error) {
+    // @ts-ignore
+    console.log((error as AxiosError).response.data)
+  }
+}
+
+

@@ -1,4 +1,4 @@
-import { CourseInterface, CourseInterfaceModel, CourseStatus, Sources } from './interfaces.courses'
+import { CourseContent, CourseInterface, CourseInterfaceModel, CourseStatus, Sources } from './interfaces.courses'
 import mongoose, { Schema } from 'mongoose'
 import { agenda } from '../scheduler'
 import { v4 } from "uuid"
@@ -10,6 +10,18 @@ import { Cohorts } from '../cohorts'
 import { CohortsStatus } from '../cohorts/interface.cohorts'
 
 
+const CourseContentSchema = new Schema<CourseContent>({
+    lesson: {
+        type: String,
+        ref: "Lessons"
+    },
+    assessment: {
+        type: String,
+        ref: "QuestionGroups"
+    },
+}, {
+    _id: false, timestamps: false
+})
 
 const CourseSchema = new Schema<CourseInterface, CourseInterfaceModel>(
     {
@@ -65,6 +77,10 @@ const CourseSchema = new Schema<CourseInterface, CourseInterfaceModel>(
             type: [String],
             default: [],
             ref: "Lessons"
+        },
+        contents: {
+            type: [CourseContentSchema],
+            default: [],
         },
         currentCohort: {
             type: String,

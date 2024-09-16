@@ -56,3 +56,38 @@ export const fetchCompanies = catchAsync(async (req: Request, res: Response) => 
 
   res.status(httpStatus.OK).send({ message: "Companies", ...teams })
 })
+
+
+export const fetchCompanySubscription = catchAsync(async (req: Request, res: Response) => {
+  const { teamId } = req.params
+
+  if (teamId) {
+    const teams = await subscriptionService.fetchMyActiveSubscription(teamId)
+
+    res.status(httpStatus.OK).send({ message: "company subscription", data: teams })
+  }
+})
+
+
+export const subscribeClient = catchAsync(async (req: Request, res: Response) => {
+  const { numberOfMonths, planId, teamId } = req.body
+  const subscription = await subscriptionService.subscribeClient({ numberOfMonths, planId }, teamId)
+  return res.status(200).json({ message: "Your subscription was successfull", data: subscription })
+})
+
+
+export const transferCompanyOwnership = catchAsync(async (req: Request, res: Response) => {
+  const { teamId } = req.params
+  if (teamId) {
+    const { email, name } = req.body
+    const company = await teamService.fetchTeamById(teamId)
+    if (company) {
+      await userService.updateUserById(company.owner, {
+        email, name
+      })
+      const verifyEmailToken = await tokenService.generateResetPasswordToken(email)
+      emailService.sendResetPasswordEmail(email, verifyEmailToken.resetPasswordToken, name.split(' ')[0] || 'customer',)
+    }
+    res.status(httpStatus.CREATED).send({ message: "Company transfered successfully" })
+  }
+})

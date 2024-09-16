@@ -4,6 +4,12 @@ import { QueryResult } from '../paginate/paginate'
 import { Distribution } from '../courses/interfaces.courses'
 
 
+export interface FacebookIntegrationData {
+    businessId: string
+    phoneNumberId: string
+    token: string | null
+    status: "PENDING" | "CONFIRMED"
+}
 export interface TeamsInterface extends Document {
     _id: string
     name: string
@@ -14,6 +20,7 @@ export interface TeamsInterface extends Document {
     facebookToken: string | null
     facebookBusinessId: string | null
     facebookPhoneNumberId: string | null
+    facebookData: FacebookIntegrationData | null
     channels: DistributionChannel[]
     logo?: string
     color?: {

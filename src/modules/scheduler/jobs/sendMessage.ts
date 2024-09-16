@@ -84,7 +84,7 @@ const handleSendWhatsappMessage: Processor<Message> = async (job: Job<Message>) 
     if (AppConfig.server !== "test") {
       const { team, ...rest } = job.attrs.data
       let teamData: TeamsInterface | undefined = undefined
-      if (team) {
+      if (team && team.length > 0) {
         let dt = await teamService.fetchTeamById(team)
         if (dt) {
           teamData = dt

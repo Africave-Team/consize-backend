@@ -4,8 +4,8 @@ import { Request, Response } from 'express'
 import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { ENROLL_STUDENT_DEFAULT_DATE, RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
-import { CONTINUE, QUIZA_A, QUIZA_B, QUIZA_C,QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow, RESUME_COURSE_TOMORROW } from './interfaces.webhooks'
-import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz,handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement } from "./service.webhooks"
+import { CONTINUE, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow, RESUME_COURSE_TOMORROW } from './interfaces.webhooks'
+import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
@@ -199,42 +199,42 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 }
               })
             } else {
-              // agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              //   to: destination,
-              //   type: "text",
-              //   messaging_product: "whatsapp",
-              //   recipient_type: "individual",
-              //   text: {
-              //     body: "The following message would include your ongoing course enrollments. Click the continue of any one of them to resume that course"
-              //   }
-              // })
-            }
-            for (let enrollment of enrollments) {
-              let progress = (enrollment.nextBlock / enrollment.totalBlocks) * 100
-              if (progress < 100) {
-                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                  to: destination,
-                  type: "interactive",
-                  messaging_product: "whatsapp",
-                  recipient_type: "individual",
-                  interactive: {
-                    body: {
-                      text: `*${enrollment.title}*\n\n${enrollment.description}\n\n*Progress*: ${progress.toFixed(0)}%`
-                    },
-                    type: "button",
-                    action: {
-                      buttons: [
-                        {
-                          type: "reply",
-                          reply: {
-                            id: `continue_${enrollment.id}`,
-                            title: "Continue"
-                          }
+              if (enrollment && enrollment.team) {
+                const team = await teamService.fetchTeamById(enrollment.team)
+                let list = enrollments
+                if (team && team.facebookData) {
+                  list = enrollments.filter(e => e.team === team.id)
+                }
+
+                for (let data of list) {
+                  let progress = (data.nextBlock / data.totalBlocks) * 100
+                  if (progress < 100) {
+                    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                      to: destination,
+                      team: data.team,
+                      type: "interactive",
+                      messaging_product: "whatsapp",
+                      recipient_type: "individual",
+                      interactive: {
+                        body: {
+                          text: `*${data.title}*\n\n${data.description}\n\n*Progress*: ${progress.toFixed(0)}%`
+                        },
+                        type: "button",
+                        action: {
+                          buttons: [
+                            {
+                              type: "reply",
+                              reply: {
+                                id: `continue_${data.id}`,
+                                title: "Continue"
+                              }
+                            }
+                          ]
                         }
-                      ]
-                    }
+                      }
+                    })
                   }
-                })
+                }
               }
             }
             break
@@ -507,43 +507,84 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       let fieldsRaw: string | null
       switch (response) {
         case "/sos":
-          agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-            to: destination,
-            type: "interactive",
-            messaging_product: "whatsapp",
-            recipient_type: "individual",
-            interactive: {
-              body: {
-                text: "Use any one of these options to recover your history"
-              },
-              type: "button",
-              action: {
-                buttons: [
-                  {
-                    type: "reply",
-                    reply: {
-                      id: COURSES,
-                      title: "My courses"
+          if (enrollment) {
+            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: destination,
+              team: enrollment.team,
+              type: "interactive",
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              interactive: {
+                body: {
+                  text: "Use any one of these options to recover your history"
+                },
+                type: "button",
+                action: {
+                  buttons: [
+                    {
+                      type: "reply",
+                      reply: {
+                        id: COURSES,
+                        title: "My courses"
+                      }
+                    },
+                    {
+                      type: "reply",
+                      reply: {
+                        id: STATS,
+                        title: "My stats"
+                      }
+                    },
+                    {
+                      type: "reply",
+                      reply: {
+                        id: CERTIFICATES,
+                        title: "My certificates"
+                      }
                     }
-                  },
-                  {
-                    type: "reply",
-                    reply: {
-                      id: STATS,
-                      title: "My stats"
-                    }
-                  },
-                  {
-                    type: "reply",
-                    reply: {
-                      id: CERTIFICATES,
-                      title: "My certificates"
-                    }
-                  }
-                ]
+                  ]
+                }
               }
-            }
-          })
+            })
+          } else {
+            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: destination,
+              type: "interactive",
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              interactive: {
+                body: {
+                  text: "Use any one of these options to recover your history"
+                },
+                type: "button",
+                action: {
+                  buttons: [
+                    {
+                      type: "reply",
+                      reply: {
+                        id: COURSES,
+                        title: "My courses"
+                      }
+                    },
+                    {
+                      type: "reply",
+                      reply: {
+                        id: STATS,
+                        title: "My stats"
+                      }
+                    },
+                    {
+                      type: "reply",
+                      reply: {
+                        id: CERTIFICATES,
+                        title: "My certificates"
+                      }
+                    }
+                  ]
+                }
+              }
+            })
+          }
           break
         case "1":
         case "2":

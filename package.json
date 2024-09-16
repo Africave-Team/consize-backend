@@ -1,6 +1,6 @@
 {
   "name": "consize-nodejs-app-backend",
-  "version": "0.0.2",
+  "version": "2.0.0",
   "description": "Nodejs backend for Consize app",
   "main": "dist/index.js",
   "bin": "bin/createNodetsApp.cjs",

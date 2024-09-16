@@ -34,4 +34,13 @@ router.patch('/settings/launchtimes/:id/:groupId', courseControllers.setLearnerG
 
 // AI apis
 
+//assessment
+router.route('/assessments/:course')
+  .get(courseControllers.fetchAssessment)
+router.route('/assessments-scores/:assessment')
+  .get(courseControllers.fetchAssessmentScore)
+
+router.route('/assessments-scores/:course/:student')
+  .get(courseControllers.fetchStudentAssessmentScoreByCourse)
+
 export default router

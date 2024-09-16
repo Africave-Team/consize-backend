@@ -50,6 +50,7 @@ export interface StudentCourseStats {
   scores: number[]
   custom?: any
   cohortId?: string
+  totalScore?: number
   lessons: {
     [lessonId: string]: {
       duration: number

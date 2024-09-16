@@ -43,6 +43,17 @@ export const updateUser = {
     .min(1),
 }
 
+
+
+export const updateUserPassword = {
+  body: Joi.object()
+    .keys({
+      oldPassword: Joi.string().custom(password),
+      newPassword: Joi.string().custom(password)
+    })
+    .min(1),
+}
+
 export const deleteUser = {
   params: Joi.object().keys({
     userId: Joi.string().custom(objectId),

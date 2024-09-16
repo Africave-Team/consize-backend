@@ -1,24 +1,25 @@
 import { Document, Model } from 'mongoose'
 import { QueryResult } from '../paginate/paginate'
+import { QuizInterface } from './interfaces.quizzes'
 
 export enum QuestionGroupsTypes {
-    ASSESSMENT = "assessment",
-    PRE_ASSESSMENT = "pre-assessment",
-    END_OF_BLOCK = "end-of-block",
-    END_OF_LESSON = "end-of-lesson",
+  ASSESSMENT = "assessment",
+  PRE_ASSESSMENT = "pre-assessment",
+  END_OF_BLOCK = "end-of-block",
+  END_OF_LESSON = "end-of-lesson",
 }
 
 interface QuestionGroups {
-  type: QuestionGroupsTypes
-  position: string
+  message: string
+  title: string
   questions: string[]
   course: string
 }
 
 export interface QuestionGroupsPayload {
-  type: QuestionGroupsTypes
-  position: string
-  questions: string[]
+  message: string
+  title: string
+  questions: string[] | QuizInterface[]
 }
 
 export interface QuestionGroupsInterface extends QuestionGroups, Document {
