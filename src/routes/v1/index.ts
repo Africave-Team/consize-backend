@@ -20,6 +20,7 @@ import aiRoute from "./ai.routes"
 import adminRoute from "./admin"
 import config from '../../config/config'
 import certificateRoute from './certificates'
+import { courseService } from '../../modules/courses'
 
 const router = express.Router()
 
@@ -115,6 +116,7 @@ const devIRoute: IRoute[] = [
   // IRoute available only in development mode
 ]
 router.get('/', (_: Request, res: Response): void => {
+  courseService.seedContents()
   res.send(`You've reached api routes of Consize`)
 })
 defaultIRoute.forEach((route) => {

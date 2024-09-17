@@ -408,7 +408,7 @@ export const duplicateCourse = catchAsync(async (req: Request, res: Response) =>
   const { title, headerMediaUrl, description } = req.body
   let data
   if (course) {
-    data = await courseService.duplicateCourse({ courseId: course, title, headerMediaUrl, description })
+    data = await courseService.duplicateCourse({ courseId: course, title, headerMediaUrl, description }, req.user.team)
   }
   res.status(200).send({ message: "Course duplicated", data })
 })
@@ -520,7 +520,7 @@ export const fetchAssessmentScore = catchAsync(async (req: Request, res: Respons
           'studentDetails.otherNames': 1  // Only include required student fields
         }
       }
-    ]);
+    ])
   }
   res.status(200).send({ message: "assessment retrieved", assessments: assessments })
 })
@@ -530,36 +530,36 @@ export const fetchAssessment = catchAsync(async (req: Request, res: Response) =>
   let assessment
   if (course) {
     assessment = await QuestionGroup.aggregate([
-    {
-      // Match the question groups by courseId
-      $match: { course: course }
-    },
-    {
-      // Lookup the assessments for each question group
-      $lookup: {
-        from: 'assessments',
-        localField: '_id',
-        foreignField: 'assessmentId',
-        as: 'assessments'
+      {
+        // Match the question groups by courseId
+        $match: { course: course }
+      },
+      {
+        // Lookup the assessments for each question group
+        $lookup: {
+          from: 'assessments',
+          localField: '_id',
+          foreignField: 'assessmentId',
+          as: 'assessments'
+        }
+      },
+      {
+        // Calculate the average score and total number of submissions per assessment
+        $addFields: {
+          averageScore: { $avg: '$assessments.score' },
+          totalSubmissions: { $size: '$assessments' }
+        }
+      },
+      {
+        // Project the desired fields: question group name, average score, total submissions
+        $project: {
+          _id: 1,
+          title: 1,
+          averageScore: 1,
+          totalSubmissions: 1
+        }
       }
-    },
-    {
-      // Calculate the average score and total number of submissions per assessment
-      $addFields: {
-        averageScore: { $avg: '$assessments.score' },
-        totalSubmissions: { $size: '$assessments' }
-      }
-    },
-    {
-      // Project the desired fields: question group name, average score, total submissions
-      $project: {
-        _id: 1,
-        title: 1,
-        averageScore: 1,
-        totalSubmissions: 1
-      }
-    }
-  ]);
+    ])
 
   }
   res.status(200).send({ message: "assessment retrieved", assessment: assessment })
@@ -567,12 +567,12 @@ export const fetchAssessment = catchAsync(async (req: Request, res: Response) =>
 
 export const fetchStudentAssessmentScoreByCourse = catchAsync(async (req: Request, res: Response) => {
   const { course, student } = req.params
-  let assessments:any = []
+  let assessments: any = []
   if (course && student) {
     assessments = await Assessment.find({
       studentId: student,  // Match the given student ID
       courseId: course     // Match the given course ID
-    });
+    })
 
   }
   res.status(200).send({ message: "assessment retrieved", assessments: assessments })
