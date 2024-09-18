@@ -72,6 +72,7 @@ export interface CreateCoursePayload {
     currentCohort?: string
     survey?: string
     courses?: string[]
+    contents: CourseContent[]
     lessons?: string[]
     library?: boolean
 }

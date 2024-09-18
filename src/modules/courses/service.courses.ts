@@ -393,6 +393,7 @@ export const duplicateCourse = async ({ courseId, title, headerMediaUrl, descrip
       currentCohort: oldCourse.currentCohort || "",
       survey: oldCourse.survey || "",
       courses: oldCourse.courses || [],
+      contents: [],
     }, owner)
     if (!oldCourse.bundle && course) {
       for (let content of oldCourse.contents) {
@@ -415,7 +416,7 @@ export const duplicateCourse = async ({ courseId, title, headerMediaUrl, descrip
                 payload.bodyMedia = e.bodyMedia
               }
 
-              const block = await createBlock(payload, newlesson.id, courseId)
+              const block = await createBlock(payload, newlesson.id, course.id)
               if (e.quiz && block) {
                 let old = await Quizzes.findById(e.quiz)
                 if (old) {
@@ -427,7 +428,7 @@ export const duplicateCourse = async ({ courseId, title, headerMediaUrl, descrip
                     correctAnswerContext: old.correctAnswerContext,
                     correctAnswerIndex: old.correctAnswerIndex,
                     hint: old.hint || ""
-                  }, newlesson.id, courseId, block.id)
+                  }, newlesson.id, course.id, block.id)
                 }
 
               }
@@ -445,7 +446,7 @@ export const duplicateCourse = async ({ courseId, title, headerMediaUrl, descrip
                   correctAnswerContext: e.correctAnswerContext,
                   correctAnswerIndex: e.correctAnswerIndex,
                   hint: e.hint || ""
-                }, newlesson.id, courseId)
+                }, newlesson.id, course.id)
               }
               return e
             }))
@@ -460,7 +461,7 @@ export const duplicateCourse = async ({ courseId, title, headerMediaUrl, descrip
               message: qg.message,
               questions: [],
               title: qg.title
-            }, courseId)
+            }, course.id)
             for (let q of qg.questions) {
               let question = await Quizzes.findById(q)
               if (question) {
@@ -471,7 +472,7 @@ export const duplicateCourse = async ({ courseId, title, headerMediaUrl, descrip
                   correctAnswerIndex: question.correctAnswerIndex,
                   revisitChunk: question.revisitChunk,
                   wrongAnswerContext: question.wrongAnswerContext
-                }, id, courseId)
+                }, id, course.id)
               }
             }
           }
