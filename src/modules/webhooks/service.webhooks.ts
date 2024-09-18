@@ -309,14 +309,14 @@ export const generateCourseFlow = async function (courseId: string) {
           if (lessonData.quizzes.length > 0) {
             flow.push({
               type: CourseFlowMessageType.ENDQUIZ,
-              content: `Congratulations on finishing the assessment 🥳! Let’s see how well you did 🌚\n\nYou scored: {score}% in this lesson 🏆\nYou are currently ranked #{course_rank} in this course 🏅\nYour course progress: {progress}% ⏱\n\nIn a few seconds, you will see a leaderboard showing the top performers in this course.
+              content: `Congratulations on finishing the quiz 🥳! Let’s see how well you did 🌚\n\nYou scored: {score}% in this lesson 🏆\nYou are currently ranked #{course_rank} in this course 🏅\nYour course progress: {progress}% ⏱\n\nIn a few seconds, you will see a leaderboard showing the top performers in this course.
           `
             })
           }
           // add intro to the next lesson
-          const nextLesson = course.lessons[lessonIndex + 1]
-          if (nextLesson) {
-            lessonData = await Lessons.findById(nextLesson)
+          const nextLesson = course.contents[lessonIndex + 1]
+          if (nextLesson && nextLesson.lesson) {
+            lessonData = await Lessons.findById(nextLesson.lesson)
             if (lessonData) {
               flow.push({
                 type: CourseFlowMessageType.ENDLESSON,
@@ -326,7 +326,6 @@ export const generateCourseFlow = async function (courseId: string) {
             }
           }
         }
-        lessonIndex++
       }
       if (content.assessment) {
         const assessmentData = await QuestionGroup.findById(content.assessment)
@@ -362,8 +361,21 @@ export const generateCourseFlow = async function (courseId: string) {
               })
             }
           }
+          // add intro to the next lesson
+          const nextLesson = course.contents[lessonIndex + 1]
+          if (nextLesson && nextLesson.lesson) {
+            let lessonData = await Lessons.findById(nextLesson.lesson)
+            if (lessonData) {
+              flow.push({
+                type: CourseFlowMessageType.ENDLESSON,
+                content: `*Next lesson*: ${lessonData.title}\n\n➡️ Tap 'Continue Now' when you're ready to start.\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.
+            `
+              })
+            }
+          }
         }
       }
+      lessonIndex++
     }
     let load = {
       type: CourseFlowMessageType.ENDCOURSE,
