@@ -22,6 +22,7 @@ const createCourseRequest: Record<keyof CreateCoursePayload, any> = {
   currentCohort: Joi.string().optional(),
   survey: Joi.string().optional(),
   lessons: Joi.array().items(Joi.string()).optional(),
+  contents: Joi.array().items().optional(),
   courses: Joi.when('bundle', {
     is: true,
     then: Joi.array().items(Joi.string()).required(),

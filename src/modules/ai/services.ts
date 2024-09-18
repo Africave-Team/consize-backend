@@ -128,6 +128,7 @@ export const buildCourse = async function (jobId: string, teamId: string) {
         url: "https://picsum.photos/200/300.jpg",
         awsFileKey: ""
       },
+      contents: [],
       source: Sources.AI,
       bundle: false,
       private: false,
@@ -768,6 +769,7 @@ export const initiateDocumentQueryAssistant = async function ({ jobId, prompt, t
           url: "https://picsum.photos/200/300.jpg",
           awsFileKey: ""
         },
+        contents: [],
         source: Sources.AI,
         bundle: false,
         private: false,

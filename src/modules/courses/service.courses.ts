@@ -372,7 +372,7 @@ export const duplicateCourse = async ({ courseId, title, headerMediaUrl, descrip
   if (oldCourse) {
     let nTitle = ""
     let titleRegex = new RegExp(title)
-    let existingNames = await Course.countDocuments({ title: { $regex: titleRegex, $options: "i" } })
+    let existingNames = await Course.countDocuments({ title: { $regex: titleRegex, $options: "i" }, owner })
     if (existingNames > 0) {
       nTitle = `${oldCourse.title} ${existingNames + 1}`
     } else {
