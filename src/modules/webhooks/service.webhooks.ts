@@ -179,7 +179,7 @@ export const generateCourseFlow = async function (courseId: string) {
 
     // blocks
     let lessonIndex = 0
-    // let lessonCount = 0
+    let lessonCount = 0
     for (let content of course.contents) {
       if (content.lesson) {
         let lessonData = await Lessons.findById(content.lesson)
@@ -188,7 +188,7 @@ export const generateCourseFlow = async function (courseId: string) {
           for (let blockId of lessonData.blocks) {
             let content = ``
             if (blockIndex === 0) {
-              content = `*Lesson ${lessonIndex + 1}: ${lessonData.title.trim()}*`
+              content = `*Lesson ${lessonCount + 1}: ${lessonData.title.trim()}*`
             }
             const blockData = await Blocks.findById(blockId)
             if (blockData) {
@@ -327,6 +327,7 @@ export const generateCourseFlow = async function (courseId: string) {
             }
           }
         }
+        lessonCount++
       }
       if (content.assessment) {
         const assessmentData = await QuestionGroup.findById(content.assessment)
@@ -1576,7 +1577,33 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               updatedData = { ...updatedData, dailyLessonsCount: updatedData.dailyLessonsCount + 1 }
             }
 
+            if (flowData[nextIndex + 1]?.type == CourseFlowMessageType.STARTASSESSMENT) {
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: phoneNumber,
+                team: data.team,
+                type: "interactive",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                interactive: {
+                  body: {
+                    text: 'Well done on completing the last lesson! 🙌🏽 \n Please click continue to proceed with the rest of the course'
+                  },
+                  type: "button",
+                  action: {
+                    buttons: [
+                      {
+                        type: "reply",
+                        reply: {
+                          id: CONTINUE + `|${messageId}`,
+                          title: "Continue"
+                        }
+                      },
 
+                    ]
+                  }
+                }
+              })
+            } else {
               let message = item.content + `\nWell done on completing the last lesson! 🙌🏽 \nYou have completed ${updatedData.dailyLessonsCount} today but you're required to complete ${updatedData.minLessonsPerDay} daily.\nTo reach the daily minimum lesson target, you have to complete ${updatedData.minLessonsPerDay - updatedData.dailyLessonsCount} lessons.\nWe're rooting for you!`.toString()
 
               if (updatedData.maxLessonsPerDay - updatedData.dailyLessonsCount > 0) {
@@ -1693,6 +1720,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 })
               }
               updatedData.finishedLastLessonAt = new Date().getTime()
+            }
 
             await redisClient.set(key, JSON.stringify({ ...updatedData }))
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
