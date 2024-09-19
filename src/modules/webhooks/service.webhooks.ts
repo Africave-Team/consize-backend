@@ -327,6 +327,7 @@ export const generateCourseFlow = async function (courseId: string) {
             }
           }
         }
+        lessonCount++
       }
       if (content.assessment) {
         const assessmentData = await QuestionGroup.findById(content.assessment)
