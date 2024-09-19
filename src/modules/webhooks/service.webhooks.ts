@@ -179,7 +179,7 @@ export const generateCourseFlow = async function (courseId: string) {
 
     // blocks
     let lessonIndex = 0
-    let lessonCount = 0
+    // let lessonCount = 0
     for (let content of course.contents) {
       if (content.lesson) {
         let lessonData = await Lessons.findById(content.lesson)
@@ -188,7 +188,7 @@ export const generateCourseFlow = async function (courseId: string) {
           for (let blockId of lessonData.blocks) {
             let content = ``
             if (blockIndex === 0) {
-              content = `*Lesson ${lessonCount + 1}: ${lessonData.title.trim()}*`
+              content = `*Lesson ${lessonIndex + 1}: ${lessonData.title.trim()}*`
             }
             const blockData = await Blocks.findById(blockId)
             if (blockData) {
