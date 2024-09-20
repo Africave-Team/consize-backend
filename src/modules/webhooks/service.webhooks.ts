@@ -243,8 +243,8 @@ export const generateCourseFlow = async function (courseId: string) {
                 flo.content = content
                 flow.push(flo)
               }
+              blockIndex++
             }
-            blockIndex++
           }
           if (lessonData.quizzes.length > 0) {
             let payload: CourseFlowItem = {
@@ -255,19 +255,20 @@ export const generateCourseFlow = async function (courseId: string) {
             flow.push(payload)
           }
           let quizIndex = 0
+          const quizzes = await Quizzes.find({ _id: { $in: lessonData.quizzes } })
           for (let quizId of lessonData.quizzes) {
             const quizData = await Quizzes.findById(quizId)
             if (quizData) {
-              let content = `End of lesson quiz ${quizIndex + 1}/${lessonData.quizzes.length}\n\nQuestion:\n${convertToWhatsAppString(he.decode(quizData.question))}\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]} \n\nC: ${quizData.choices[2]}`
+              let content = `End of lesson quiz ${quizIndex + 1}/${quizzes.length}\n\nQuestion:\n${convertToWhatsAppString(he.decode(quizData.question))}\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]} \n\nC: ${quizData.choices[2]}`
               flow.push({
                 type: CourseFlowMessageType.QUIZ,
                 content,
                 lesson: lessonData,
                 quiz: quizData
               })
+              quizIndex++
             }
 
-            quizIndex++
           }
           // add score card for the quizes
           if (lessonData.quizzes.length > 0) {
@@ -289,8 +290,8 @@ export const generateCourseFlow = async function (courseId: string) {
               })
             }
           }
+          lessonCount++
         }
-        lessonCount++
       }
       if (content.assessment) {
         const assessmentData = await QuestionGroup.findById(content.assessment)
