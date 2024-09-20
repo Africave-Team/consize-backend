@@ -327,6 +327,11 @@ export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: stri
       path: 'quizzes' // Populating quizzes at the lesson level
     }
   }).populate({
+    path: "contents.lesson",
+    populate: {
+      path: 'blocks' // Populating quizzes at the lesson level
+    }
+  }).populate({
     path: "contents.assessment",
     populate: {
       path: 'questions' // Populating quizzes at the lesson level
