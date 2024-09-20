@@ -2049,10 +2049,13 @@ export const handleSurveyMulti = async (answer: number, data: CourseEnrollment, 
     const courseFlow = await redisClient.get(courseKey)
     const key = `${config.redisBaseKey}enrollments:${phoneNumber}:${data?.id}`
     if (courseFlow) {
+      console.log("flow")
       const courseFlowData: CourseFlowItem[] = JSON.parse(courseFlow)
       const item = courseFlowData[data.currentBlock]
+      console.log(data.currentBlock, item, item?.surveyId)
       if (item && item.surveyId) {
         // save the survey response
+        console.log(item.surveyQuestion, answer)
         if (item.surveyQuestion && answer && item.surveyQuestion?.choices[answer]) {
           await SurveyResponse.create({
             survey: item.surveyId,
