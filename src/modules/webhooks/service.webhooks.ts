@@ -240,6 +240,7 @@ export const generateCourseFlow = async function (courseId: string) {
 
                 }
               } else {
+                flo.content = content
                 flow.push(flo)
               }
             }
