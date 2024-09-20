@@ -1180,7 +1180,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
             },
             {
               // @ts-ignore
-              v: response.student?.name || "",
+              v: `${response.student?.firstName} ${response.student?.otherNames}` || "",
               t: "s",
               s: {
                 alignment: {
