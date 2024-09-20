@@ -190,95 +190,57 @@ export const generateCourseFlow = async function (courseId: string) {
             if (blockIndex === 0) {
               content = `*Lesson ${lessonCount + 1}: ${lessonData.title.trim()}*`
             }
+
             const blockData = await Blocks.findById(blockId)
             if (blockData) {
+              let flo: CourseFlowItem = {
+                type: CourseFlowMessageType.BLOCK,
+                content,
+                block: blockData,
+                lesson: lessonData
+              }
               content += ` \n\n*Section ${blockIndex + 1}: ${blockData.title.trim()}* \n\n${convertToWhatsAppString(he.decode(blockData.content))}`
               if (blockData.quiz) {
                 const quiz = await Quizzes.findById(blockData.quiz)
                 if (quiz) {
                   content += `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
-                  let flo: CourseFlowItem = {
-                    type: CourseFlowMessageType.BLOCKWITHQUIZ,
-                    content,
-                    block: blockData,
-                    lesson: lessonData,
-                    quiz,
-                  }
-                  if (blockData.bodyMedia && blockData.bodyMedia.url && blockData.bodyMedia.url.length > 10) {
-                    flo.mediaType = blockData.bodyMedia.mediaType
-                    flo.mediaUrl = blockData.bodyMedia.url
-                    if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
-                      flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
-                      flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
-                    }
-                  }
-                  if (content.length > 1024) {
-                    let chunks = splitStringIntoChunks(content)
-                    for (let index = 0; index < chunks.length; index++) {
-                      let copy = { ...flo }
-                      const element = chunks[index]
-                      if (element) {
-                        if (index === 0) {
-                          copy.type = CourseFlowMessageType.BLOCK
-                          copy.content = element
-                          delete copy.quiz
-                          flow.push(copy)
-                        } else {
-                          copy = { ...flo }
-                          copy.content = element
-                          delete copy.mediaType
-                          delete copy.mediaUrl
-                          delete copy.thumbnailUrl
-                          flow.push(copy)
-                        }
-                      }
+                  flo.quiz = quiz
+                  flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
+                }
+              }
+              if (blockData.bodyMedia && blockData.bodyMedia.url) {
+                flo.mediaType = blockData.bodyMedia.mediaType
+                flo.mediaUrl = blockData.bodyMedia.url
+                if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
+                  flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
+                  flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
+                }
+              }
 
+              if (content.length > 1024) {
+                let chunks = splitStringIntoChunks(content)
+                for (let index = 0; index < chunks.length; index++) {
+                  let copy = { ...flo }
+                  const element = chunks[index]
+                  if (element) {
+                    if (index === 0) {
+                      copy.type = CourseFlowMessageType.BLOCK
+                      copy.content = element
+                      delete copy.quiz
+                      flow.push(copy)
+                    } else {
+                      copy = { ...flo }
+                      copy.content = element
+                      delete copy.mediaType
+                      delete copy.mediaUrl
+                      delete copy.thumbnailUrl
+                      flow.push(copy)
                     }
-                  } else {
-                    flow.push(flo)
                   }
+
                 }
               } else {
-                let flo: CourseFlowItem = {
-                  type: CourseFlowMessageType.BLOCK,
-                  content,
-                  block: blockData,
-                  lesson: lessonData
-                }
-                if (blockData.bodyMedia && blockData.bodyMedia.url) {
-                  flo.mediaType = blockData.bodyMedia.mediaType
-                  flo.mediaUrl = blockData.bodyMedia.url
-                  if (blockData.bodyMedia.mediaType === MediaType.VIDEO) {
-                    flo.thumbnailUrl = await generateVideoThumbnail(blockData.bodyMedia.url)
-                    flo.mediaUrlEmbed = encodeURI(`${config.clientUrl}/embed/${blockData.bodyMedia.url.replace('https://storage.googleapis.com/kippa-cdn-public/microlearn-images/', '').replace('.mp4', '')}`)
-                  }
-                }
-
-                if (content.length > 1024) {
-                  let chunks = splitStringIntoChunks(content)
-                  for (let index = 0; index < chunks.length; index++) {
-                    let copy = { ...flo }
-                    const element = chunks[index]
-                    if (element) {
-                      if (index === 0) {
-                        copy.type = CourseFlowMessageType.BLOCK
-                        copy.content = element
-                        delete copy.quiz
-                        flow.push(copy)
-                      } else {
-                        copy = { ...flo }
-                        copy.content = element
-                        delete copy.mediaType
-                        delete copy.mediaUrl
-                        delete copy.thumbnailUrl
-                        flow.push(copy)
-                      }
-                    }
-
-                  }
-                } else {
-                  flow.push(flo)
-                }
+                flow.push(flo)
               }
             }
             blockIndex++
