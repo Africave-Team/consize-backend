@@ -2054,7 +2054,11 @@ export const handleSurveyMulti = async (answer: number, data: CourseEnrollment, 
       if (item && item.surveyId) {
         // save the survey response
         if (item.surveyQuestion && item.surveyQuestion?.choices[answer]) {
-          await SurveyResponse.create({
+          await SurveyResponse.updateOne({
+            course: data.id,
+            student: data.student,
+            survey: item.surveyId,
+          }, {
             survey: item.surveyId,
             team: data.team,
             surveyQuestion: item.surveyQuestion.id,
@@ -2062,7 +2066,7 @@ export const handleSurveyMulti = async (answer: number, data: CourseEnrollment, 
             student: data.student,
             response: item.surveyQuestion.choices[answer],
             responseType: ResponseType.MULTI_CHOICE
-          })
+          }, { upsert: true })
         }
         // check if the next block is a survey
         let nextBlock = courseFlowData[data.nextBlock]
@@ -2107,7 +2111,11 @@ export const handleSurveyFreeform = async (answer: string, data: CourseEnrollmen
     if (item && item.surveyId) {
       // save the survey response
       if (item.surveyQuestion) {
-        await SurveyResponse.create({
+        await SurveyResponse.updateOne({
+          course: data.id,
+          survey: item.surveyId,
+          student: data.student,
+        }, {
           survey: item.surveyId,
           team: data.team,
           surveyQuestion: item.surveyQuestion.id,
@@ -2115,7 +2123,7 @@ export const handleSurveyFreeform = async (answer: string, data: CourseEnrollmen
           student: data.student,
           response: answer,
           responseType: ResponseType.FREE_FORM
-        })
+        }, { upsert: true })
       }
       // check if the next block is a survey
       let nextBlock = courseFlowData[data.nextBlock]
