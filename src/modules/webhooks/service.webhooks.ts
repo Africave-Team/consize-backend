@@ -320,7 +320,7 @@ export const generateCourseFlow = async function (courseId: string) {
             if (assessmentData.questions.length === quizIndex) {
               flow.push({
                 type: CourseFlowMessageType.ENDASSESSMENT,
-                content: `Congratulations on finishing the assessment 🥳! Click continue to continue with the rest of the course.`,
+                content: lessonIndex === 0 ? `Great job! Now that you’ve completed this assessment, let’s start the course and learn! 🥳` : `Well done! You've completed this assessment. Let's continue with the course and keep building on what you've learned!`,
                 assessmentId: assessmentData._id
               })
             }
