@@ -2058,6 +2058,7 @@ export const handleSurveyMulti = async (answer: number, data: CourseEnrollment, 
             course: data.id,
             student: data.student,
             survey: item.surveyId,
+            surveyQuestion: item.surveyQuestion.id,
           }, {
             survey: item.surveyId,
             team: data.team,
@@ -2115,6 +2116,7 @@ export const handleSurveyFreeform = async (answer: string, data: CourseEnrollmen
           course: data.id,
           survey: item.surveyId,
           student: data.student,
+          surveyQuestion: item.surveyQuestion.id,
         }, {
           survey: item.surveyId,
           team: data.team,
