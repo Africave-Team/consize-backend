@@ -46,7 +46,7 @@ export const fetchSurveyResponses = async (course: string): Promise<SurveyRespon
       throw new ApiError(httpStatus.NOT_FOUND, "Survey not found")
     }
     const responses: SurveyResponseInterface[] = await SurveyResponse.aggregate([
-      { $match: { course } },
+      { $match: { course, responseType: ResponseType.FREE_FORM } },
       {
         $group: {
           _id: '$student',
