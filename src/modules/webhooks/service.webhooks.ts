@@ -737,15 +737,9 @@ export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string
           link: data.mediaUrl
         }
       }
-      if ((data.mediaType === MediaType.VIDEO || data.mediaType === MediaType.AUDIO) && data.mediaUrlEmbed && payload.interactive.header) {
-        if (data.mediaUrlEmbed) {
-          payload.interactive.header.video = {
-            link: data.mediaUrlEmbed
-          }
-        } else {
-          payload.interactive.header.video = {
-            link: data.mediaUrl
-          }
+      if ((data.mediaType === MediaType.VIDEO || data.mediaType === MediaType.AUDIO) && payload.interactive.header) {
+        payload.interactive.header.video = {
+          link: data.mediaUrl
         }
       }
     }
