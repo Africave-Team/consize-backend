@@ -20,7 +20,7 @@ export const login = {
   body: Joi.object().keys({
     email: Joi.string().required(),
     password: Joi.string().required(),
-    shortCode: Joi.string().optional(),
+    shortCode: Joi.string().optional().allow(""),
   }),
 }
 

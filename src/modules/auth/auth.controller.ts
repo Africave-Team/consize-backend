@@ -27,7 +27,7 @@ export const login = catchAsync(async (req: Request, res: Response) => {
   const user = await authService.loginUserWithEmailAndPassword(email, password)
   const tokens = await tokenService.generateAuthTokens(user)
   const team = await teamService.fetchTeamById(user.team)
-  if (shortCode && team && team.shortCode !== shortCode) {
+  if (shortCode && shortCode.length > 0 && team && team.shortCode !== shortCode) {
     throw new ApiError(httpStatus.BAD_REQUEST, "You are not a member of this workspace")
   }
   res.send({ user, tokens, team })
