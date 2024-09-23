@@ -37,6 +37,7 @@ import { QuestionGroupsInterface, QuestionGroupsPayload } from './interfaces.que
 import QuestionGroup from './model.question-group'
 import Enrollments from '../sessions/model'
 import Courses from './model.courses'
+import { Survey, SurveyResponse } from '../surveys'
 
 interface SessionStudent extends StudentCourseStats {
   id: string
@@ -325,6 +326,11 @@ export const fetchSingleTeamCourse = async ({ teamId, courseId }: { teamId: stri
     path: "contents.lesson",
     populate: {
       path: 'quizzes' // Populating quizzes at the lesson level
+    }
+  }).populate({
+    path: "contents.lesson",
+    populate: {
+      path: 'blocks' // Populating quizzes at the lesson level
     }
   }).populate({
     path: "contents.assessment",
@@ -1111,10 +1117,138 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
       ]
     })
   ]
+  let reviewData: RowData[][] = []
+  if (course.survey) {
+    const survey = await Survey.findById(course.survey)
+    const responses = await SurveyResponse.find({ course: courseId, survey: course.survey }).populate("student")
+
+    if (survey) {
+      reviewData = [
+        [
+          {
+            v: "Question",
+            t: "s",
+            s: {
+              font: {
+                sz: 15,
+                bold: true
+              },
+            }
+          },
+          {
+            v: "Response",
+            t: "s",
+            s: {
+              font: {
+                sz: 15,
+                bold: true
+              }
+            }
+          },
+          {
+            v: "Response type",
+            t: "s",
+            s: {
+              font: {
+                sz: 15,
+                bold: true
+              }
+            }
+          },
+          {
+            v: "Student name",
+            t: "s",
+            s: {
+              font: {
+                sz: 15,
+                bold: true
+              },
+            }
+          },
+          {
+            v: "Phone number",
+            t: "s",
+            s: {
+              font: {
+                sz: 15,
+                bold: true
+              },
+            }
+          },
+        ],
+        ...responses.map((response) => {
+          let q = survey.questions.find(e => e.id === response.surveyQuestion)
+          return [
+            {
+              v: q?.question || "",
+              t: "s",
+              s: {
+                font: {
+                  bold: true
+                }
+              }
+            },
+            {
+              // @ts-ignore
+              v: response.response || "",
+              t: "s",
+              s: {
+                alignment: {
+                  horizontal: 'left',
+                  vertical: 'center',
+                },
+                font: {
+                  bold: true
+                }
+              }
+            },
+            {
+              v: q?.responseType.replace('-', ' ') || "",
+              t: "s",
+              s: {
+                font: {
+                  bold: true
+                }
+              }
+            },
+            {
+              // @ts-ignore
+              v: `${response.student?.firstName} ${response.student?.otherNames}` || "",
+              t: "s",
+              s: {
+                alignment: {
+                  horizontal: 'left',
+                  vertical: 'center',
+                },
+                font: {
+                  bold: true
+                }
+              }
+            },
+            {
+              // @ts-ignore
+              v: response.student?.phoneNumber || "",
+              t: "s",
+              s: {
+                alignment: {
+                  horizontal: 'left',
+                  vertical: 'center',
+                },
+                font: {
+                  bold: true
+                }
+              }
+            }
+          ]
+        })
+      ]
+    }
+  }
   const path = await handleExport({
     name: name.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, '-').toLowerCase(),
     statsData,
-    tableData
+    tableData,
+    reviewData: reviewData.length > 0 ? reviewData : undefined
   })
   return {
     file: path,
