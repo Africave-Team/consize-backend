@@ -2389,7 +2389,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
       })
     }
   } catch (error) {
-    console.log("Something Failed in this flow =>", (error as AxiosError))
+    console.log("Something Failed in this flow =>", (error as AxiosError).response?.data)
   }
 }
 
