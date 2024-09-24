@@ -2335,13 +2335,14 @@ export const exchangeFacebookToken = async function (code: string, team: string)
           Authorization: `Bearer ${config.whatsapp.token}`
         }
       })
+      console.log("fetched parent templates =>", parentTemplatesResults.data,)
       const childTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       })
 
-      console.log("Fetched both parent and child templates =>", parentTemplatesResults.data, childTemplatesResults.data)
+      console.log("Fetched child templates =>", childTemplatesResults.data)
 
       const parent_optin_template = parentTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
       const child_optin_template = childTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
@@ -2389,7 +2390,8 @@ export const exchangeFacebookToken = async function (code: string, team: string)
       })
     }
   } catch (error) {
-    console.log("Something Failed in this flow =>", (error as AxiosError).response?.data)
+    console.log("Something Failed in this flow =>", (error as AxiosError))
+    console.log("Something Failed in this flow =>", (error as AxiosError)?.response?.data)
   }
 }
 
