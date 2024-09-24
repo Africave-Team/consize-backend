@@ -2288,6 +2288,7 @@ export const sendScheduleAcknowledgement = async (phoneNumber: string, time: str
 
 export const exchangeFacebookToken = async function (code: string, team: string) {
   try {
+    console.log("exchanging facebook token =>", code)
     const result: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/oauth/access_token`, {
       params: {
         'client_id': config.facebook.id,
@@ -2296,13 +2297,16 @@ export const exchangeFacebookToken = async function (code: string, team: string)
         'grant_type': 'authorization_code'
       }
     })
+    console.log("Finished exchange =>", result.data)
     const token = result.data.access_token
     let teamData = await teamService.fetchTeamById(team)
+    console.log("Fecthed team =>", team, teamData)
     if (teamData && teamData.facebookBusinessId && teamData.facebookPhoneNumberId) {
       const updatePayload: FacebookIntegrationData = { phoneNumberId: teamData.facebookPhoneNumberId, businessId: teamData.facebookBusinessId, status: "PENDING", token }
       await teamService.updateTeamInfo(team, {
         facebookData: updatePayload
       })
+      console.log("Finished updating team data =>", updatePayload)
       // register the phone number
       await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.phoneNumberId}/register`, {
         messaging_product: "whatsapp",
@@ -2322,7 +2326,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
           'Content-Type': 'application/json'
         }
       })
-
+      console.log("Register phone and subscribe =>")
       // copy the auth template to the new waba from main account
       // get the auth template
 
@@ -2336,6 +2340,8 @@ export const exchangeFacebookToken = async function (code: string, team: string)
           Authorization: `Bearer ${token}`
         }
       })
+
+      console.log("Fetched both parent and child templates =>", parentTemplatesResults.data, childTemplatesResults.data)
 
       const parent_optin_template = parentTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
       const child_optin_template = childTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
@@ -2383,8 +2389,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
       })
     }
   } catch (error) {
-    // @ts-ignore
-    console.log((error as AxiosError).response.data)
+    console.log("Something Failed in this flow =>", (error as AxiosError))
   }
 }
 
