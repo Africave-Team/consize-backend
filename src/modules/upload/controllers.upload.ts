@@ -1,10 +1,13 @@
 import { Request, Response } from 'express'
-import ApiError from '../errors/ApiError'
 import catchAsync from '../utils/catchAsync'
-import { uploadFileToCloudStorage } from '../upload/service.upload'
+import { reencodeVideo, uploadFileToCloudStorage } from '../upload/service.upload'
 import Busboy from 'busboy'
 import { Readable } from 'stream'
-import { logger } from '../logger'
+import path from 'path'
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs'
+const projectRoot = process.cwd()
+
+const localVideoPath = path.join(projectRoot, 'generated-files')
 
 // Define a function to convert file stream to buffer
 async function streamToBuffer (fileStream: Readable): Promise<Buffer> {
@@ -33,20 +36,86 @@ async function streamToBuffer (fileStream: Readable): Promise<Buffer> {
 export const uploadFile = catchAsync(async (req: Request, res: Response) => {
 
   const busboy = Busboy({ headers: req.headers })
+  const uploads: { url?: string, filename?: string, error?: string }[] = [] // To track multiple file uploads if needed
   let destination = 'microlearn-images/'
-  busboy.on('file', async (_, file, { filename, mimeType }) => {
+  busboy.on('file', async (_, file, { mimeType, filename: fileName }) => {
+    let filename = new Date().getTime().toString() + '.' + fileName.split('.')[1]
     if (mimeType === 'application/pdf') {
       destination = 'microlearn-pdfs/'
     }
-    destination = destination + filename
-    try {
-      const buffer = await streamToBuffer(file)
-      const url = await uploadFileToCloudStorage(buffer, destination)
-      return res.send({ data: url, message: "File uploaded successfully" })
-    } catch (error) {
-      logger.info(error)
-      throw new ApiError(503, "Could not upload this file")
+
+    if (mimeType.startsWith('video/')) {
+      if (!existsSync(localVideoPath)) {
+        mkdirSync(localVideoPath)
+      }
+
+      try {
+        // Convert stream to buffer and save temporarily
+        const tempFilePath = path.join(localVideoPath, filename)
+        const buffer = await streamToBuffer(file)
+        writeFileSync(tempFilePath, buffer)
+
+        // Analyze video encoding
+        // const metadata = await getVideoMetadata(tempFilePath)
+
+        // // Check if video is already in desired format (H.264 for video and AAC for audio)
+        // const videoCodec = metadata.video_codec
+        // const audioCodec = metadata.audio_codec
+
+        // if (videoCodec !== 'h264' || audioCodec !== 'aac') {
+        // Re-encode video if it does not conform to H.264 and AAC
+        const outputFileName = `reencoded-${filename}`
+        const outputFilePath = path.join(localVideoPath, outputFileName)
+
+        await reencodeVideo(tempFilePath, outputFilePath)
+
+        // Upload re-encoded video
+        const reencodedBuffer = readFileSync(outputFilePath)
+        const url = await uploadFileToCloudStorage(reencodedBuffer, destination + outputFileName)
+
+        // Clean up temp files
+        unlinkSync(tempFilePath)
+        unlinkSync(outputFilePath)
+
+        uploads.push({ url, filename: outputFileName })
+        // } else {
+        //   // Upload original video if encoding is correct
+        //   const url = await uploadFileToCloudStorage(buffer, destination + filename)
+
+        //   // Clean up temp file
+        //   unlinkSync(tempFilePath)
+
+        //   uploads.push({ url, filename })
+        // }
+
+      } catch (error) {
+        console.error(error)
+        uploads.push({ error: `Could not process video file: ${filename}` })
+      }
+
+    } else {
+      // Handle non-video files (images, PDFs, etc.)
+      if (mimeType === 'application/pdf') {
+        destination = 'microlearn-pdfs/'
+      }
+
+      destination += filename
+
+      try {
+        // Convert stream to buffer and upload non-video files as is
+        const buffer = await streamToBuffer(file)
+        const url = await uploadFileToCloudStorage(buffer, destination)
+
+        uploads.push({ url, filename })
+
+      } catch (error) {
+        console.error(error)
+        uploads.push({ error: `Could not upload file: ${filename}` })
+      }
     }
+
+    return res.send({ data: uploads[0]?.url, message: "File uploaded successfully" })
   })
+
   req.pipe(busboy)
 })
