@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import catchAsync from '../utils/catchAsync'
-import { reencodeVideo, uploadFileToCloudStorage } from '../upload/service.upload'
+import { reencodeVideo, uploadFileToCloudStorage, handleVideoReencoding } from '../upload/service.upload'
 import Busboy from 'busboy'
 import { Readable } from 'stream'
 import path from 'path'
@@ -118,4 +118,10 @@ export const uploadFile = catchAsync(async (req: Request, res: Response) => {
   })
 
   req.pipe(busboy)
+})
+
+
+export const reencodeVideos = catchAsync(async (_: Request, res: Response) => {
+  handleVideoReencoding()
+  return res.send({ message: "successfully" })
 })
