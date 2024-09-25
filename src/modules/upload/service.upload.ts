@@ -198,9 +198,9 @@ export async function downloadFileToDir (url: string, dir: string) {
 export async function handleVideoReencoding () {
   const projectRoot = process.cwd()
   const localVideoPath = path.join(projectRoot, 'generated-files')
-  const id = 'bcff47ae-b4dc-4a77-b4f6-3768db1c0dcc'
+  // const id = 'bcff47ae-b4dc-4a77-b4f6-3768db1c0dcc'
   const blocks = await Blocks.find({
-    course: { $ne: id }, 'bodyMedia.mediaType': MediaType.VIDEO
+    course: "8822cee4-3557-4207-8c9f-6ef7341dc328", 'bodyMedia.mediaType': MediaType.VIDEO
   })
   if (!existsSync(localVideoPath)) {
     mkdirSync(localVideoPath)
