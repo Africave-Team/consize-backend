@@ -9,6 +9,8 @@ import { unlinkSync } from 'fs'
 import { QuizInterface } from './interfaces.quizzes'
 import Assessment from '../statistics/assessment.model'
 import QuestionGroup from './model.question-group'
+import { transitionMessages as defaultTransitionMessage } from './interfaces.transition-messages'
+import TransitionMessage from './model.transition-message'
 // import { agenda } from '../scheduler'
 // import { unlinkSync } from "fs"
 
@@ -577,3 +579,37 @@ export const fetchStudentAssessmentScoreByCourse = catchAsync(async (req: Reques
   }
   res.status(200).send({ message: "assessment retrieved", assessments: assessments })
 })
+
+export const fetchTransitionMessage = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+  let customTransitionMessages: any = []
+  
+  if (course) {
+    customTransitionMessages = TransitionMessage.find({course})
+  }
+  
+  res.status(200).send({
+    defaultTransitionMessage: defaultTransitionMessage,
+    customTransitionMessages: customTransitionMessages
+  })
+})
+
+export const createTransitionMessage = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+
+  const { message, type } = req.body;
+
+    const updatedDocument = await TransitionMessage.findOneAndUpdate(
+      { course, type }, // Match criteria
+      { message, course, type }, // Fields to update or set on insert
+      {
+        new: true, // Return the updated document
+        upsert: true, // Create a new document if no match is found
+        setDefaultsOnInsert: true, // Apply default values on new document creation
+      }
+    );
+
+  // Respond with the updated or created document
+  res.status(200).json(updatedDocument);
+})
+
