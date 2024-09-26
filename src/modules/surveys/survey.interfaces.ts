@@ -67,3 +67,18 @@ export interface ChartDataInformation {
 export interface ResponseMap {
   [option: string]: number
 }
+
+
+export interface AssessmentAggregationResult {
+  _id: string             // ID of the assessment
+  studentId: string       // ID of the student
+  courseId: string        // ID of the course
+  teamId: string          // ID of the team
+  assessmentId: string    // ID of the assessment
+  score: number           // The score of the assessment
+  title: string
+  studentDetails: {
+    firstName: string     // First name of the student
+    otherNames: string    // Other names of the student
+  }
+}

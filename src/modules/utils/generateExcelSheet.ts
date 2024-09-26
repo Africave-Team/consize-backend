@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx-js-style'
 import path from "path"
 
-const createWorkbook = ({ statsData, tableData, reviewData }: Omit<ExportHandlerInterface, "name">) => {
+const createWorkbook = ({ statsData, tableData, reviewData, assessmentData }: Omit<ExportHandlerInterface, "name">) => {
   // Create a new workbook
   const workbook = XLSX.utils.book_new()
   if (statsData) {
@@ -55,6 +55,23 @@ const createWorkbook = ({ statsData, tableData, reviewData }: Omit<ExportHandler
     // Add Sheet 2 to the workbook
     XLSX.utils.book_append_sheet(workbook, sheet3, 'Survey responses')
 
+  }
+
+  if (assessmentData) {
+    const sheet3 = XLSX.utils.aoa_to_sheet(assessmentData)
+
+    const colWidths3 = [
+      { wch: 70 }, // Width of column A (Question)
+      { wch: 40 }, // Width of column B (Response)
+      { wch: 40 }, // Width of column B (Response type)
+      { wch: 40 }, // Width of column B (Student name)
+      { wch: 40 }, // Width of column B (Phone number)
+    ]
+
+    // Apply column widths to the worksheet
+    sheet3['!cols'] = colWidths3
+    // Add Sheet 2 to the workbook
+    XLSX.utils.book_append_sheet(workbook, sheet3, "Assessments")
   }
 
 
@@ -127,12 +144,13 @@ interface ExportHandlerInterface {
   statsData?: RowData[][] | undefined
   tableData?: RowData[][] | undefined
   reviewData?: RowData[][] | undefined
+  assessmentData?: RowData[][] | undefined
 }
 
-export const handleExport = async ({ name, statsData, tableData, reviewData }: ExportHandlerInterface): Promise<string> => {
+export const handleExport = async ({ name, statsData, tableData, reviewData, assessmentData }: ExportHandlerInterface): Promise<string> => {
   // Create the workbook
   const projectRoot = process.cwd()
-  const workbook = createWorkbook({ statsData, tableData, reviewData })
+  const workbook = createWorkbook({ statsData, tableData, reviewData, assessmentData })
   const filePath = path.join(projectRoot, "generated-files", `${name}.xlsx`)
   // Save the workbook to a file
   try {

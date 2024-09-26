@@ -15,7 +15,7 @@ import Quizzes from './model.quizzes'
 import Settings from './model.settings'
 import { CourseDisableDays, CourseSettings, DropoutEvents, LearnerGroup, LearnerGroupLaunchTime, PeriodTypes } from './interfaces.settings'
 import Students from '../students/model.students'
-import { StudentCourseStats } from '../students/interface.students'
+import { StudentCourseStats, StudentInterface } from '../students/interface.students'
 import moment, { Moment } from 'moment-timezone'
 import { CourseStatistics } from '../rtdb/interfaces.rtdb'
 import { agenda } from '../scheduler'
@@ -38,6 +38,8 @@ import QuestionGroup from './model.question-group'
 import Enrollments from '../sessions/model'
 import Courses from './model.courses'
 import { Survey, SurveyResponse } from '../surveys'
+import { AssessmentAggregationResult, SurveyResponseInterface } from '../surveys/survey.interfaces'
+import Assessment from '../statistics/assessment.model'
 
 interface SessionStudent extends StudentCourseStats {
   id: string
@@ -1142,135 +1144,286 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
   let reviewData: RowData[][] = []
   if (course.survey) {
     const survey = await Survey.findById(course.survey)
-    const responses = await SurveyResponse.find({ course: courseId, survey: course.survey }).populate("student")
+    // const responses = await SurveyResponse.find({ course: courseId, survey: course.survey }).populate("student")
+    const res: {
+      student: Pick<StudentInterface, 'firstName' | 'otherNames' | 'phoneNumber'>  // The populated student details
+      responses: SurveyResponseInterface[]  // The array of survey responses
+    }[] = await SurveyResponse.aggregate([
+      {
+        $match: { course: courseId }  // Step 1: Filter by the given course ID
+      },
+      {
+        $group: {
+          _id: "$student",  // Step 2: Group by student
+          responses: {
+            $push: {  // Group responses into an array
+              _id: "$_id",
+              response: "$response",
+              responseType: "$responseType",
+              survey: "$survey",
+              surveyQuestion: "$surveyQuestion",
+              team: "$team",
+              createdAt: "$createdAt"
+            }
+          }
+        }
+      },
+      {
+        $lookup: {  // Step 3: Populate the student details
+          from: "students",
+          localField: "_id",  // Link to the `student` field (which is the `_id` here)
+          foreignField: "_id",
+          as: "studentDetails"
+        }
+      },
+      {
+        $unwind: "$studentDetails"  // Unwind to deconstruct the student array
+      },
+      {
+        $project: {  // Step 4: Project the desired fields
+          _id: 0,  // Do not include the default MongoDB `_id`
+          student: {
+            firstName: "$studentDetails.firstName",
+            otherNames: "$studentDetails.otherNames",
+            phoneNumber: "$studentDetails.phoneNumber"
+          },
+          responses: 1  // Include the grouped responses
+        }
+      }
+    ]) as {
+      student: Pick<StudentInterface, 'firstName' | 'otherNames' | 'phoneNumber'>  // The populated student details
+      responses: SurveyResponseInterface[]  // The array of survey responses
+    }[]
 
     if (survey) {
+      function removeDuplicatesAndReorderResponses (
+        responses: SurveyResponseInterface[]
+      ): SurveyResponseInterface[] {
+        // Step 1: Remove duplicates
+        const uniqueResponsesMap = new Map<string, SurveyResponseInterface>()
+
+        responses.forEach(response => {
+          if (!uniqueResponsesMap.has(response.surveyQuestion)) {
+            uniqueResponsesMap.set(response.surveyQuestion, response)
+          }
+        })
+
+        // Step 2: Convert map back to array and sort by question order
+        const uniqueResponses = Array.from(uniqueResponsesMap.values())
+
+        return uniqueResponses.sort((a, b) => {
+          const indexA = questionOrderMap.get(a.surveyQuestion) ?? Infinity
+          const indexB = questionOrderMap.get(b.surveyQuestion) ?? Infinity
+          return indexA - indexB
+        })
+      }
+      const questionOrderMap = new Map(
+        survey.questions.map((question, index) => [question.id, index])
+      )
       reviewData = [
         [
-          {
-            v: "Question",
-            t: "s",
-            s: {
-              font: {
-                sz: 15,
-                bold: true
-              },
-            }
-          },
-          {
-            v: "Response",
-            t: "s",
-            s: {
-              font: {
-                sz: 15,
-                bold: true
-              }
-            }
-          },
-          {
-            v: "Response type",
-            t: "s",
-            s: {
-              font: {
-                sz: 15,
-                bold: true
-              }
-            }
-          },
           {
             v: "Student name",
             t: "s",
             s: {
               font: {
-                sz: 15,
+                sz: 10,
                 bold: true
               },
             }
           },
           {
-            v: "Phone number",
+            v: "Student phone number",
             t: "s",
             s: {
               font: {
-                sz: 15,
+                sz: 10,
                 bold: true
-              },
+              }
             }
           },
-        ],
-        ...responses.map((response) => {
-          let q = survey.questions.find(e => e.id === response.surveyQuestion)
-          return [
-            {
-              v: q?.question || "",
-              t: "s",
-              s: {
-                font: {
-                  bold: true
-                }
-              }
-            },
-            {
-              // @ts-ignore
-              v: response.response || "",
-              t: "s",
-              s: {
-                alignment: {
-                  horizontal: 'left',
-                  vertical: 'center',
-                },
-                font: {
-                  bold: true
-                }
-              }
-            },
-            {
-              v: q?.responseType.replace('-', ' ') || "",
-              t: "s",
-              s: {
-                font: {
-                  bold: true
-                }
-              }
-            },
-            {
-              // @ts-ignore
-              v: `${response.student?.firstName} ${response.student?.otherNames}` || "",
-              t: "s",
-              s: {
-                alignment: {
-                  horizontal: 'left',
-                  vertical: 'center',
-                },
-                font: {
-                  bold: true
-                }
-              }
-            },
-            {
-              // @ts-ignore
-              v: response.student?.phoneNumber || "",
-              t: "s",
-              s: {
-                alignment: {
-                  horizontal: 'left',
-                  vertical: 'center',
-                },
-                font: {
-                  bold: true
-                }
+          ...survey.questions.map((q) => ({
+            v: q.question,
+            t: "s",
+            s: {
+              font: {
+                sz: 10,
+                bold: true
               }
             }
+          })),
+        ],
+        ...res.map((r) => {
+
+          let student = r.student
+          let responses = removeDuplicatesAndReorderResponses(r.responses)
+
+          return [
+            {
+              // @ts-ignore
+              v: `${student?.firstName} ${student?.otherNames}` || "",
+              t: "s",
+              s: {
+                alignment: {
+                  horizontal: 'left',
+                  vertical: 'center',
+                },
+                font: {
+                  bold: false,
+                  sz: 10
+                }
+              }
+            },
+            {
+              // @ts-ignore
+              v: student?.phoneNumber || "",
+              t: "s",
+              s: {
+                alignment: {
+                  horizontal: 'left',
+                  vertical: 'center',
+                },
+                font: {
+                  bold: false,
+                  sz: 10
+                }
+              }
+            },
+            ...responses.map((resp) => ({
+              v: resp.response || "",
+              t: "s",
+              s: {
+                font: {
+                  bold: false,
+                  sz: 10
+                }
+              }
+            })),
           ]
         })
       ]
     }
   }
+
+  const assessments = await QuestionGroup.find({ course: course.id })
+  const assessmentData: { studentName: string, id: string, assessmentId: string, scores: number[], questions: number }[] = []
+  for (let assessment of assessments) {
+    let results: AssessmentAggregationResult[] = await Assessment.aggregate([
+      {
+        $match: { assessmentId: assessment.id }  // Match the given assessment ID
+      },
+      {
+        $lookup: {
+          from: 'students',  // Join with students collection
+          localField: 'studentId',  // Field from assessments collection
+          foreignField: '_id',  // Field from students collection
+          as: 'studentDetails'  // Output field
+        }
+      },
+      {
+        $unwind: '$studentDetails'  // Unwind the studentDetails array
+      },
+      {
+        $project: {
+          _id: 1,
+          studentId: 1,
+          courseId: 1,
+          teamId: 1,
+          assessmentId: 1,
+          score: 1,
+          'studentDetails.firstName': 1,
+          'studentDetails.otherNames': 1  // Only include required student fields
+        }
+      }
+    ]) as AssessmentAggregationResult[]
+
+    for (let rec of results) {
+      const record = assessmentData.find(e => e.id === rec.studentId && e.assessmentId === rec.assessmentId)
+      if (record) {
+        record.scores.push(rec.score)
+      } else {
+        assessmentData.push({
+          studentName: `${rec.studentDetails.firstName} ${rec.studentDetails.otherNames}`,
+          questions: assessment.questions.length,
+          id: rec.studentId,
+          scores: [rec.score],
+          assessmentId: rec.assessmentId
+        })
+      }
+    }
+  }
+
+  let assessmentExportData: RowData[][] = []
+
+  assessmentExportData = [
+    [
+      {
+        v: "Student name",
+        t: "s",
+        s: {
+          font: {
+            sz: 10,
+            bold: true
+          },
+        }
+      },
+      ...assessments.map((q) => ({
+        v: q.title,
+        t: "s",
+        s: {
+          alignment: {
+            horizontal: 'center',
+            vertical: 'center',
+          },
+          font: {
+            sz: 10,
+            bold: true
+          }
+        }
+      })),
+    ],
+    ...assessmentData.map((r) => {
+      return [
+        {
+          v: r.studentName,
+          t: "s",
+          s: {
+            alignment: {
+              horizontal: 'left',
+              vertical: 'center',
+            },
+            font: {
+              bold: false,
+              sz: 10
+            }
+          }
+        },
+        ...r.scores.map((score) => ({
+          v: `${score}/${r.questions}`,
+          t: "s",
+          s: {
+            alignment: {
+              horizontal: 'center',
+              vertical: 'center',
+            },
+            font: {
+              bold: false,
+              sz: 10
+            }
+          }
+        })),
+      ]
+    })
+  ]
+
+
+
   const path = await handleExport({
     name: name.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, '-').toLowerCase(),
     statsData,
     tableData,
-    reviewData: reviewData.length > 0 ? reviewData : undefined
+    reviewData: reviewData.length > 0 ? reviewData : undefined,
+    assessmentData: assessmentExportData
   })
   return {
     file: path,
