@@ -74,7 +74,7 @@ enum PageType {
 }
 
 
-export const createCourse = async (coursePayload: CreateCoursePayload, teamId: string): Promise<CourseInterface> => {
+export const createCourse = async (coursePayload: CreateCoursePayload, teamId: string, ignoreSettings?: boolean): Promise<CourseInterface> => {
   const team = await Teams.findById(teamId, 'name')
   if (team && (/consize/i.test(team.name))) {
     coursePayload.library = true
@@ -87,7 +87,9 @@ export const createCourse = async (coursePayload: CreateCoursePayload, teamId: s
   })
   await course.save()
   setInitialCourseStats(course.id, teamId)
-  setInitialCourseSettings(course.id)
+  if (!ignoreSettings) {
+    setInitialCourseSettings(course.id)
+  }
   return course
 }
 
@@ -187,6 +189,8 @@ const setInitialCourseSettings = async function (id: string) {
   await Course.findByIdAndUpdate(id, { $set: { settings: setting.id } })
   await setting.save()
 }
+
+
 
 export const updateCourse = async (coursePayload: Partial<CreateCoursePayload>, courseId: string, teamId: string): Promise<CourseInterface> => {
   const course = await Course.findOneAndUpdate({ _id: courseId, owner: teamId }, { $set: { ...coursePayload } }, { new: true })
@@ -400,7 +404,25 @@ export const duplicateCourse = async ({ courseId, title, headerMediaUrl, descrip
       survey: oldCourse.survey || "",
       courses: oldCourse.courses || [],
       contents: [],
-    }, owner)
+    }, owner, true)
+    const settingsOld = await Settings.findById(oldCourse.settings)
+    if (settingsOld) {
+      const setting = new Settings({
+        enrollmentFormFields: settingsOld.enrollmentFormFields,
+        metadata: settingsOld.metadata,
+        learnerGroups: settingsOld.learnerGroups,
+        courseMaterials: settingsOld.courseMaterials,
+        reminderSchedule: settingsOld.reminderSchedule,
+        dropoutWaitPeriod: settingsOld.dropoutWaitPeriod,
+        reminderDuration: settingsOld.reminderDuration,
+        inactivityPeriod: settingsOld.inactivityPeriod,
+        dropoutEvent: settingsOld.dropoutEvent,
+        resumption: settingsOld.resumption,
+        disableReminders: settingsOld.disableReminders
+      })
+      await Course.findByIdAndUpdate(course.id, { $set: { settings: setting.id } })
+      await setting.save()
+    }
     if (!oldCourse.bundle && course) {
       for (let content of oldCourse.contents) {
         // duplicate the lesson

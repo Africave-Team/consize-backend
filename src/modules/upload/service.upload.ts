@@ -175,23 +175,27 @@ export async function deleteFile (url: string): Promise<void> {
 
 
 export async function downloadFileToDir (url: string, dir: string) {
-  const options = {
-    destination: dir,
-  }
-  console.log(options)
-  const storage = new Storage({
-    projectId: serviceAccount.project_id,
-    credentials: {
-      client_email: serviceAccount.client_email,
-      private_key: serviceAccount.private_key?.split(String.raw`\n`).join("\n"),
-    },
-  })
+  try {
+    const options = {
+      destination: dir,
+    }
+    console.log(options)
+    const storage = new Storage({
+      projectId: serviceAccount.project_id,
+      credentials: {
+        client_email: serviceAccount.client_email,
+        private_key: serviceAccount.private_key?.split(String.raw`\n`).join("\n"),
+      },
+    })
 
-  const bucketName = 'kippa-cdn-public'
-  let [_, destination] = decodeURI(url).split(`/${bucketName}/`)
-  if (destination) {
-    await storage.bucket(bucketName).file(destination).download(options)
-    console.log(`Downloaded to ${dir}`)
+    const bucketName = 'kippa-cdn-public'
+    let [_, destination] = decodeURI(url).split(`/${bucketName}/`)
+    if (destination) {
+      await storage.bucket(bucketName).file(destination).download(options)
+      console.log(`Downloaded to ${dir}`)
+    }
+  } catch (error) {
+    console.log(error)
   }
 }
 
