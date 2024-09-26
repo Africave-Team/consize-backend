@@ -7,3 +7,10 @@ export const enroll = {
     companyName: Joi.string().required(),
   }),
 }
+
+
+export const godMode = {
+  body: Joi.object().keys({
+    teamId: Joi.string().required()
+  }),
+}

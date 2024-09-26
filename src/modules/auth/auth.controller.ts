@@ -24,14 +24,33 @@ export const register = catchAsync(async (req: Request, res: Response) => {
 
 export const login = catchAsync(async (req: Request, res: Response) => {
   const { email, password, shortCode } = req.body
-  const user = await authService.loginUserWithEmailAndPassword(email, password)
-  const tokens = await tokenService.generateAuthTokens(user)
-  const team = await teamService.fetchTeamById(user.team)
-  if (shortCode && shortCode.length > 0 && team && team.shortCode !== shortCode) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "You are not a member of this workspace")
+  let user: IUserDoc | null = null
+  user = await authService.loginUserWithEmailAndPassword(email, password)
+  if (user) {
+    const tokens = await tokenService.generateAuthTokens(user)
+    const team = await teamService.fetchTeamById(user.team)
+    if (shortCode && shortCode.length > 0 && team && team.shortCode !== shortCode) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "You are not a member of this workspace")
+    }
+    res.send({ user, tokens, team })
   }
-  res.send({ user, tokens, team })
 })
+
+
+export const loginTestMode = catchAsync(async (req: Request, res: Response) => {
+  const { teamId } = req.body
+  let user: IUserDoc | null = null
+  const team = await teamService.fetchTeamById(teamId)
+
+  if (team) {
+    user = await userService.getUserById(team.owner)
+    if (user) {
+      const tokens = await tokenService.generateAuthTokens(user)
+      res.send({ user, tokens, team })
+    }
+  }
+})
+
 
 export const logout = catchAsync(async (req: Request, res: Response) => {
   await authService.logout(req.body.refreshToken)
