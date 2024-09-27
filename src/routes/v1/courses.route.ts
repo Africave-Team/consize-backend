@@ -43,4 +43,9 @@ router.route('/assessments-scores/:assessment')
 router.route('/assessments-scores/:course/:student')
   .get(courseControllers.fetchStudentAssessmentScoreByCourse)
 
+router.route('/:course/transition-messages')
+  .get(courseControllers.fetchTransitionMessage)
+  .post(courseControllers.createTransitionMessage)
+
+
 export default router
