@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx-js-style'
 import path from "path"
+import { existsSync, mkdirSync } from 'fs'
 
 const createWorkbook = ({ statsData, tableData, reviewData, assessmentData }: Omit<ExportHandlerInterface, "name">) => {
   // Create a new workbook
@@ -153,6 +154,9 @@ export const handleExport = async ({ name, statsData, tableData, reviewData, ass
   const workbook = createWorkbook({ statsData, tableData, reviewData, assessmentData })
   const filePath = path.join(projectRoot, "generated-files", `${name}.xlsx`)
   // Save the workbook to a file
+  if (!existsSync(path.join(projectRoot, "generated-files"))) {
+    mkdirSync(path.join(projectRoot, "generated-files"))
+  }
   try {
     await XLSX.writeFile(workbook, filePath)
   } catch (error) {
