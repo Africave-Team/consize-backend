@@ -585,9 +585,8 @@ export const fetchTransitionMessage = catchAsync(async (req: Request, res: Respo
   let customTransitionMessages: any = []
   
   if (course) {
-    customTransitionMessages = TransitionMessage.find({course})
+    customTransitionMessages = await TransitionMessage.find({course: course})
   }
-  
   res.status(200).send({
     defaultTransitionMessage: defaultTransitionMessage,
     customTransitionMessages: customTransitionMessages
