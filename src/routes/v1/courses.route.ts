@@ -43,7 +43,7 @@ router.route('/assessments-scores/:assessment')
 router.route('/assessments-scores/:course/:student')
   .get(courseControllers.fetchStudentAssessmentScoreByCourse)
 
-router.route('/:course/transition-messages')
+router.route('/transition-messages/:course')
   .get(courseControllers.fetchTransitionMessage)
   .post(courseControllers.createTransitionMessage)
 
