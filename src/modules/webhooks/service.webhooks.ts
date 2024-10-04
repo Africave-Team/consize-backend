@@ -159,13 +159,13 @@ export const generateCourseFlow = async function (courseId: string) {
     // welcome message
     flow.push({
       type: CourseFlowMessageType.WELCOME,
-      content: `You have successfully enrolled for the course *${course.title}* by the organization *${courseOwner?.name}*.\n\nThis is a self paced course, which means you can learn at your own speed.\n\nStart the course anytime at your convenience by tapping 'Start'.`
+      content: `You have successfully enrolled for the course *${course.title.trim()}* by the organization *${courseOwner?.name}*.\n\nThis is a self paced course, which means you can learn at your own speed.\n\nStart the course anytime at your convenience by tapping 'Start'.`
     })
     const description = convertToWhatsAppString(he.decode(course.description))
 
-    let message = `*Course title*: ${course.title}\n\n*Course description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total lessons in the course: ${course.lessons.length}\n⏰ Avg. time you'd spend on each lesson: ${settings?.metadata.idealLessonTime.value} ${settings?.metadata.idealLessonTime.type}\n🏁 Max lessons per day: ${settings?.metadata.maxLessonsPerDay}\n🗓 Number of days to complete: 2\n\nPlease tap 'Continue' to start your first lesson`
+    let message = `*Course title*: ${course.title.trim()}\n\n*Course description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total lessons in the course: ${course.lessons.length}\n⏰ Avg. time you'd spend on each lesson: ${settings?.metadata.idealLessonTime.value} ${settings?.metadata.idealLessonTime.type}\n🏁 Max lessons per day: ${settings?.metadata.maxLessonsPerDay}\n🗓 Number of days to complete: 2\n\nPlease tap 'Continue' to start your first lesson`
     if (course.contents && course.contents[0] && course.contents[0].assessment) {
-      message = `*Course title*: ${course.title}\n\n*Course description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total lessons in the course: ${course.lessons.length}\n⏰ Avg. time you'd spend on each lesson: ${settings?.metadata.idealLessonTime.value} ${settings?.metadata.idealLessonTime.type}\n🏁 Max lessons per day: ${settings?.metadata.maxLessonsPerDay}\n🗓 Number of days to complete: 2\n\nPlease tap 'Continue' to start the initial assessment`
+      message = `*Course title*: ${course.title.trim()}\n\n*Course description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total lessons in the course: ${course.lessons.length}\n⏰ Avg. time you'd spend on each lesson: ${settings?.metadata.idealLessonTime.value} ${settings?.metadata.idealLessonTime.type}\n🏁 Max lessons per day: ${settings?.metadata.maxLessonsPerDay}\n🗓 Number of days to complete: 2\n\nPlease tap 'Continue' to start the initial assessment`
     }
     // course intro
     flow.push({
@@ -544,7 +544,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
             recipient_type: "individual",
             interactive: {
               body: {
-                text: `Hey ${student.firstName}! It looks like you have been inactive in the course *${course.title}* 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to resume the course.`
+                text: `Hey ${student.firstName}! It looks like you have been inactive in the course *${course.title.trim()}* 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to resume the course.`
               },
               type: "button",
               action: {
@@ -824,7 +824,7 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
       const courseOwner = await Team.findById(course.owner)
       let payload: CourseFlowItem = {
         type: CourseFlowMessageType.INTRO,
-        content: `This is a bundle of courses. \n*Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nYou will receive the following courses in this order;\n${titles.map((title, index) => `${index + 1}. *${title}*`).join('\n')}. \nHappy learning.`
+        content: `This is a bundle of courses. \n*Bundle title*: ${course.title.trim()}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nYou will receive the following courses in this order;\n${titles.map((title, index) => `${index + 1}. *${title}*`).join('\n')}. \nHappy learning.`
       }
       if (course.headerMedia && course.headerMedia.url && course.headerMedia.url.startsWith('https://')) {
         payload.mediaType = course.headerMedia.mediaType
@@ -845,7 +845,7 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
       //   type: CourseFlowMessageType.END_OF_BUNDLE,
       //   mediaType: course.headerMedia?.mediaType || "",
       //   mediaUrl: course.headerMedia?.url || "",
-      //   content: `Congratulations on completing.\n *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}.`
+      //   content: `Congratulations on completing.\n *Bundle title*: ${course.title.trim()}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}.`
       // }
 
 
