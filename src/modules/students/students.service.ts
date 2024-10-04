@@ -248,7 +248,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
   if (settings) {
     if (source === "qr") {
       const buttons: ReplyButton[] = []
-      let message = `Hello ${student.firstName}! Thank you for enrolling on the course *${course.title}*\nPlease select when you would like to start this course.\n\n`
+      let message = `Hello ${student.firstName}! Thank you for enrolling on the course *${course.title.trim()}*\nPlease select when you would like to start this course.\n\n`
       let options = ['A', 'B', 'C']
       if (settings.resumption) {
         if (settings.resumption.enableImmediate) {
@@ -361,7 +361,7 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
       messaging_product: "whatsapp",
       recipient_type: "individual",
       text: {
-        body: `Hello ${student.firstName}! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
+        body: `Hello ${student.firstName}! Your enrollment to the course *${course.title.trim()}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
       }
     })
   }
