@@ -744,10 +744,12 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const match = extractId(response)
               if (match && match[0]) {
                 let code = match[0]
-                const { name, courses } = await resolveTeamCourseWithShortcode(code)
+                const { name, courses, owner } = await resolveTeamCourseWithShortcode(code)
+
                 const key = `${config.redisBaseKey}last_request:${destination}`
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                   to: destination,
+                  team: owner,
                   type: "text",
                   messaging_product: "whatsapp",
                   recipient_type: "individual",
@@ -802,6 +804,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                       to: destination,
                       type: "text",
+                      team: course.owner,
                       messaging_product: "whatsapp",
                       recipient_type: "individual",
                       text: {
@@ -839,6 +842,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                         agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                           to: destination,
                           type: "text",
+                          team: course.owner,
                           messaging_product: "whatsapp",
                           recipient_type: "individual",
                           text: {
