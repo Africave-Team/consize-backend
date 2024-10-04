@@ -206,6 +206,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
     if (source === "qr") {
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
         to: student.phoneNumber,
+        team: course.owner,
         type: "text",
         messaging_product: "whatsapp",
         recipient_type: "individual",
@@ -229,6 +230,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
         agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
           to: student.phoneNumber,
           type: "text",
+          team: course.owner,
           messaging_product: "whatsapp",
           recipient_type: "individual",
           text: {
@@ -309,6 +311,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
         to: student.phoneNumber,
         type: "interactive",
+        team: course.owner,
         messaging_product: "whatsapp",
         recipient_type: "individual",
         interactive: {
@@ -353,6 +356,7 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
   if (source === "qr") {
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: student.phoneNumber,
+      team: course.owner,
       type: "text",
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -730,10 +734,10 @@ export const getStudentsByCourseId = async (courseId: string, page: number = 1):
 }
 
 export const saveAssessmentScore = async (teamId: string, courseId: string, studentId: string, assessmentId: string, score: number): Promise<void> => {
-   // Find the record with courseId, assessmentId, and studentId
-    await Assessment.findOneAndUpdate(
-      { courseId, assessmentId, studentId,teamId },
-      { $set: { score } }, // Update the score if found
-      { new: true, upsert: true } // Create a new record if not found
-    );
+  // Find the record with courseId, assessmentId, and studentId
+  await Assessment.findOneAndUpdate(
+    { courseId, assessmentId, studentId, teamId },
+    { $set: { score } }, // Update the score if found
+    { new: true, upsert: true } // Create a new record if not found
+  )
 }
