@@ -5,7 +5,7 @@ import { scheduleDailyRoutine } from '../webhooks/service.webhooks'
 const agenda = new Agenda({
   db: {
     address: `${config.mongoose.url}`,
-    collection: "crons",
+    collection: process.env['SCHEDULER_COLLECTION'] || "crons",
   }
 })
 

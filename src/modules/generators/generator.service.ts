@@ -282,12 +282,12 @@ export const generateCourseCertificateURL = async (course: CourseInterface, stud
     let second = signatories[1]
     if (first) {
       payload.signatory1 = first.name
-      payload.signature1 = first.name
+      payload.signature1 = first.signature || first.name
     }
 
     if (second) {
       payload.signatory2 = second.name
-      payload.signature2 = second.name
+      payload.signature2 = second.signature || second.name
     }
   }
   const query = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
