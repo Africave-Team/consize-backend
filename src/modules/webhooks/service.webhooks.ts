@@ -617,14 +617,14 @@ export const scheduleInactivityMessage = async (enrollment: CourseEnrollment, ph
     for (let job of jobs) {
       await job.remove()
     }
-    agenda.schedule(`in ${enrollment.inactivityPeriod.value} ${enrollment.inactivityPeriod.type}`, INACTIVITY_REMINDER, { studentId: enrollment.student, courseId: enrollment.id, slackToken: enrollment.slackToken, slackChannel, phoneNumber })
+    agenda.schedule(`in ${enrollment.inactivityPeriod.value} ${enrollment.inactivityPeriod.type}`, INACTIVITY_REMINDER, { studentId: enrollment.student, courseId: enrollment.id, slackToken: enrollment.slackToken, slackChannel, phoneNumber, team: enrollment.team, })
   }
   const jobs = await agenda.jobs({ name: INACTIVITY_REMINDER_SHORT, 'data.courseId': enrollment.id, 'data.studentId': enrollment.student })
   // Check if the job exists
   for (let job of jobs) {
     await job.remove()
   }
-  agenda.schedule(`in 3 minutes`, INACTIVITY_REMINDER_SHORT, { studentId: enrollment.student, courseId: enrollment.id, slackToken: enrollment.slackToken, slackChannel, phoneNumber })
+  agenda.schedule(`in 3 minutes`, INACTIVITY_REMINDER_SHORT, { studentId: enrollment.student, courseId: enrollment.id, team: enrollment.team, slackToken: enrollment.slackToken, slackChannel, phoneNumber })
 }
 
 export const scheduleDailyRoutine = async () => {
