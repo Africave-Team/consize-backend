@@ -7,6 +7,7 @@ import { Distribution } from '../courses/interfaces.courses'
 export interface FacebookIntegrationData {
     businessId: string
     phoneNumberId: string
+    phoneNumber: string
     token: string | null
     status: "PENDING" | "CONFIRMED"
 }
