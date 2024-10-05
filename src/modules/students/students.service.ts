@@ -89,7 +89,7 @@ export const registerStudentSlack = async (payload: CreateStudentPayload): Promi
 
 // otps
 
-export const sendOTP = async (userId: string, phoneNumber: string): Promise<void> => {
+export const sendOTP = async (userId: string, phoneNumber: string, teamId?: string): Promise<void> => {
   const code = randomstring.generate({
     charset: 'numeric',
     length: 6
@@ -99,8 +99,8 @@ export const sendOTP = async (userId: string, phoneNumber: string): Promise<void
     code,
     student: userId
   }, { upsert: true })
-  console.log(code)
-  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+
+  let payload: Message = {
     "messaging_product": "whatsapp",
     "recipient_type": "individual",
     "to": phoneNumber,
@@ -126,7 +126,11 @@ export const sendOTP = async (userId: string, phoneNumber: string): Promise<void
       ],
     },
 
-  })
+  }
+  if (teamId) {
+    payload.team = teamId
+  }
+  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
 }
 
 
