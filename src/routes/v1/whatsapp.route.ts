@@ -7,6 +7,7 @@ const router: Router = express.Router()
 
 router.route("/webhook").get(whatsappWebhookSubscriber).post(whatsappWebhookMessageHandler)
 router.post('/token-exchange', auth(), FacebookTokenExchange)
+router.post('/reload-facebook-templates/:teamId', FacebookTokenExchange)
 router.post('/uninstall', auth(), FacebookUninstall)
 
 router.get("/convert-block-to-whatsapp/:blockId", convertBlockContentToWhatsapp)
