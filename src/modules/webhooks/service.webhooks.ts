@@ -2522,7 +2522,7 @@ export const reloadTemplates = async function (team: string) {
           if (!optin_template || optin_template.status !== "APPROVED") {
             updatePayload.status = "PENDING"
             // schedule an event in 24 hours to check again
-            // agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
           } else {
             updatePayload.status = "CONFIRMED"
           }

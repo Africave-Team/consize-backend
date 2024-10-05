@@ -5,7 +5,7 @@ import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { ENROLL_STUDENT_DEFAULT_DATE, RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { CONTINUE, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow, RESUME_COURSE_TOMORROW } from './interfaces.webhooks'
-import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement, reloadTemplates } from "./service.webhooks"
+import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement, handleDelayedFacebookStatus } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
@@ -959,7 +959,7 @@ export const FacebookTokenExchange = catchAsync(async (req: Request, res: Respon
 
 export const ReloadTemplates = catchAsync(async (req: Request, res: Response) => {
   if (req.params['teamId']) {
-    await reloadTemplates(req.params['teamId'])
+    await handleDelayedFacebookStatus(req.params['teamId'])
     const team = await teamService.fetchTeamById(req.params['teamId'])
     res.status(httpStatus.OK).send({ message: "Facebook access has been saved.", data: team })
   } else {
