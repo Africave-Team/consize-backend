@@ -2387,7 +2387,10 @@ export const exchangeFacebookToken = async function (code: string, team: string)
             name: original.name,
             category: original.category,
             language: original.language,
-            components: original.components
+            components: [{
+              "type": "BODY",
+              "add_security_recommendation": true
+            }, original.components[1]]
           }, {
             headers: {
               Authorization: `Bearer ${token}`
@@ -2435,7 +2438,7 @@ export const reloadTemplates = async function (team: string) {
 
     let teamData = await teamService.fetchTeamById(team)
     if (teamData && teamData.facebookData && teamData.facebookData.token) {
-      const updatePayload: FacebookIntegrationData = { ...teamData.facebookData }
+      const updatePayload: FacebookIntegrationData = { ...JSON.parse(JSON.stringify(teamData.facebookData)) }
       const parentTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${config.whatsapp.waba}/message_templates?fields=name,status,category,components,language`, {
         headers: {
           Authorization: `Bearer ${config.whatsapp.token}`
@@ -2491,7 +2494,6 @@ export const reloadTemplates = async function (team: string) {
 
       const parent_auth_template = parentTemplatesResults.data.data.filter((e: any) => e.name === config.whatsapp.authTemplateName)
       const child_auth_template = childTemplatesResults.data.data.filter((e: any) => e.name === config.whatsapp.authTemplateName)
-      console.log(parent_auth_template, child_auth_template)
       if (child_auth_template.length === 0) {
         if (parent_auth_template.length === 1) {
           let original: any = parent_auth_template[0]
@@ -2499,7 +2501,10 @@ export const reloadTemplates = async function (team: string) {
             name: original.name,
             category: original.category,
             language: original.language,
-            components: original.components
+            components: [{
+              "type": "BODY",
+              "add_security_recommendation": true
+            }, original.components[1]]
           }, {
             headers: {
               Authorization: `Bearer ${teamData.facebookData.token}`
@@ -2517,7 +2522,7 @@ export const reloadTemplates = async function (team: string) {
           if (!optin_template || optin_template.status !== "APPROVED") {
             updatePayload.status = "PENDING"
             // schedule an event in 24 hours to check again
-            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+            // agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
           } else {
             updatePayload.status = "CONFIRMED"
           }
@@ -2527,7 +2532,7 @@ export const reloadTemplates = async function (team: string) {
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
           // schedule an event in 24 hours to check again
-          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          // agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
