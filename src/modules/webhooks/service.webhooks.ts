@@ -2247,7 +2247,7 @@ export const sendResumptionMessage = async (phoneNumber: string, _: string, data
           text: "Welcome back"
         },
         body: {
-          text: `You scheduled to resume the course *${data.title} today at this time.*\n\nYou can resume your scheduled course by clicking the "Resume Now" button below`
+          text: `You scheduled to resume the course *${data.title.trim()} today at this time.*\n\nYou can resume your scheduled course by clicking the "Resume Now" button below`
         },
         type: "button",
         action: {
