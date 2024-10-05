@@ -2491,6 +2491,7 @@ export const reloadTemplates = async function (team: string) {
 
       const parent_auth_template = parentTemplatesResults.data.data.filter((e: any) => e.name === config.whatsapp.authTemplateName)
       const child_auth_template = childTemplatesResults.data.data.filter((e: any) => e.name === config.whatsapp.authTemplateName)
+      console.log(parent_auth_template, child_auth_template)
       if (child_auth_template.length === 0) {
         if (parent_auth_template.length === 1) {
           let original: any = parent_auth_template[0]
@@ -2512,6 +2513,7 @@ export const reloadTemplates = async function (team: string) {
             }
           })
           let optin_template = templates.data.data.find((e: any) => e.name === config.whatsapp.authTemplateName)
+          console.log("returned payload", templates.data.data, optin_template)
           if (!optin_template || optin_template.status !== "APPROVED") {
             updatePayload.status = "PENDING"
             // schedule an event in 24 hours to check again
