@@ -10,6 +10,7 @@ export const fetchStudent = {
 export const confirmStudentPhoneNumber = {
   body: Joi.object().keys({
     code: Joi.string().required().description("OTP code"),
+    teamId: Joi.string().required().description("Specify the team"),
   }),
 }
 
