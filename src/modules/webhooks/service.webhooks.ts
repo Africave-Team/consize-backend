@@ -2638,7 +2638,7 @@ export const handleDelayedFacebookStatus = async function (team: string) {
   try {
     let teamData = await teamService.fetchTeamById(team)
     if (teamData && teamData.facebookData) {
-      const updatePayload: FacebookIntegrationData = { phoneNumberId: teamData.facebookData.phoneNumberId, businessId: teamData.facebookData.businessId, token: teamData.facebookData.token, status: teamData.facebookData.status, phoneNumber: "" }
+      const updatePayload: FacebookIntegrationData = { phoneNumberId: teamData.facebookData.phoneNumberId, businessId: teamData.facebookData.businessId, token: teamData.facebookData.token, status: teamData.facebookData.status, phoneNumber: teamData.facebookData.phoneNumber || "" }
 
       const childTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
         headers: {
