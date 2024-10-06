@@ -38,7 +38,7 @@ export const registerStudent = catchAsync(async (req: Request, res: Response) =>
 
 // confirm OTP
 export const confirmWhatsappOTP = catchAsync(async (req: Request, res: Response) => {
-  const student = await studentService.verifyOTP(req.body.code)
+  const student = await studentService.verifyOTP(req.body.code, req.body.teamId)
   res.status(httpStatus.OK).send({ data: student, message: "Student phone number verified" })
 })
 // enroll for a course

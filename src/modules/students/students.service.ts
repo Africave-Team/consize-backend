@@ -134,7 +134,7 @@ export const sendOTP = async (userId: string, phoneNumber: string, teamId?: stri
 }
 
 
-export const verifyOTP = async (code: string): Promise<StudentInterface> => {
+export const verifyOTP = async (code: string, teamId: string): Promise<StudentInterface> => {
   const record = await OTP.findOne({ code })
   if (!record) {
     throw new ApiError(httpStatus.BAD_REQUEST, "This code is invalid. Check your messages and try again.")
@@ -149,6 +149,7 @@ export const verifyOTP = async (code: string): Promise<StudentInterface> => {
   // send the success message
 
   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+    team: teamId,
     "messaging_product": "whatsapp",
     "recipient_type": "individual",
     "to": student.phoneNumber,
