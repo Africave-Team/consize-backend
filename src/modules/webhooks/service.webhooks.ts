@@ -2672,7 +2672,7 @@ export const handleDelayedFacebookStatus = async function (team: string) {
       if (child_reg_success_template.length > 0) {
         let optin_template = child_reg_success_template[0]
         if (!optin_template || optin_template.status !== "APPROVED") {
-          updatePayload.status = "PENDING"
+          // updatePayload.status = "PENDING"
           agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
