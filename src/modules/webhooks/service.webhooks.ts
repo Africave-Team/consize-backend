@@ -2422,6 +2422,48 @@ export const exchangeFacebookToken = async function (code: string, team: string)
           updatePayload.status = "CONFIRMED"
         }
       }
+
+      const parent_reg_success_template = parentTemplatesResults.data.data.filter((e: any) => e.name === "registration_successful")
+      const child_reg_success_template = childTemplatesResults.data.data.filter((e: any) => e.name === "registration_successful")
+      if (child_reg_success_template.length === 0) {
+        if (parent_reg_success_template.length === 1) {
+          let original: any = parent_reg_success_template[0]
+          await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates`, {
+            name: original.name,
+            category: original.category,
+            language: original.language,
+            components: original.components
+          }, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          })
+
+          await delay(3000)
+          const templates: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          })
+          let optin_template = templates.data.data.find((e: any) => e.name === "registration_successful")
+          if (!optin_template || optin_template.status !== "APPROVED") {
+            updatePayload.status = "PENDING"
+            // schedule an event in 24 hours to check again
+            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          } else {
+            updatePayload.status = "CONFIRMED"
+          }
+        }
+      } else {
+        let optin_template = child_auth_template[0]
+        if (!optin_template || optin_template.status !== "APPROVED") {
+          updatePayload.status = "PENDING"
+          // schedule an event in 24 hours to check again
+          // agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+        } else {
+          updatePayload.status = "CONFIRMED"
+        }
+      }
       await teamService.updateTeamInfo(team, {
         facebookData: updatePayload
       })
@@ -2537,6 +2579,49 @@ export const reloadTemplates = async function (team: string) {
           updatePayload.status = "CONFIRMED"
         }
       }
+
+
+      const parent_reg_success_template = parentTemplatesResults.data.data.filter((e: any) => e.name === "registration_successful")
+      const child_reg_success_template = childTemplatesResults.data.data.filter((e: any) => e.name === "registration_successful")
+      if (child_reg_success_template.length === 0) {
+        if (parent_reg_success_template.length === 1) {
+          let original: any = parent_reg_success_template[0]
+          await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates`, {
+            name: original.name,
+            category: original.category,
+            language: original.language,
+            components: original.components
+          }, {
+            headers: {
+              Authorization: `Bearer ${teamData.facebookData.token}`
+            }
+          })
+
+          await delay(3000)
+          const templates: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
+            headers: {
+              Authorization: `Bearer ${teamData.facebookData.token}`
+            }
+          })
+          let optin_template = templates.data.data.find((e: any) => e.name === "registration_successful")
+          if (!optin_template || optin_template.status !== "APPROVED") {
+            updatePayload.status = "PENDING"
+            // schedule an event in 24 hours to check again
+            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          } else {
+            updatePayload.status = "CONFIRMED"
+          }
+        }
+      } else {
+        let optin_template = child_auth_template[0]
+        if (!optin_template || optin_template.status !== "APPROVED") {
+          updatePayload.status = "PENDING"
+          // schedule an event in 24 hours to check again
+          // agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+        } else {
+          updatePayload.status = "CONFIRMED"
+        }
+      }
       await teamService.updateTeamInfo(team, {
         facebookData: updatePayload
       })
@@ -2563,6 +2648,7 @@ export const handleDelayedFacebookStatus = async function (team: string) {
 
       const child_optin_template = childTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
       const child_auth_template = childTemplatesResults.data.data.filter((e: any) => e.name === config.whatsapp.authTemplateName)
+      const child_reg_success_template = childTemplatesResults.data.data.filter((e: any) => e.name === "registration_successful")
       if (child_optin_template.length > 0) {
         let optin_template = child_optin_template[0]
         if (!optin_template || optin_template.status !== "APPROVED") {
@@ -2575,6 +2661,16 @@ export const handleDelayedFacebookStatus = async function (team: string) {
 
       if (child_auth_template.length > 0) {
         let optin_template = child_auth_template[0]
+        if (!optin_template || optin_template.status !== "APPROVED") {
+          updatePayload.status = "PENDING"
+          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+        } else {
+          updatePayload.status = "CONFIRMED"
+        }
+      }
+
+      if (child_reg_success_template.length > 0) {
+        let optin_template = child_reg_success_template[0]
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
           agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
