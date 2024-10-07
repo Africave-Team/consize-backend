@@ -2719,11 +2719,11 @@ export const handleHelp = async (phoneNumber: string): Promise<void> => {
         type: "button",
         action: {
           buttons: [
-            {
-              type: "web_url",
-              url: "https://wa.link/cd7fgk",
-              title: "Support",
-            },
+            // {
+            //   type: "web_url",
+            //   url: "https://wa.link/cd7fgk",
+            //   title: "Support",
+            // },
             {
               type: "reply",
               reply: {
