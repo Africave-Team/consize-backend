@@ -2438,4 +2438,38 @@ export const handleDelayedFacebookStatus = async function (team: string) {
   }
 }
 
+export const handleHelp = async (phoneNumber: string): Promise<void> => {
+   try {
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: phoneNumber,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        body: {
+          text: `Click on help to talk to our support or click 'continue' to continue with the rest of the course`
+        },
+        type: "button",
+        action: {
+          buttons: [
+            {
+              type: "web_url",
+              url: "https://wa.link/cd7fgk",
+              title: "Support",
+            },
+            {
+              type: "reply",
+              reply: {
+                id: "Continue",
+                title: "Continue"
+              }
+            }
+          ]
+        }
+      }
+    })
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+  }
+}
 
