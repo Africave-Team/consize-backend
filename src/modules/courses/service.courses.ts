@@ -2312,13 +2312,14 @@ export const handleSendDropoutMessage = async (courseId: string, studentId: stri
 export const resolveTeamCourseWithShortcode = async (code: string) => {
   const team = await Teams.findOne({ shortCode: code })
   let courses: CourseInterface[] = []
-  let name = ""
+  let name = "", owner = ''
   if (team) {
     name = team.name
+    owner = team.owner
     courses = await Course.find({ owner: team.id, status: CourseStatus.PUBLISHED, private: false }).limit(10)
   }
 
-  return { courses, name }
+  return { courses, name, owner }
 }
 
 

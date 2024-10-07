@@ -37,6 +37,9 @@ const FacebookDataSchema = new Schema<FacebookIntegrationData>(
         phoneNumberId: {
             type: String
         },
+        phoneNumber: {
+            type: String
+        },
         token: {
             type: String
         }

@@ -89,7 +89,7 @@ export const registerStudentSlack = async (payload: CreateStudentPayload): Promi
 
 // otps
 
-export const sendOTP = async (userId: string, phoneNumber: string): Promise<void> => {
+export const sendOTP = async (userId: string, phoneNumber: string, teamId?: string): Promise<void> => {
   const code = randomstring.generate({
     charset: 'numeric',
     length: 6
@@ -99,8 +99,8 @@ export const sendOTP = async (userId: string, phoneNumber: string): Promise<void
     code,
     student: userId
   }, { upsert: true })
-  console.log(code)
-  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+
+  let payload: Message = {
     "messaging_product": "whatsapp",
     "recipient_type": "individual",
     "to": phoneNumber,
@@ -126,11 +126,15 @@ export const sendOTP = async (userId: string, phoneNumber: string): Promise<void
       ],
     },
 
-  })
+  }
+  if (teamId) {
+    payload.team = teamId
+  }
+  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, payload)
 }
 
 
-export const verifyOTP = async (code: string): Promise<StudentInterface> => {
+export const verifyOTP = async (code: string, teamId: string): Promise<StudentInterface> => {
   const record = await OTP.findOne({ code })
   if (!record) {
     throw new ApiError(httpStatus.BAD_REQUEST, "This code is invalid. Check your messages and try again.")
@@ -145,6 +149,7 @@ export const verifyOTP = async (code: string): Promise<StudentInterface> => {
   // send the success message
 
   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+    team: teamId,
     "messaging_product": "whatsapp",
     "recipient_type": "individual",
     "to": student.phoneNumber,
@@ -206,6 +211,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
     if (source === "qr") {
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
         to: student.phoneNumber,
+        team: course.owner,
         type: "text",
         messaging_product: "whatsapp",
         recipient_type: "individual",
@@ -229,6 +235,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
         agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
           to: student.phoneNumber,
           type: "text",
+          team: course.owner,
           messaging_product: "whatsapp",
           recipient_type: "individual",
           text: {
@@ -246,7 +253,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
   if (settings) {
     if (source === "qr") {
       const buttons: ReplyButton[] = []
-      let message = `Hello ${student.firstName}! Thank you for enrolling on the course *${course.title}*\nPlease select when you would like to start this course.\n\n`
+      let message = `Hello ${student.firstName}! Thank you for enrolling on the course *${course.title.trim()}*\nPlease select when you would like to start this course.\n\n`
       let options = ['A', 'B', 'C']
       if (settings.resumption) {
         if (settings.resumption.enableImmediate) {
@@ -309,6 +316,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
         to: student.phoneNumber,
         type: "interactive",
+        team: course.owner,
         messaging_product: "whatsapp",
         recipient_type: "individual",
         interactive: {
@@ -353,11 +361,12 @@ export const startEnrollmentWhatsapp = async function (studentId: string, course
   if (source === "qr") {
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: student.phoneNumber,
+      team: course.owner,
       type: "text",
       messaging_product: "whatsapp",
       recipient_type: "individual",
       text: {
-        body: `Hello ${student.firstName}! Your enrollment to the course *${course.title}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
+        body: `Hello ${student.firstName}! Your enrollment to the course *${course.title.trim()}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
       }
     })
   }
@@ -730,10 +739,10 @@ export const getStudentsByCourseId = async (courseId: string, page: number = 1):
 }
 
 export const saveAssessmentScore = async (teamId: string, courseId: string, studentId: string, assessmentId: string, score: number): Promise<void> => {
-   // Find the record with courseId, assessmentId, and studentId
-    await Assessment.findOneAndUpdate(
-      { courseId, assessmentId, studentId,teamId },
-      { $set: { score } }, // Update the score if found
-      { new: true, upsert: true } // Create a new record if not found
-    );
+  // Find the record with courseId, assessmentId, and studentId
+  await Assessment.findOneAndUpdate(
+    { courseId, assessmentId, studentId, teamId },
+    { $set: { score } }, // Update the score if found
+    { new: true, upsert: true } // Create a new record if not found
+  )
 }
