@@ -11,6 +11,7 @@ import Assessment from '../statistics/assessment.model'
 import QuestionGroup from './model.question-group'
 import { transitionMessages as defaultTransitionMessage } from './interfaces.transition-messages'
 import TransitionMessage from './model.transition-message'
+import { teamService } from '../teams'
 // import { agenda } from '../scheduler'
 // import { unlinkSync } from "fs"
 
@@ -157,6 +158,8 @@ export const fetchTeamSingleCourse = catchAsync(async (req: Request, res: Respon
     }
   }
 
+  const team = await teamService.fetchTeamById(req.user.team)
+
   return res.status(httpStatus.OK).send({
     data: {
       ...results,
@@ -166,7 +169,8 @@ export const fetchTeamSingleCourse = catchAsync(async (req: Request, res: Respon
         ...settings, //@ts-ignore
         id: settings?._id,
         learnerGroups: groups
-      }
+      },
+      team
     }, message: "Here you are."
   })
 })
@@ -583,10 +587,11 @@ export const fetchStudentAssessmentScoreByCourse = catchAsync(async (req: Reques
 export const fetchTransitionMessage = catchAsync(async (req: Request, res: Response) => {
   const { course } = req.params
   let customTransitionMessages: any = []
-  
+
   if (course) {
-    customTransitionMessages = await TransitionMessage.find({course: course})
+    customTransitionMessages = TransitionMessage.find({ course })
   }
+
   res.status(200).send({
     defaultTransitionMessage: defaultTransitionMessage,
     customTransitionMessages: customTransitionMessages
@@ -596,19 +601,19 @@ export const fetchTransitionMessage = catchAsync(async (req: Request, res: Respo
 export const createTransitionMessage = catchAsync(async (req: Request, res: Response) => {
   const { course } = req.params
 
-  const { message, type } = req.body;
+  const { message, type } = req.body
 
-    const updatedDocument = await TransitionMessage.findOneAndUpdate(
-      { course, type }, // Match criteria
-      { message, course, type }, // Fields to update or set on insert
-      {
-        new: true, // Return the updated document
-        upsert: true, // Create a new document if no match is found
-        setDefaultsOnInsert: true, // Apply default values on new document creation
-      }
-    );
+  const updatedDocument = await TransitionMessage.findOneAndUpdate(
+    { course, type }, // Match criteria
+    { message, course, type }, // Fields to update or set on insert
+    {
+      new: true, // Return the updated document
+      upsert: true, // Create a new document if no match is found
+      setDefaultsOnInsert: true, // Apply default values on new document creation
+    }
+  )
 
   // Respond with the updated or created document
-  res.status(200).json(updatedDocument);
+  res.status(200).json(updatedDocument)
 })
 

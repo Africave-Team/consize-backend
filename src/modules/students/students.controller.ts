@@ -27,18 +27,18 @@ export const checkStudentInfo = catchAsync(async (req: Request, res: Response) =
 })
 
 export const registerStudent = catchAsync(async (req: Request, res: Response) => {
-  const { email, phoneNumber, firstName, otherNames, custom, tz } = req.body
+  const { email, phoneNumber, firstName, otherNames, custom, tz, teamId } = req.body
   const student = await studentService.registerStudent({ email, phoneNumber, firstName, otherNames, custom, tz })
   if (!student.verified) {
     // dispatch the event to send OTP for this user
-    await studentService.sendOTP(student.id, student.phoneNumber)
+    await studentService.sendOTP(student.id, student.phoneNumber, teamId)
   }
   res.status(httpStatus.CREATED).send({ data: student, message: "Student record has been created." })
 })
 
 // confirm OTP
 export const confirmWhatsappOTP = catchAsync(async (req: Request, res: Response) => {
-  const student = await studentService.verifyOTP(req.body.code)
+  const student = await studentService.verifyOTP(req.body.code, req.body.teamId)
   res.status(httpStatus.OK).send({ data: student, message: "Student phone number verified" })
 })
 // enroll for a course

@@ -159,13 +159,13 @@ export const generateCourseFlow = async function (courseId: string) {
     // welcome message
     flow.push({
       type: CourseFlowMessageType.WELCOME,
-      content: `You have successfully enrolled for the course *${course.title}* by the organization *${courseOwner?.name}*.\n\nThis is a self paced course, which means you can learn at your own speed.\n\nStart the course anytime at your convenience by tapping 'Start'.`
+      content: `You have successfully enrolled for the course *${course.title.trim()}* by the organization *${courseOwner?.name}*.\n\nThis is a self paced course, which means you can learn at your own speed.\n\nStart the course anytime at your convenience by tapping 'Start'.`
     })
     const description = convertToWhatsAppString(he.decode(course.description))
 
-    let message = `*Course title*: ${course.title}\n\n*Course description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total lessons in the course: ${course.lessons.length}\n⏰ Avg. time you'd spend on each lesson: ${settings?.metadata.idealLessonTime.value} ${settings?.metadata.idealLessonTime.type}\n🏁 Max lessons per day: ${settings?.metadata.maxLessonsPerDay}\n🗓 Number of days to complete: 2\n\nPlease tap 'Continue' to start your first lesson`
+    let message = `*Course title*: ${course.title.trim()}\n\n*Course description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total lessons in the course: ${course.lessons.length}\n⏰ Avg. time you'd spend on each lesson: ${settings?.metadata.idealLessonTime.value} ${settings?.metadata.idealLessonTime.type}\n🏁 Max lessons per day: ${settings?.metadata.maxLessonsPerDay}\n🗓 Number of days to complete: 2\n\nPlease tap 'Continue' to start your first lesson`
     if (course.contents && course.contents[0] && course.contents[0].assessment) {
-      message = `*Course title*: ${course.title}\n\n*Course description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total lessons in the course: ${course.lessons.length}\n⏰ Avg. time you'd spend on each lesson: ${settings?.metadata.idealLessonTime.value} ${settings?.metadata.idealLessonTime.type}\n🏁 Max lessons per day: ${settings?.metadata.maxLessonsPerDay}\n🗓 Number of days to complete: 2\n\nPlease tap 'Continue' to start the initial assessment`
+      message = `*Course title*: ${course.title.trim()}\n\n*Course description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total lessons in the course: ${course.lessons.length}\n⏰ Avg. time you'd spend on each lesson: ${settings?.metadata.idealLessonTime.value} ${settings?.metadata.idealLessonTime.type}\n🏁 Max lessons per day: ${settings?.metadata.maxLessonsPerDay}\n🗓 Number of days to complete: 2\n\nPlease tap 'Continue' to start the initial assessment`
     }
     // course intro
     flow.push({
@@ -561,7 +561,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
             recipient_type: "individual",
             interactive: {
               body: {
-                text: `Hey ${student.firstName}! It looks like you have been inactive in the course *${course.title}* 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to resume the course.`
+                text: `Hey ${student.firstName}! It looks like you have been inactive in the course *${course.title.trim()}* 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to resume the course.`
               },
               type: "button",
               action: {
@@ -634,14 +634,14 @@ export const scheduleInactivityMessage = async (enrollment: CourseEnrollment, ph
     for (let job of jobs) {
       await job.remove()
     }
-    agenda.schedule(`in ${enrollment.inactivityPeriod.value} ${enrollment.inactivityPeriod.type}`, INACTIVITY_REMINDER, { studentId: enrollment.student, courseId: enrollment.id, slackToken: enrollment.slackToken, slackChannel, phoneNumber })
+    agenda.schedule(`in ${enrollment.inactivityPeriod.value} ${enrollment.inactivityPeriod.type}`, INACTIVITY_REMINDER, { studentId: enrollment.student, courseId: enrollment.id, slackToken: enrollment.slackToken, slackChannel, phoneNumber, team: enrollment.team, })
   }
   const jobs = await agenda.jobs({ name: INACTIVITY_REMINDER_SHORT, 'data.courseId': enrollment.id, 'data.studentId': enrollment.student })
   // Check if the job exists
   for (let job of jobs) {
     await job.remove()
   }
-  agenda.schedule(`in 3 minutes`, INACTIVITY_REMINDER_SHORT, { studentId: enrollment.student, courseId: enrollment.id, slackToken: enrollment.slackToken, slackChannel, phoneNumber })
+  agenda.schedule(`in 3 minutes`, INACTIVITY_REMINDER_SHORT, { studentId: enrollment.student, courseId: enrollment.id, team: enrollment.team, slackToken: enrollment.slackToken, slackChannel, phoneNumber })
 }
 
 export const scheduleDailyRoutine = async () => {
@@ -841,7 +841,7 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
       const courseOwner = await Team.findById(course.owner)
       let payload: CourseFlowItem = {
         type: CourseFlowMessageType.INTRO,
-        content: `This is a bundle of courses. \n*Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nYou will receive the following courses in this order;\n${titles.map((title, index) => `${index + 1}. *${title}*`).join('\n')}. \nHappy learning.`
+        content: `This is a bundle of courses. \n*Bundle title*: ${course.title.trim()}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nYou will receive the following courses in this order;\n${titles.map((title, index) => `${index + 1}. *${title}*`).join('\n')}. \nHappy learning.`
       }
       if (course.headerMedia && course.headerMedia.url && course.headerMedia.url.startsWith('https://')) {
         payload.mediaType = course.headerMedia.mediaType
@@ -862,7 +862,7 @@ export const startBundle = async (phoneNumber: string, courseId: string, student
       //   type: CourseFlowMessageType.END_OF_BUNDLE,
       //   mediaType: course.headerMedia?.mediaType || "",
       //   mediaUrl: course.headerMedia?.url || "",
-      //   content: `Congratulations on completing.\n *Bundle title*: ${course.title}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}.`
+      //   content: `Congratulations on completing.\n *Bundle title*: ${course.title.trim()}\n\n*Bundle description*: ${description}\n\n*Course Organizer*: ${courseOwner?.name}\n📓 Total courses in the bundle: ${course.courses.length}. \n\nCourses completed are\n${courses.map((r, index) => `${index + 1}. *${r.title}*`).join('\n')}.`
       // }
 
 
@@ -2264,7 +2264,7 @@ export const sendResumptionMessage = async (phoneNumber: string, _: string, data
           text: "Welcome back"
         },
         body: {
-          text: `You scheduled to resume the course *${data.title} today at this time.*\n\nYou can resume your scheduled course by clicking the "Resume Now" button below`
+          text: `You scheduled to resume the course *${data.title.trim()} today at this time.*\n\nYou can resume your scheduled course by clicking the "Resume Now" button below`
         },
         type: "button",
         action: {
@@ -2316,7 +2316,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
     const token = result.data.access_token
     let teamData = await teamService.fetchTeamById(team)
     if (teamData && teamData.facebookBusinessId && teamData.facebookPhoneNumberId) {
-      const updatePayload: FacebookIntegrationData = { phoneNumberId: teamData.facebookPhoneNumberId, businessId: teamData.facebookBusinessId, status: "PENDING", token }
+      const updatePayload: FacebookIntegrationData = { phoneNumberId: teamData.facebookPhoneNumberId, businessId: teamData.facebookBusinessId, status: "PENDING", token, phoneNumber: "" }
       await teamService.updateTeamInfo(team, {
         facebookData: updatePayload
       })
@@ -2394,6 +2394,251 @@ export const exchangeFacebookToken = async function (code: string, team: string)
           updatePayload.status = "CONFIRMED"
         }
       }
+
+      const parent_auth_template = parentTemplatesResults.data.data.filter((e: any) => e.name === config.whatsapp.authTemplateName)
+      const child_auth_template = childTemplatesResults.data.data.filter((e: any) => e.name === config.whatsapp.authTemplateName)
+      if (child_auth_template.length === 0) {
+        if (parent_auth_template.length === 1) {
+          let original: any = parent_auth_template[0]
+          await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates`, {
+            name: original.name,
+            category: original.category,
+            language: original.language,
+            components: [{
+              "type": "BODY",
+              "add_security_recommendation": true
+            }, original.components[1]]
+          }, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          })
+
+          await delay(3000)
+          const templates: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          })
+          let optin_template = templates.data.data.find((e: any) => e.name === config.whatsapp.authTemplateName)
+          if (!optin_template || optin_template.status !== "APPROVED") {
+            updatePayload.status = "PENDING"
+            // schedule an event in 24 hours to check again
+            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          } else {
+            updatePayload.status = "CONFIRMED"
+          }
+        }
+      } else {
+        let optin_template = child_auth_template[0]
+        if (!optin_template || optin_template.status !== "APPROVED") {
+          updatePayload.status = "PENDING"
+          // schedule an event in 24 hours to check again
+          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+        } else {
+          updatePayload.status = "CONFIRMED"
+        }
+      }
+
+      const parent_reg_success_template = parentTemplatesResults.data.data.filter((e: any) => e.name === "registration_successful")
+      const child_reg_success_template = childTemplatesResults.data.data.filter((e: any) => e.name === "registration_successful")
+      if (child_reg_success_template.length === 0) {
+        if (parent_reg_success_template.length === 1) {
+          let original: any = parent_reg_success_template[0]
+          await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates`, {
+            name: original.name,
+            category: original.category,
+            language: original.language,
+            components: original.components
+          }, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          })
+
+          await delay(3000)
+          const templates: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          })
+          let optin_template = templates.data.data.find((e: any) => e.name === "registration_successful")
+          if (!optin_template || optin_template.status !== "APPROVED") {
+            updatePayload.status = "PENDING"
+            // schedule an event in 24 hours to check again
+            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          } else {
+            updatePayload.status = "CONFIRMED"
+          }
+        }
+      } else {
+        let optin_template = child_auth_template[0]
+        if (!optin_template || optin_template.status !== "APPROVED") {
+          updatePayload.status = "PENDING"
+          // schedule an event in 24 hours to check again
+          // agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+        } else {
+          updatePayload.status = "CONFIRMED"
+        }
+      }
+      await teamService.updateTeamInfo(team, {
+        facebookData: updatePayload
+      })
+    }
+  } catch (error) {
+    console.log("Something Failed in this flow =>", (error as AxiosError))
+    console.log("Something Failed in this flow =>", (error as AxiosError)?.response?.data)
+  }
+}
+
+
+export const reloadTemplates = async function (team: string) {
+  try {
+
+    let teamData = await teamService.fetchTeamById(team)
+    if (teamData && teamData.facebookData && teamData.facebookData.token) {
+      const updatePayload: FacebookIntegrationData = { ...JSON.parse(JSON.stringify(teamData.facebookData)) }
+      const parentTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${config.whatsapp.waba}/message_templates?fields=name,status,category,components,language`, {
+        headers: {
+          Authorization: `Bearer ${config.whatsapp.token}`
+        }
+      })
+      const childTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
+        headers: {
+          Authorization: `Bearer ${teamData.facebookData.token}`
+        }
+      })
+
+      const parent_optin_template = parentTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
+      const child_optin_template = childTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
+      if (child_optin_template.length === 0) {
+        if (parent_optin_template.length === 1) {
+          let original: any = parent_optin_template[0]
+          await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates`, {
+            name: original.name,
+            category: original.category,
+            language: original.language,
+            components: original.components
+          }, {
+            headers: {
+              Authorization: `Bearer ${teamData.facebookData.token}`
+            }
+          })
+
+          await delay(3000)
+          const templates: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
+            headers: {
+              Authorization: `Bearer ${teamData.facebookData.token}`
+            }
+          })
+          let optin_template = templates.data.data.find((e: any) => e.name === "successful_optin_no_variable")
+          if (!optin_template || optin_template.status !== "APPROVED") {
+            updatePayload.status = "PENDING"
+            // schedule an event in 24 hours to check again
+            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          } else {
+            updatePayload.status = "CONFIRMED"
+          }
+        }
+      } else {
+        let optin_template = child_optin_template[0]
+        if (!optin_template || optin_template.status !== "APPROVED") {
+          updatePayload.status = "PENDING"
+          // schedule an event in 24 hours to check again
+          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+        } else {
+          updatePayload.status = "CONFIRMED"
+        }
+      }
+
+      const parent_auth_template = parentTemplatesResults.data.data.filter((e: any) => e.name === config.whatsapp.authTemplateName)
+      const child_auth_template = childTemplatesResults.data.data.filter((e: any) => e.name === config.whatsapp.authTemplateName)
+      if (child_auth_template.length === 0) {
+        if (parent_auth_template.length === 1) {
+          let original: any = parent_auth_template[0]
+          await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates`, {
+            name: original.name,
+            category: original.category,
+            language: original.language,
+            components: [{
+              "type": "BODY",
+              "add_security_recommendation": true
+            }, original.components[1]]
+          }, {
+            headers: {
+              Authorization: `Bearer ${teamData.facebookData.token}`
+            }
+          })
+
+          await delay(3000)
+          const templates: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
+            headers: {
+              Authorization: `Bearer ${teamData.facebookData.token}`
+            }
+          })
+          let optin_template = templates.data.data.find((e: any) => e.name === config.whatsapp.authTemplateName)
+          console.log("returned payload", templates.data.data, optin_template)
+          if (!optin_template || optin_template.status !== "APPROVED") {
+            updatePayload.status = "PENDING"
+            // schedule an event in 24 hours to check again
+            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          } else {
+            updatePayload.status = "CONFIRMED"
+          }
+        }
+      } else {
+        let optin_template = child_auth_template[0]
+        if (!optin_template || optin_template.status !== "APPROVED") {
+          updatePayload.status = "PENDING"
+          // schedule an event in 24 hours to check again
+          // agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+        } else {
+          updatePayload.status = "CONFIRMED"
+        }
+      }
+
+
+      const parent_reg_success_template = parentTemplatesResults.data.data.filter((e: any) => e.name === "registration_successful")
+      const child_reg_success_template = childTemplatesResults.data.data.filter((e: any) => e.name === "registration_successful")
+      if (child_reg_success_template.length === 0) {
+        if (parent_reg_success_template.length === 1) {
+          let original: any = parent_reg_success_template[0]
+          await axios.post(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates`, {
+            name: original.name,
+            category: original.category,
+            language: original.language,
+            components: original.components
+          }, {
+            headers: {
+              Authorization: `Bearer ${teamData.facebookData.token}`
+            }
+          })
+
+          await delay(3000)
+          const templates: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
+            headers: {
+              Authorization: `Bearer ${teamData.facebookData.token}`
+            }
+          })
+          let optin_template = templates.data.data.find((e: any) => e.name === "registration_successful")
+          if (!optin_template || optin_template.status !== "APPROVED") {
+            updatePayload.status = "PENDING"
+            // schedule an event in 24 hours to check again
+            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          } else {
+            updatePayload.status = "CONFIRMED"
+          }
+        }
+      } else {
+        let optin_template = child_auth_template[0]
+        if (!optin_template || optin_template.status !== "APPROVED") {
+          updatePayload.status = "PENDING"
+          // schedule an event in 24 hours to check again
+          // agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+        } else {
+          updatePayload.status = "CONFIRMED"
+        }
+      }
       await teamService.updateTeamInfo(team, {
         facebookData: updatePayload
       })
@@ -2410,7 +2655,7 @@ export const handleDelayedFacebookStatus = async function (team: string) {
   try {
     let teamData = await teamService.fetchTeamById(team)
     if (teamData && teamData.facebookData) {
-      const updatePayload: FacebookIntegrationData = { phoneNumberId: teamData.facebookData.phoneNumberId, businessId: teamData.facebookData.businessId, token: teamData.facebookData.token, status: teamData.facebookData.status }
+      const updatePayload: FacebookIntegrationData = { phoneNumberId: teamData.facebookData.phoneNumberId, businessId: teamData.facebookData.businessId, token: teamData.facebookData.token, status: teamData.facebookData.status, phoneNumber: teamData.facebookData.phoneNumber || "" }
 
       const childTemplatesResults: AxiosResponse = await axios.get(`https://graph.facebook.com/v19.0/${updatePayload.businessId}/message_templates?fields=name,status,category,components`, {
         headers: {
@@ -2419,10 +2664,32 @@ export const handleDelayedFacebookStatus = async function (team: string) {
       })
 
       const child_optin_template = childTemplatesResults.data.data.filter((e: any) => e.name === "successful_optin_no_variable")
+      const child_auth_template = childTemplatesResults.data.data.filter((e: any) => e.name === config.whatsapp.authTemplateName)
+      const child_reg_success_template = childTemplatesResults.data.data.filter((e: any) => e.name === "registration_successful")
       if (child_optin_template.length > 0) {
         let optin_template = child_optin_template[0]
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
+          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+        } else {
+          updatePayload.status = "CONFIRMED"
+        }
+      }
+
+      if (child_auth_template.length > 0) {
+        let optin_template = child_auth_template[0]
+        if (!optin_template || optin_template.status !== "APPROVED") {
+          updatePayload.status = "PENDING"
+          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+        } else {
+          updatePayload.status = "CONFIRMED"
+        }
+      }
+
+      if (child_reg_success_template.length > 0) {
+        let optin_template = child_reg_success_template[0]
+        if (!optin_template || optin_template.status !== "APPROVED") {
+          // updatePayload.status = "PENDING"
           agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
