@@ -2737,6 +2737,28 @@ export const handleHelp = async (phoneNumber: string): Promise<void> => {
         }
       }
     })
+
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+            to: phoneNumber,
+            type: "interactive",
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            interactive: {
+              body: { text:"_______________"},
+              type: "button",
+              action: {
+                buttons: [
+                  {
+                    type: "reply",
+                    reply: {
+                      id: `continue`,
+                      title: "Continue"
+                    }
+                  }
+                ]
+              }
+            }
+          })
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
