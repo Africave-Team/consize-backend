@@ -519,6 +519,19 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       let field: string | null
       let fieldsRaw: string | null
       switch (response) {
+        case "HELP":
+        case "help":
+          // await handleHelp(destination)
+          agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: destination,
+              type: "text",
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              text: {
+                body: "you reached the help center"
+              }
+            })
+          break;
         case "/sos":
           if (enrollment) {
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
