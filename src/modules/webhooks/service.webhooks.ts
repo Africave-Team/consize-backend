@@ -2705,7 +2705,7 @@ export const handleDelayedFacebookStatus = async function (team: string) {
   }
 }
 
-export const handleHelp = async (phoneNumber: string): Promise<void> => {
+export const handleHelp = async (phoneNumber: string, courseId: string): Promise<void> => {
    try {
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
@@ -2740,7 +2740,7 @@ export const handleHelp = async (phoneNumber: string): Promise<void> => {
                   {
                     type: "reply",
                     reply: {
-                      id: `continue`,
+                      id: `continue_${courseId}`,
                       title: "Continue"
                     }
                   }
