@@ -521,16 +521,34 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       switch (response) {
         case "HELP":
         case "help":
-          await handleHelp(destination)
-          // agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-          //     to: destination,
-          //     type: "text",
-          //     messaging_product: "whatsapp",
-          //     recipient_type: "individual",
-          //     text: {
-          //       body: "you reached the help center"
-          //     }
-          //   })
+          agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+            to: destination,
+            type: "interactive",
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            interactive: {
+              body: {
+                text: `Click on help to talk to our support or click continue to continue with the rest of the course`
+              },
+              type: "button",
+              action: {
+                buttons: [
+                  // {
+                  //   type: "web_url",
+                  //   url: "https://wa.link/cd7fgk",
+                  //   title: "Support",
+                  // },
+                  {
+                    type: "reply",
+                    reply: {
+                      id: "Continue",
+                      title: "Continue"
+                    }
+                  }
+                ]
+              }
+            }
+          })
           break;
         case "/sos":
           if (enrollment) {
