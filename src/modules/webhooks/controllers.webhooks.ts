@@ -132,7 +132,9 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         let today = moment().add(24, 'hours').format('YYYY-MM-DD')
         switch (btnId) {
           case "HELP":
-            await handleHelp(destination)
+            if(enrollment){
+              await handleHelp(destination, enrollment.id)
+            }
             break;
           case START:
           case RESUME_COURSE:
@@ -514,7 +516,9 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         case "Help":
         case "'help'":
         case "'HELP'":
-          await handleHelp(destination)
+          if(enrollment){
+            await handleHelp(destination, enrollment.id)
+          }
           break;
         case "/sos":
           if (enrollment) {
