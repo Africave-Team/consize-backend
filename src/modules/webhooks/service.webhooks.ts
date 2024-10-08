@@ -2718,25 +2718,22 @@ export const handleHelp = async (phoneNumber: string): Promise<void> => {
           text: `Click on help to talk to our support or click continue to continue with the rest of the course`
         },
         action: {
-          name: "cta_url",
-          parameters: {
-            display_text: "Talk to support",
-            url: "https://wa.link/cd7fgk"
-          }
-          // buttons: [
-          //   {
-          //     type: "web_url",
-          //     url: "https://wa.link/cd7fgk",
-          //     title: "Support",
-          //   },
-          //   {
-          //     type: "reply",
-          //     reply: {
-          //       id: "Continue",
-          //       title: "Continue"
-          //     }
-          //   }
-          // ]
+          buttons: [
+            {
+              name: "cta_url",
+              parameters: {
+                display_text: "Talk to support",
+                url: "https://wa.link/cd7fgk"
+              }
+            },
+            {
+              type: "reply",
+              reply: {
+                id: "Continue",
+                title: "Continue"
+              }
+            }
+          ]
         }
       }
     })
