@@ -18,7 +18,9 @@ interface MessageBody {
 }
 
 export interface ReplyButton {
-  type: "reply" | "web_url"
+  type?: "reply" | "web_url"
+  name?: "cta_url"
+  parameters?: any
   reply?: {
     id: string
     title: string
