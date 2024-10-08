@@ -561,7 +561,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
             recipient_type: "individual",
             interactive: {
               body: {
-                text: `Hey ${student.firstName}! It looks like you have been inactive in the course *${course.title.trim()}* 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to resume the course.`
+                text: `Hey ${student.firstName}! It looks like you have been inactive in the course *${course.title.trim()}* 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to resume the course, or click help to speak with a support person`
               },
               type: "button",
               action: {
@@ -571,6 +571,13 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
                     reply: {
                       id: `continue_${payload.courseId}`,
                       title: "Continue"
+                    }
+                  },
+                  {
+                    type: "reply",
+                    reply: {
+                      id: `HELP`,
+                      title: "Help"
                     }
                   }
                 ]
@@ -598,7 +605,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
                   type: MessageBlockType.SECTION,
                   text: {
                     type: SlackTextMessageTypes.MARKDOWN,
-                    text: `Hey ${student.firstName}! It looks like you have been inactive in the course 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to resume the course.`
+                    text: `Hey ${student.firstName}! It looks like you have been inactive in the course 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to resume the course, or click help to speak with a support person`
                   },
                 },
                 {
@@ -612,6 +619,16 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
                         "emoji": true
                       },
                       "value": `continue_${payload.courseId}|${msgId}`,
+                      style: MessageActionButtonStyle.PRIMARY
+                    },
+                    {
+                      "type": SlackActionType.BUTTON,
+                      "text": {
+                        "type": SlackTextMessageTypes.PLAINTEXT,
+                        "text": "Help",
+                        "emoji": true
+                      },
+                      "value": `HELP`,
                       style: MessageActionButtonStyle.PRIMARY
                     }
                   ]
