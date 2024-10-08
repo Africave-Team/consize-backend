@@ -533,11 +533,11 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               type: "button",
               action: {
                 buttons: [
-                  // {
-                  //   type: "web_url",
-                  //   url: "https://wa.link/cd7fgk",
-                  //   title: "Support",
-                  // },
+                  {
+                    type: "web_url",
+                    url: "https://wa.link/cd7fgk",
+                    title: "Support",
+                  },
                   {
                     type: "reply",
                     reply: {
