@@ -132,17 +132,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         let today = moment().add(24, 'hours').format('YYYY-MM-DD')
         switch (btnId) {
           case "HELP":
-          case "help":
             await handleHelp(destination)
-            // agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-            //     to: destination,
-            //     type: "text",
-            //     messaging_product: "whatsapp",
-            //     recipient_type: "individual",
-            //     text: {
-            //       body: "you reached the help center"
-            //     }
-            //   })
             break;
           case START:
           case RESUME_COURSE:
@@ -521,39 +511,10 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       switch (response) {
         case "HELP":
         case "help":
-          agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-            to: destination,
-            type: "interactive",
-            messaging_product: "whatsapp",
-            recipient_type: "individual",
-            interactive: {
-              type: "cta_url",
-              body: {
-                text: `Click on help to talk to our support or click continue to continue with the rest of the course`
-              },
-              action: {
-                name: "cta_url",
-                parameters: {
-                  display_text: "Talk to support",
-                  url: "https://wa.link/cd7fgk"
-                }
-                // buttons: [
-                //   {
-                //     type: "web_url",
-                //     url: "https://wa.link/cd7fgk",
-                //     title: "Support",
-                //   },
-                //   {
-                //     type: "reply",
-                //     reply: {
-                //       id: "Continue",
-                //       title: "Continue"
-                //     }
-                //   }
-                // ]
-              }
-            }
-          })
+        case "Help":
+        case "'help'":
+        case "'HELP'":
+          await handleHelp(destination)
           break;
         case "/sos":
           if (enrollment) {
