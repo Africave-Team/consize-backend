@@ -2733,7 +2733,7 @@ export const handleHelp = async (phoneNumber: string): Promise<void> => {
             messaging_product: "whatsapp",
             recipient_type: "individual",
             interactive: {
-              body: { text:"_______________"},
+              body: { text:""},
               type: "button",
               action: {
                 buttons: [
