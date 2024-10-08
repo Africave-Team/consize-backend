@@ -2714,7 +2714,7 @@ export const handleHelp = async (phoneNumber: string): Promise<void> => {
       recipient_type: "individual",
       interactive: {
         body: {
-          text: `Click on help to talk to our support or click 'continue' to continue with the rest of the course`
+          text: `Click on help to talk to our support or click continue to continue with the rest of the course`
         },
         type: "button",
         action: {
