@@ -2713,25 +2713,30 @@ export const handleHelp = async (phoneNumber: string): Promise<void> => {
       messaging_product: "whatsapp",
       recipient_type: "individual",
       interactive: {
+        type: "cta_url",
         body: {
           text: `Click on help to talk to our support or click continue to continue with the rest of the course`
         },
-        type: "button",
         action: {
-          buttons: [
-            {
-              type: "web_url",
-              url: "https://wa.link/cd7fgk",
-              title: "Support",
-            },
-            {
-              type: "reply",
-              reply: {
-                id: "Continue",
-                title: "Continue"
-              }
-            }
-          ]
+          name: "cta_url",
+          parameters: {
+            display_text: "Talk to support",
+            url: "https://wa.link/cd7fgk"
+          }
+          // buttons: [
+          //   {
+          //     type: "web_url",
+          //     url: "https://wa.link/cd7fgk",
+          //     title: "Support",
+          //   },
+          //   {
+          //     type: "reply",
+          //     reply: {
+          //       id: "Continue",
+          //       title: "Continue"
+          //     }
+          //   }
+          // ]
         }
       }
     })
