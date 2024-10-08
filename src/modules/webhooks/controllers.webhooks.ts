@@ -5,7 +5,7 @@ import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { ENROLL_STUDENT_DEFAULT_DATE, RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { CONTINUE, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow, RESUME_COURSE_TOMORROW } from './interfaces.webhooks'
-import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement, reloadTemplates } from "./service.webhooks"
+import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement, reloadTemplates, handleHelp } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
@@ -133,16 +133,16 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         switch (btnId) {
           case "HELP":
           case "help":
-            // await handleHelp(destination)
-            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                to: destination,
-                type: "text",
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                text: {
-                  body: "you reached the help center"
-                }
-              })
+            await handleHelp(destination)
+            // agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+            //     to: destination,
+            //     type: "text",
+            //     messaging_product: "whatsapp",
+            //     recipient_type: "individual",
+            //     text: {
+            //       body: "you reached the help center"
+            //     }
+            //   })
             break;
           case START:
           case RESUME_COURSE:
@@ -521,16 +521,16 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       switch (response) {
         case "HELP":
         case "help":
-          // await handleHelp(destination)
-          agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              to: destination,
-              type: "text",
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              text: {
-                body: "you reached the help center"
-              }
-            })
+          await handleHelp(destination)
+          // agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+          //     to: destination,
+          //     type: "text",
+          //     messaging_product: "whatsapp",
+          //     recipient_type: "individual",
+          //     text: {
+          //       body: "you reached the help center"
+          //     }
+          //   })
           break;
         case "/sos":
           if (enrollment) {
