@@ -2715,7 +2715,7 @@ export const handleHelp = async (phoneNumber: string): Promise<void> => {
       interactive: {
         type: "cta_url",
         body: {
-          text: `Click on help to talk to our support or click continue to continue with the rest of the course`
+          text: `Click on help to talk to our support`
         },
         action: {
           name: "cta_url",
@@ -2733,7 +2733,7 @@ export const handleHelp = async (phoneNumber: string): Promise<void> => {
             messaging_product: "whatsapp",
             recipient_type: "individual",
             interactive: {
-              body: { text:""},
+              body: { text:"Click continue to continue with the rest of the course"},
               type: "button",
               action: {
                 buttons: [
