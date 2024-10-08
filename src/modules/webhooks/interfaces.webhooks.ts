@@ -41,13 +41,15 @@ interface InteractiveMessageSection {
 export interface InteractiveMessage {
   type: "interactive"
   interactive: {
-    type: "button" | "list"
+    type: "button" | "list" | "cta_url"
     header?: Header
     body: MessageBody
     action: {
       buttons?: ReplyButton[]
       button?: string
       sections?: InteractiveMessageSection[]
+      name?: string
+      parameters?: any
     }
   }
 }
