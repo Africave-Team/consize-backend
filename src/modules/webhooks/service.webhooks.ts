@@ -491,7 +491,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
                   type: MessageBlockType.SECTION,
                   text: {
                     type: SlackTextMessageTypes.MARKDOWN,
-                    text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`
+                    text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.\nIf you face any issues while taking the course, click help to talk to our support team`
                   },
                 },
                 {
@@ -506,17 +506,17 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
                       },
                       "value": `continue_${payload.courseId}`,
                       style: MessageActionButtonStyle.PRIMARY
+                    },
+                    {
+                      "type": SlackActionType.BUTTON,
+                      "text": {
+                        "type": SlackTextMessageTypes.PLAINTEXT,
+                        "text": "Help",
+                        "emoji": true
+                      },
+                      "value": `HELP`,
+                      style: MessageActionButtonStyle.PRIMARY
                     }
-                    // {
-                    //   "type": SlackActionType.BUTTON,
-                    //   "text": {
-                    //     "type": SlackTextMessageTypes.PLAINTEXT,
-                    //     "text": "help",
-                    //     "emoji": true
-                    //   },
-                    //   "value": `help_${payload.courseId}`,
-                    //   style: MessageActionButtonStyle.PRIMARY
-                    // }
                   ]
                 }
               ]
