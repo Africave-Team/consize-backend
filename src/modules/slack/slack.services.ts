@@ -1647,7 +1647,7 @@ export const sendEnrollmentScheduleAcknowledgement = async (url: string, message
   }
 }
 
-export const handleHelpSlack = async (courseId: string,channelId: string, data: CourseEnrollment): Promise<void> => {
+export const handleHelpSlack = async (channelId: string, data: CourseEnrollment): Promise<void> => {
    try {
     agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
       channel: channelId,
@@ -1658,7 +1658,7 @@ export const handleHelpSlack = async (courseId: string,channelId: string, data: 
             type: MessageBlockType.SECTION,
             text: {
               type: SlackTextMessageTypes.MARKDOWN,
-              text: `Click continue to continue with the rest of the course`
+              text: `Click help to talk to our support`
             },
           },
           {
@@ -1666,12 +1666,13 @@ export const handleHelpSlack = async (courseId: string,channelId: string, data: 
             elements: [
               {
                 "type": SlackActionType.BUTTON,
+                "url" : "https://wa.link/cd7fgk",
                 "text": {
                   "type": SlackTextMessageTypes.PLAINTEXT,
-                  "text": "Continue",
+                  "text": "help",
                   "emoji": true
                 },
-                "value": `continue_${courseId}`,
+                "value": `HELP`,
                 style: MessageActionButtonStyle.PRIMARY
               }
             ]
