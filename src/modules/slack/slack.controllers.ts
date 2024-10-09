@@ -51,7 +51,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
           switch (btnId) {
             case HELP:
               if (enrollment) {
-                await handleHelpSlack(enrollment?.id, channel.id, enrollment)
+                await handleHelpSlack(channel.id, enrollment)
               }
               break;
             case START:
