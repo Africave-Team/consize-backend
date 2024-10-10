@@ -1672,7 +1672,7 @@ export const handleHelpSlack = async (channelId: string, data: CourseEnrollment)
                   "text": "help",
                   "emoji": true
                 },
-                "value": `HELP`,
+                "value": `help`,
                 style: MessageActionButtonStyle.PRIMARY
               }
             ]
