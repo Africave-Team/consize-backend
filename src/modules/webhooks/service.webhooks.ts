@@ -509,12 +509,13 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
                     },
                     {
                       "type": SlackActionType.BUTTON,
+                      "url" : "https://wa.link/cd7fgk",
                       "text": {
                         "type": SlackTextMessageTypes.PLAINTEXT,
-                        "text": "Help",
+                        "text": "help",
                         "emoji": true
                       },
-                      "value": `HELP`,
+                      "value": `help`,
                       style: MessageActionButtonStyle.PRIMARY
                     }
                   ]
