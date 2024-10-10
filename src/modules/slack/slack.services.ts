@@ -193,7 +193,7 @@ export const sendSlackMessage = async function (slackToken: string, channelId: s
       Authorization: `Bearer ${slackToken}`
     }
   })
-
+  console.log(JSON.stringify(result.data))
   if (!result.data.ok) {
     console.log(result.data)
     throw new Error("Could not send this message")
