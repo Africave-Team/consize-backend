@@ -4,8 +4,8 @@ import { catchAsync } from '../utils'
 import { slackServices } from '.'
 import { teamService } from '../teams'
 import { FetchChannels, Fetchmembers, MessageBlockType, SendSlackMessagePayload, SendSlackResponsePayload, SlackResponse, SlackTextMessageTypes } from './interfaces.slack'
-import { CourseEnrollment, RESUME_COURSE, START, CONTINUE, QUIZ_NO, QUIZ_YES, QUIZ_A, QUIZ_B, QUIZ_C, STATS, COURSES, CERTIFICATES, SURVEY_B, SURVEY_C, TOMORROW, MORNING, AFTERNOON, EVENING, SCHEDULE_RESUMPTION, ACCEPT_INVITATION, REJECT_INVITATION, RESUME_COURSE_TOMORROW, QUIZA_A, QUIZA_B, QUIZA_C } from '../webhooks/interfaces.webhooks'
-import { fetchEnrollmentsSlack, handleContinueSlack, handleBlockQuiz, handleLessonQuiz, handleSurvey, sendResumptionOptions, sendScheduleAcknowledgement, handleSendSurveySlack, handleAssessment } from './slack.services'
+import { CourseEnrollment, RESUME_COURSE, START, CONTINUE, QUIZ_NO, QUIZ_YES, QUIZ_A, QUIZ_B, QUIZ_C, STATS, COURSES, CERTIFICATES, SURVEY_B, SURVEY_C, TOMORROW, MORNING, AFTERNOON, EVENING, SCHEDULE_RESUMPTION, ACCEPT_INVITATION, REJECT_INVITATION, RESUME_COURSE_TOMORROW, QUIZA_A, QUIZA_B, QUIZA_C, HELP } from '../webhooks/interfaces.webhooks'
+import { fetchEnrollmentsSlack, handleContinueSlack, handleBlockQuiz, handleLessonQuiz, handleSurvey, sendResumptionOptions, sendScheduleAcknowledgement, handleSendSurveySlack, handleAssessment, handleHelpSlack } from './slack.services'
 import { Student } from '../students'
 import { agenda } from '../scheduler'
 import { RESUME_TOMORROW, SEND_CERTIFICATE_SLACK, SEND_SLACK_MESSAGE, SEND_SLACK_RESPONSE } from '../scheduler/MessageTypes'
@@ -49,6 +49,11 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
           console.log(btnId, messageId, enrollment?.lastMessageId)
           let today = moment().add(24, "hours").format('YYYY-MM-DD')
           switch (btnId) {
+            case HELP:
+              if (enrollment) {
+                await handleHelpSlack(channel.id, enrollment)
+              }
+              break
             case START:
             case RESUME_COURSE:
             case RESUME_COURSE_TOMORROW:

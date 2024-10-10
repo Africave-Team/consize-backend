@@ -1646,3 +1646,41 @@ export const sendEnrollmentScheduleAcknowledgement = async (url: string, message
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
 }
+
+export const handleHelpSlack = async (channelId: string, data: CourseEnrollment): Promise<void> => {
+  try {
+    agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+      channel: channelId,
+      accessToken: data.slackToken || "",
+      message: {
+        blocks: [
+          {
+            type: MessageBlockType.SECTION,
+            text: {
+              type: SlackTextMessageTypes.MARKDOWN,
+              text: `Click help to talk to our support`
+            },
+          },
+          {
+            type: MessageBlockType.ACTIONS,
+            elements: [
+              {
+                "type": SlackActionType.BUTTON,
+                "url": "https://wa.link/cd7fgk",
+                "text": {
+                  "type": SlackTextMessageTypes.PLAINTEXT,
+                  "text": "help",
+                  "emoji": true
+                },
+                "value": `help`,
+                style: MessageActionButtonStyle.PRIMARY
+              }
+            ]
+          }
+        ]
+      }
+    })
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+  }
+}

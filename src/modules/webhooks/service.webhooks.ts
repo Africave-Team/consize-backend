@@ -285,7 +285,7 @@ export const generateCourseFlow = async function (courseId: string) {
             if (lessonData) {
               flow.push({
                 type: CourseFlowMessageType.ENDLESSON,
-                content: `*Next lesson*: ${lessonData.title}\n\n➡️ Tap 'Continue Now' when you're ready to start.\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.
+                content: `*Next lesson*: ${lessonData.title}\n\n➡️ Tap 'Continue Now' when you're ready to start.\n\nTap 'Continue Tomorrow' to continue tomorrow at 9am tomorrow \n\nTap 'Set Resumption Time' to choose the time to continue tomorrow.\nRemember, If you face any issues while taking the course, respond with a ‘help’ to talk to our support team
             `
               })
             }
@@ -447,7 +447,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
             recipient_type: "individual",
             interactive: {
               body: {
-                text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`
+                text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.\nIf you face any issues while taking the course, click help to talk to our support team`
               },
               type: "button",
               action: {
@@ -457,6 +457,13 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
                     reply: {
                       id: `continue_${payload.courseId}`,
                       title: "Continue"
+                    }
+                  },
+                  {
+                    type: "reply",
+                    reply: {
+                      id: `help_${payload.courseId}`,
+                      title: "help"
                     }
                   }
                 ]
@@ -484,7 +491,7 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
                   type: MessageBlockType.SECTION,
                   text: {
                     type: SlackTextMessageTypes.MARKDOWN,
-                    text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`
+                    text: `Hey ${student.firstName}! It looks like you have been idle for quite some time 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.\nIf you face any issues while taking the course, click help to talk to our support team`
                   },
                 },
                 {
@@ -498,6 +505,17 @@ export const sendInactivityMessage = async (payload: { studentId: string, course
                         "emoji": true
                       },
                       "value": `continue_${payload.courseId}`,
+                      style: MessageActionButtonStyle.PRIMARY
+                    },
+                    {
+                      "type": SlackActionType.BUTTON,
+                      "url": "https://wa.link/cd7fgk",
+                      "text": {
+                        "type": SlackTextMessageTypes.PLAINTEXT,
+                        "text": "help",
+                        "emoji": true
+                      },
+                      "value": `help`,
                       style: MessageActionButtonStyle.PRIMARY
                     }
                   ]
@@ -544,7 +562,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
             recipient_type: "individual",
             interactive: {
               body: {
-                text: `Hey ${student.firstName}! It looks like you have been inactive in the course *${course.title.trim()}* 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to resume the course.`
+                text: `Hey ${student.firstName}! It looks like you have been inactive in the course *${course.title.trim()}* 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to resume the course, or click help to speak with a support person`
               },
               type: "button",
               action: {
@@ -554,6 +572,13 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
                     reply: {
                       id: `continue_${payload.courseId}`,
                       title: "Continue"
+                    }
+                  },
+                  {
+                    type: "reply",
+                    reply: {
+                      id: `HELP`,
+                      title: "Help"
                     }
                   }
                 ]
@@ -581,7 +606,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
                   type: MessageBlockType.SECTION,
                   text: {
                     type: SlackTextMessageTypes.MARKDOWN,
-                    text: `Hey ${student.firstName}! It looks like you have been inactive in the course 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to resume the course.`
+                    text: `Hey ${student.firstName}! It looks like you have been inactive in the course 🤔.\n\nIn case you are stuck due to technical reasons, please click 'Continue' to resume the course, or click help to speak with a support person`
                   },
                 },
                 {
@@ -595,6 +620,17 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
                         "emoji": true
                       },
                       "value": `continue_${payload.courseId}|${msgId}`,
+                      style: MessageActionButtonStyle.PRIMARY
+                    },
+                    {
+                      "type": SlackActionType.BUTTON,
+                      "url": "https://wa.link/cd7fgk",
+                      "text": {
+                        "type": SlackTextMessageTypes.PLAINTEXT,
+                        "text": "Help",
+                        "emoji": true
+                      },
+                      "value": `help`,
                       style: MessageActionButtonStyle.PRIMARY
                     }
                   ]
@@ -2688,4 +2724,51 @@ export const handleDelayedFacebookStatus = async function (team: string) {
   }
 }
 
+export const handleHelp = async (phoneNumber: string, courseId: string): Promise<void> => {
+  try {
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: phoneNumber,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        type: "cta_url",
+        body: {
+          text: `Click on help to talk to our support`
+        },
+        action: {
+          name: "cta_url",
+          parameters: {
+            display_text: "Talk to support",
+            url: "https://wa.link/cd7fgk"
+          }
+        }
+      }
+    })
+
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: phoneNumber,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        body: { text: "Click continue to continue with the rest of the course" },
+        type: "button",
+        action: {
+          buttons: [
+            {
+              type: "reply",
+              reply: {
+                id: `continue_${courseId}`,
+                title: "Continue"
+              }
+            }
+          ]
+        }
+      }
+    })
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+  }
+}
 

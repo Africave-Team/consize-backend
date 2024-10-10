@@ -101,7 +101,7 @@ Thank you for your feedback about this course 🤝.`
   "Inactivity Reminder": {
     "variables": [{ value: "student.firstName", name: "StudentName" },],
     "description": "Sent after a longer period of inactivity, encouraging the user to stay on track.",
-    "content": "`Hey [[StudentName]]! It looks like you have been idle for quite some time 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.`"
+    "content": "`Hey [[StudentName]]! It looks like you have been idle for quite some time 🤔.\n\nOther learners are getting ahead.\n Click 'Continue' to move forward in the course.\n If you face any issues while taking the course, respond with a ‘help’ to talk to our support team`"
   },
   "Scheduled Reminder": {
     "variables": [{ value: "student.firstName", name: "StudentName" }, { name: "Progress", value: "enrollment.totalBlocks" }, { name: "CourseTitle", value: "enrollment.title", }],

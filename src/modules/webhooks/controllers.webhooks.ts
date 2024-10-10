@@ -5,7 +5,7 @@ import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { ENROLL_STUDENT_DEFAULT_DATE, RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { CONTINUE, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow, RESUME_COURSE_TOMORROW } from './interfaces.webhooks'
-import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement, reloadTemplates } from "./service.webhooks"
+import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement, reloadTemplates, handleHelp } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
@@ -131,6 +131,11 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         // }
         let today = moment().add(24, 'hours').format('YYYY-MM-DD')
         switch (btnId) {
+          case "HELP":
+            if(enrollment){
+              await handleHelp(destination, enrollment.id)
+            }
+            break;
           case START:
           case RESUME_COURSE:
           case RESUME_COURSE_TOMORROW:
@@ -506,6 +511,15 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       let field: string | null
       let fieldsRaw: string | null
       switch (response) {
+        case "HELP":
+        case "help":
+        case "Help":
+        case "'help'":
+        case "'HELP'":
+          if(enrollment){
+            await handleHelp(destination, enrollment.id)
+          }
+          break;
         case "/sos":
           if (enrollment) {
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
