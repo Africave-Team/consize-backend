@@ -514,8 +514,31 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         case "HELP":
         case "help":
         case "Help":
+        case "hElp":
+        case "heLp":
+        case "helP":
+        case "HElp":
+        case "HeLp":
+        case "HelP":
+        case "hELp":
+        case "hElP":
+        case "heLP":
+        case "HElP":
+        case "HELp":
         case "'help'":
         case "'HELP'":
+        case "'Help'":
+        case "'hElp'":
+        case "'heLp'":
+        case "'helP'":
+        case "'HElp'":
+        case "'HeLp'":
+        case "'HelP'":
+        case "'hELp'":
+        case "'hElP'":
+        case "'heLP'":
+        case "'HElP'":
+        case "'HELp'":
           if(enrollment){
             await handleHelp(destination, enrollment.id)
           }
