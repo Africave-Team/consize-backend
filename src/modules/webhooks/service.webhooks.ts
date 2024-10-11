@@ -606,7 +606,7 @@ export const sendShortInactivityMessage = async (payload: { studentId: string, c
                     },
                     {
                       "type": SlackActionType.BUTTON,
-                      "url" : "https://wa.link/cd7fgk",
+                      "url": "https://wa.link/cd7fgk",
                       "text": {
                         "type": SlackTextMessageTypes.PLAINTEXT,
                         "text": "Help",
@@ -2707,7 +2707,7 @@ export const handleDelayedFacebookStatus = async function (team: string) {
 }
 
 export const handleHelp = async (phoneNumber: string, courseId: string): Promise<void> => {
-   try {
+  try {
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
       type: "interactive",
@@ -2729,26 +2729,26 @@ export const handleHelp = async (phoneNumber: string, courseId: string): Promise
     })
 
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-            to: phoneNumber,
-            type: "interactive",
-            messaging_product: "whatsapp",
-            recipient_type: "individual",
-            interactive: {
-              body: { text:"Click continue to continue with the rest of the course"},
-              type: "button",
-              action: {
-                buttons: [
-                  {
-                    type: "reply",
-                    reply: {
-                      id: `continue_${courseId}`,
-                      title: "Continue"
-                    }
-                  }
-                ]
+      to: phoneNumber,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        body: { text: "Click continue to continue with the rest of the course" },
+        type: "button",
+        action: {
+          buttons: [
+            {
+              type: "reply",
+              reply: {
+                id: `continue_${courseId}`,
+                title: "Continue"
               }
             }
-          })
+          ]
+        }
+      }
+    })
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }

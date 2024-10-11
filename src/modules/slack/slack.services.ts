@@ -193,7 +193,7 @@ export const sendSlackMessage = async function (slackToken: string, channelId: s
       Authorization: `Bearer ${slackToken}`
     }
   })
-
+  console.log(JSON.stringify(result.data))
   if (!result.data.ok) {
     console.log(result.data)
     throw new Error("Could not send this message")
@@ -1648,7 +1648,7 @@ export const sendEnrollmentScheduleAcknowledgement = async (url: string, message
 }
 
 export const handleHelpSlack = async (channelId: string, data: CourseEnrollment): Promise<void> => {
-   try {
+  try {
     agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
       channel: channelId,
       accessToken: data.slackToken || "",
@@ -1666,7 +1666,7 @@ export const handleHelpSlack = async (channelId: string, data: CourseEnrollment)
             elements: [
               {
                 "type": SlackActionType.BUTTON,
-                "url" : "https://wa.link/cd7fgk",
+                "url": "https://wa.link/cd7fgk",
                 "text": {
                   "type": SlackTextMessageTypes.PLAINTEXT,
                   "text": "help",
