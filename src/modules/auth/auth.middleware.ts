@@ -3,6 +3,7 @@ import passport from 'passport'
 import httpStatus from 'http-status'
 import ApiError from '../errors/ApiError'
 import { IUserDoc } from '../user/user.interfaces'
+import Teams from '../teams/model.teams'
 
 const verifyCallback =
   (req: Request, resolve: any, reject: any) =>
@@ -12,6 +13,11 @@ const verifyCallback =
       }
       req.user = user
 
+      const team = await Teams.findById(user.team).select('status').exec();
+
+      if (team && team.status === 'DEACTIVATED') {
+            return reject(new ApiError(httpStatus.FORBIDDEN, 'Your account has been deactivated. Please contact your account manager to get it reactivated.'))
+      }
       resolve()
     }
 
