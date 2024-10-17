@@ -502,6 +502,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       const fieldKey = `${config.redisBaseKey}field:${destination}`
       const fieldsKey = `${config.redisBaseKey}fields:${destination}`
       const keySelected = `${config.redisBaseKey}selected:${destination}`
+      const keyLastRequest = `${config.redisBaseKey}last_request:${destination}`
       const response = messageBody[0].text.body.toLowerCase()
       let field: string | null
       let fieldsRaw: string | null
@@ -597,8 +598,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         case "9":
         case "10":
           field = await redisClient.get(fieldKey)
-          const key = `${config.redisBaseKey}last_request:${destination}`
-          const dt = await redisClient.get(key)
+          const dt = await redisClient.get(keyLastRequest)
           if (field && field === "tz") {
             let selected = timezones[Number(response) - 1]
             if (selected) {
@@ -725,6 +725,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             redisClient.del(fieldKey)
             redisClient.del(fieldsKey)
             redisClient.del(keySelected)
+            redisClient.del(keyLastRequest)
             if (teamCourses) {
               // get the course short code
               const extractId = function (text: string) {
