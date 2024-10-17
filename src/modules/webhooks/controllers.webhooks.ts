@@ -18,6 +18,7 @@ import Courses from '../courses/model.courses'
 import { courseService } from '../courses'
 import { teamService } from '../teams'
 import { resolveCohortWithShortCode } from '../cohorts/service.cohorts'
+import Teams from '../teams/model.teams'
 // import { logger } from '../logger'
 
 const timezones = [
@@ -643,19 +644,33 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               let courseId = await redisClient.get(keySelected)
               const course = await Courses.findById(courseId)
               if (courseId && course && student) {
-                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                  to: destination,
-                  type: "text",
-                  messaging_product: "whatsapp",
-                  recipient_type: "individual",
-                  text: {
-                    body: `Thank you for your message! Your enrollment to the course *${course.title.trim()}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
-                  }
-                })
-                await studentService.enrollStudentToCourse(student.id, courseId, "qr")
-                redisClient.del(fieldKey)
-                redisClient.del(fieldsKey)
-                redisClient.del(keySelected)
+                const team = await Teams.findById(course.owner).select('status').exec();
+
+                if (team && team.status === 'DEACTIVATED') {
+                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                    to: destination,
+                    type: "text",
+                    messaging_product: "whatsapp",
+                    recipient_type: "individual",
+                    text: {
+                      body: `Enrollment link is expired.`
+                    }
+                  })
+                }else{
+                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                    to: destination,
+                    type: "text",
+                    messaging_product: "whatsapp",
+                    recipient_type: "individual",
+                    text: {
+                      body: `Thank you for your message! Your enrollment to the course *${course.title.trim()}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
+                    }
+                  })
+                  await studentService.enrollStudentToCourse(student.id, courseId, "qr")
+                  redisClient.del(fieldKey)
+                  redisClient.del(fieldsKey)
+                  redisClient.del(keySelected)
+                } 
               }
             }
           } else {
