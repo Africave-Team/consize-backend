@@ -10,6 +10,7 @@ import Courses from '../courses/model.courses'
 import { Team, teamService } from '../teams'
 import { CourseInterface, CourseStatus, MediaType } from '../courses/interfaces.courses'
 import he from "he"
+import * as cheerio from "cheerio"
 import db from "../rtdb"
 import Settings from '../courses/model.settings'
 import Lessons from '../courses/model.lessons'
@@ -85,38 +86,88 @@ export interface CourseFlowItem {
 //   currentType: CourseFlowMessageType
 // }
 
-export function convertToWhatsAppString (html: string, indent: number = 0): string {
-  if (!html) return ''
+function formatText (html: string, indent: number) {
   let formattedText = html
   formattedText = formattedText.replace(/\s+([^\s]+)="/gi, ' $1=')
   // formattedText = formattedText.replace(/\n/g, '')
   // Replace <br /> tags with new lines
-  formattedText = formattedText.replace(/<br\s*\/?>/gi, '\n')
   // formattedText = formattedText.replace(/<p(?:\s+[^>]*?)?>(.*?)<\/p>/gi, '')
   formattedText = formattedText.replace(/<p(?:\s+[^>]*?)?>(.*?)<\/p>/gi, '$1')
+  formattedText = formattedText.replace(/<p>(.*?)<\/p>/gi, '$1')
+
+
   // Replace <b> tags with *
   formattedText = formattedText.replace(/<b>(.*?)<\/b>/gi, (_, p1) => `*${p1.trim()}*`)
   formattedText = formattedText.replace(/<strong>(.*?)<\/strong>/gi, (_, p1) => `*${p1.trim()}*`)
 
   // Replace <i> tags with _
-  formattedText = formattedText.replace(/<i>(.*?)<\/i>/gi, '_$1_')
+  formattedText = formattedText.replace(/<i>(.*?)<\/i>/gi, (_, p1) => `_${p1.trim()}_`)
+  formattedText = formattedText.replace(/<em>(.*?)<\/em>/gi, (_, p1) => `_${p1.trim()}_`)
 
   // Handle lists
   // Replace <ul> and <ol> tags with new lines
   formattedText = formattedText.replace(/<\/?ul.*?>/gi, '')
   formattedText = formattedText.replace(/<\/?ol.*?>/gi, '')
+  let count = 0
 
   // Replace <li> tags with "-" for unordered lists and numbers for ordered lists
   formattedText = formattedText.replace(/<li(?:\s+[^>]*?)?>(.*?)<\/li>/gi, (_, content) => {
     const indentation = ' '.repeat(indent * 4)
-    return `${indentation}- ${convertToWhatsAppString(content, indent + 1)}`
+    if (html.includes('<ol>')) {
+      count = count + 1
+      return `${indentation}${count}. ${formatText(content, indent + 1)}`
+    }
+    return `${indentation}- ${formatText(content, indent + 1)}`
   })
 
   // Remove any remaining HTML tags
-  formattedText = formattedText.replace(/<[^>]+>/g, '')
-
+  // formattedText = formattedText.replace(/\n{3,}/g, '\n\n')
+  // formattedText = formattedText.replace(/<[^>]+>/g, '')
+  formattedText = formattedText.replace(/<br\s*\/?>/gi, '\n')
+  formattedText = formattedText.replace(/&nbsp;/gi, '')
 
   return formattedText.trim()
+}
+
+function splitHtmlIntoGroups (html: string, indent: number) {
+  const $ = cheerio.load(html)
+  const groups: string[] = []
+
+  // Select all <p>, <ul>, and <ol> tags
+  $('p, ul, ol').each((_, element) => {
+    $(element).find('strong, em').each((_, elem) => {
+      const firstChild = $(elem).contents().first()
+      if (firstChild.is('br')) {
+        firstChild.remove() // Remove <br> if it's the first child
+      }
+    })
+
+    const group = $.html(element)
+    const content = $(element).text().trim() // Get the text content of the element and trim whitespace
+
+
+    // Only add non-empty elements to the groups array
+    if (content !== '') {
+      groups.push(formatText(he.decode(group), indent))
+    }
+  })
+
+  if (groups.length === 0 && $.text().trim() !== '') {
+    const wrappedContent = `<p>${$.text().trim()}</p>`
+    groups.push(formatText(wrappedContent, indent))
+  }
+
+  return groups
+}
+
+
+
+export function convertToWhatsAppString (html: string, indent: number = 0): string {
+  if (!html) return ''
+  const elements = splitHtmlIntoGroups(html, indent)
+  let val = elements.join('\n\n')
+  return val
+
 }
 
 function splitStringIntoChunks (str: string, chunkSize = 700) {

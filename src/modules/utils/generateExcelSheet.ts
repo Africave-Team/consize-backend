@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx-js-style'
 import path from "path"
 import { existsSync, mkdirSync } from 'fs'
 
-const createWorkbook = ({ statsData, tableData, reviewData, assessmentData }: Omit<ExportHandlerInterface, "name">) => {
+const createWorkbook = ({ statsData, tableData, reviewData, assessmentData, additionalQuestionsData }: Omit<ExportHandlerInterface, "name">) => {
   // Create a new workbook
   const workbook = XLSX.utils.book_new()
   if (statsData) {
@@ -73,6 +73,22 @@ const createWorkbook = ({ statsData, tableData, reviewData, assessmentData }: Om
     sheet3['!cols'] = colWidths3
     // Add Sheet 2 to the workbook
     XLSX.utils.book_append_sheet(workbook, sheet3, "Assessments")
+  }
+
+  if (additionalQuestionsData && additionalQuestionsData[0]) {
+    const sheet4 = XLSX.utils.aoa_to_sheet(additionalQuestionsData)
+
+    const colWidths4 = additionalQuestionsData[0]?.map((_, index) => {
+      if (index === 0) {
+        return { wch: 70 }
+      }
+      return { wch: 30 }
+    })
+
+    // Apply column widths to the worksheet
+    sheet4['!cols'] = colWidths4
+    // Add Sheet 2 to the workbook
+    XLSX.utils.book_append_sheet(workbook, sheet4, "Additional Student Information")
   }
 
 
@@ -146,12 +162,14 @@ interface ExportHandlerInterface {
   tableData?: RowData[][] | undefined
   reviewData?: RowData[][] | undefined
   assessmentData?: RowData[][] | undefined
+
+  additionalQuestionsData?: RowData[][] | undefined
 }
 
-export const handleExport = async ({ name, statsData, tableData, reviewData, assessmentData }: ExportHandlerInterface): Promise<string> => {
+export const handleExport = async ({ name, statsData, tableData, reviewData, assessmentData, additionalQuestionsData }: ExportHandlerInterface): Promise<string> => {
   // Create the workbook
   const projectRoot = process.cwd()
-  const workbook = createWorkbook({ statsData, tableData, reviewData, assessmentData })
+  const workbook = createWorkbook({ statsData, tableData, reviewData, assessmentData, additionalQuestionsData })
   const filePath = path.join(projectRoot, "generated-files", `${name}.xlsx`)
   // Save the workbook to a file
   if (!existsSync(path.join(projectRoot, "generated-files"))) {

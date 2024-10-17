@@ -733,6 +733,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
 
   if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Could not find the specified course')
   let name = `course-report-${course.title}-${moment().format('DD-MM-YY hh:mm')}`
+  const courseSettings = await Settings.findById(course.settings)
   const titles = [
     {
       v: "Student name",
@@ -1417,13 +1418,86 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
   ]
 
 
+  let additionInfoData: RowData[][] = []
+  if (courseSettings && courseSettings.enrollmentFormFields) {
+    let additionalFields = courseSettings.enrollmentFormFields.filter(e => !e.defaultField)
+    if (additionalFields.length > 0) {
+      additionInfoData = [
+        [
+          {
+            v: "Student name",
+            t: "s",
+            s: {
+              font: {
+                sz: 10,
+                bold: true
+              },
+            }
+          },
+          ...additionalFields.map((q) => ({
+            v: q.fieldName,
+            t: "s",
+            s: {
+              alignment: {
+                horizontal: 'center',
+                vertical: 'center',
+              },
+              font: {
+                sz: 10,
+                bold: true
+              }
+            }
+          })),
+        ],
+        ...enrollments.map((r) => {
+          let fieldValues = additionalFields.map((e) => {
+            let value = r.custom[e.variableName]
+              ? r.custom[e.variableName].charAt(0).toUpperCase() + r.custom[e.variableName].slice(1)
+              : "No"
+            return {
+              v: value,
+              t: "s",
+              s: {
+                alignment: {
+                  horizontal: 'left',
+                  vertical: 'center',
+                },
+                font: {
+                  bold: false,
+                  sz: 10
+                }
+              }
+            }
+          })
+          return [
+            {
+              v: r.name,
+              t: "s",
+              s: {
+                alignment: {
+                  horizontal: 'left',
+                  vertical: 'center',
+                },
+                font: {
+                  bold: false,
+                  sz: 10
+                }
+              }
+            },
+            ...fieldValues,
+          ]
+        })
+      ]
+    }
+  }
 
   const path = await handleExport({
     name: name.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, '-').toLowerCase(),
     statsData,
     tableData,
     reviewData: reviewData.length > 0 ? reviewData : undefined,
-    assessmentData: assessmentExportData
+    assessmentData: assessmentExportData,
+    additionalQuestionsData: additionInfoData
   })
   return {
     file: path,
