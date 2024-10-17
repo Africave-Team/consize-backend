@@ -186,7 +186,21 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
   const team = await Teams.findById(course.owner).select('status').exec();
 
   if (team && team.status === 'DEACTIVATED') {
-    throw new ApiError(httpStatus.FORBIDDEN, "link expired")
+    if (source === "qr") {
+        agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+          to: student.phoneNumber,
+          type: "text",
+          team: course.owner,
+          messaging_product: "whatsapp",
+          recipient_type: "individual",
+          text: {
+            body: `Enrollment link is deactivated`
+          }
+        })
+        return
+    }else{
+      throw new ApiError(httpStatus.FORBIDDEN, "link expired")
+    }
   }
   const owner = await Teams.findById(course.owner).select('name')
   if (!owner) {
@@ -259,6 +273,7 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
 
   if (settings) {
     if (source === "qr") {
+
       const buttons: ReplyButton[] = []
       let message = `Hello ${student.firstName}! Thank you for enrolling on the course *${course.title.trim()}*\nPlease select when you would like to start this course.\n\n`
       let options = ['A', 'B', 'C']
