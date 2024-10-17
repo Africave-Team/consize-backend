@@ -457,7 +457,7 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
 
     // Step 3: Ensure the received data matches the defined type
     // Use type assertion or type guards to ensure type safety
-    let data: StudentCourseStats | null = snapshot.val()
+    let data: StudentCourseStats | null = await snapshot.val()
     if (data === null) {
       data = {
         name: `${student.firstName} ${student.otherNames}`,
@@ -516,8 +516,8 @@ export const saveBlockDuration = async function (teamId: string, studentId: stri
     }
     let payload: StudentCourseStats = {
       ...data,
-
     }
+    console.log("BLOCK DURATION PAYLOAD=>", payload)
     await dbRef.set(payload)
     await sessionService.updateEnrollment(studentId, lesson.course, payload)
     await statsService.updateDailyStats({

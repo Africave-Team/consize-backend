@@ -1236,13 +1236,20 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
         let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId, currentBlock: nextIndex, nextBlock: nextIndex + 1 }
         let currentItem = flowData[data.currentBlock]
         if (currentItem && (currentItem.type === CourseFlowMessageType.BLOCK || currentItem.type === CourseFlowMessageType.BLOCKWITHQUIZ)) {
+          console.log("CHECKING FOR BLOCK DURATION")
           // calculate the elapsed time and update stats service
           if (data.blockStartTime) {
             let diffInSeconds = moment().diff(moment(data.blockStartTime), 'seconds')
             if (diffInSeconds > 250) {
               diffInSeconds = 200
             }
-            saveBlockDuration(data.team, data.student, diffInSeconds, currentItem.lesson, currentItem.block)
+            console.log("BLOCK DURATION =>", diffInSeconds)
+
+            try {
+              await saveBlockDuration(data.team, data.student, diffInSeconds, currentItem.lesson, currentItem.block)
+            } catch (error) {
+              console.log("FAILED TO SAVE BLOCK DURATION =>", error)
+            }
             updatedData = { ...updatedData, blockStartTime: null, lastActivity: new Date().toISOString() }
           }
         }
