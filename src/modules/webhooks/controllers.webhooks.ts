@@ -597,6 +597,8 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         case "9":
         case "10":
           field = await redisClient.get(fieldKey)
+          const key = `${config.redisBaseKey}last_request:${destination}`
+          const dt = await redisClient.get(key)
           if (field && field === "tz") {
             let selected = timezones[Number(response) - 1]
             if (selected) {
@@ -621,13 +623,8 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 redisClient.del(keySelected)
               }
             }
-          } else {
-            const key = `${config.redisBaseKey}last_request:${destination}`
-            const dt = await redisClient.get(key)
-            let courses: string[] = []
-            if (dt) {
-              courses = [...JSON.parse(dt)]
-            }
+          } else if (dt) {
+            let courses: string[] = [...JSON.parse(dt)]
             const selected = courses[Number(response) - 1]
 
             if (selected) {
@@ -710,6 +707,8 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 }
               })
             }
+          } else if (enrollment) {
+            handleSurveyFreeform(response, enrollment, destination, v4())
           }
           break
 
