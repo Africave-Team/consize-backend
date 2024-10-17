@@ -29,6 +29,11 @@ export const login = catchAsync(async (req: Request, res: Response) => {
   if (user) {
     const tokens = await tokenService.generateAuthTokens(user)
     const team = await teamService.fetchTeamById(user.team)
+
+    if (team && team.status === 'DEACTIVATED') {
+      throw new ApiError(httpStatus.FORBIDDEN, "Your account has been deactivated. Please contact your account manager to get it reactivated.")
+    }
+
     if (shortCode && shortCode.length > 0 && team && team.shortCode !== shortCode) {
       throw new ApiError(httpStatus.BAD_REQUEST, "You are not a member of this workspace")
     }
