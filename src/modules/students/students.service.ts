@@ -182,15 +182,17 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
   if (!course) {
     throw new ApiError(httpStatus.NOT_FOUND, "No course found for this id.")
   }
+
+  const team = await Teams.findById(course.owner).select('status').exec();
+
+  if (team && team.status === 'DEACTIVATED') {
+    throw new ApiError(httpStatus.FORBIDDEN, "link expired")
+  }
   const owner = await Teams.findById(course.owner).select('name')
   if (!owner) {
     throw new ApiError(httpStatus.NOT_FOUND, "No team found.")
   }
 
-  console.log(owner.status)
-  if (owner.status === "DEACTIVATED") {
-    throw new ApiError(httpStatus.FORBIDDEN, "link expired")
-  }
   // get active subscription
   const subscription = await subscriptionService.fetchMyActiveSubscription(course.owner)
   if (!subscription) {
