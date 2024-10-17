@@ -646,7 +646,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   const student = await Students.findOne({ phoneNumber: destination })
                   if (student) {
                     await studentService.enrollStudentToCourse(student.id, selected, "qr")
-                    redisClient.del(key)
+                    redisClient.del(keyLastRequest)
                   } else {
                     const keySelected = `${config.redisBaseKey}selected:${destination}`
                     await redisClient.set(keySelected, selected)
@@ -668,7 +668,6 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                       await Students.create({
                         phoneNumber: destination,
                       })
-                      const keySelected = `${config.redisBaseKey}selected:${destination}`
                       await redisClient.set(fieldKey, fields[0].field)
                       await redisClient.set(fieldsKey, JSON.stringify(fields))
                       await redisClient.set(keySelected, course.id)
