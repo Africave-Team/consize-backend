@@ -55,7 +55,7 @@ export const TeamSchema = new Schema<TeamsInterface, ITeamModel>(
         _id: { type: String, default: () => v4() },
         status: {
             type: String,
-            enum: ["PENDING", "CONFIRMED", "DEACTIVATED"],
+            enum: ["PENDING", "CONFIRMED", "DEACTIVATED", "ACTIVATED"],
             default: "PENDING"
         },
         name: {

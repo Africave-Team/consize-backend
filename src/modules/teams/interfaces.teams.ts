@@ -23,7 +23,7 @@ export interface TeamsInterface extends Document {
     facebookPhoneNumberId: string | null
     facebookData: FacebookIntegrationData | null
     channels: DistributionChannel[]
-    status?: "PENDING" | "CONFIRMED" | "DEACTIVATED"
+    status?: "PENDING" | "CONFIRMED" | "DEACTIVATED" | "ACTIVATED"
     logo?: string
     color?: {
         primary: string
