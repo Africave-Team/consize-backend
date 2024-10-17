@@ -97,12 +97,12 @@ function formatText (html: string, indent: number) {
 
 
   // Replace <b> tags with *
-  formattedText = formattedText.replace(/<b>(.*?)<\/b>/gi, (_, p1) => `*${p1.trim()}*`)
-  formattedText = formattedText.replace(/<strong>(.*?)<\/strong>/gi, (_, p1) => `*${p1.trim()}*`)
+  formattedText = formattedText.replace(/<b>(.*?)<\/b>/gi, (_, p1) => `*${p1.trim()}* `)
+  formattedText = formattedText.replace(/<strong>(.*?)<\/strong>/gi, (_, p1) => `*${p1.trim()}* `)
 
   // Replace <i> tags with _
-  formattedText = formattedText.replace(/<i>(.*?)<\/i>/gi, (_, p1) => `_${p1.trim()}_`)
-  formattedText = formattedText.replace(/<em>(.*?)<\/em>/gi, (_, p1) => `_${p1.trim()}_`)
+  formattedText = formattedText.replace(/<i>(.*?)<\/i>/gi, (_, p1) => `_${p1.trim()}_ `)
+  formattedText = formattedText.replace(/<em>(.*?)<\/em>/gi, (_, p1) => `_${p1.trim()}_ `)
 
   // Handle lists
   // Replace <ul> and <ol> tags with new lines
