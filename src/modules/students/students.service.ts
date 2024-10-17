@@ -187,7 +187,8 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
     throw new ApiError(httpStatus.NOT_FOUND, "No team found.")
   }
 
-  if (owner.status === 'DEACTIVATED') {
+  console.log(owner.status)
+  if (owner.status === "DEACTIVATED") {
     throw new ApiError(httpStatus.FORBIDDEN, "link expired")
   }
   // get active subscription
