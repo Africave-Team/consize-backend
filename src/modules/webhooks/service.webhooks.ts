@@ -97,13 +97,23 @@ function formatText (html: string, indent: number) {
 
 
   // Replace <b> tags with *
-  formattedText = formattedText.replace(/<b>(.*?)<\/b>/gi, (_, p1) => `*${p1.trim()}* `)
-  formattedText = formattedText.replace(/<strong>(.*?)<\/strong>/gi, (_, p1) => `*${p1.trim()}* `)
+  formattedText = formattedText.replace(/<b>(.*?)<\/b>/gi, (_, p1) => {
+    return p1.trim().endsWith(' ') ? `*${p1.trim()}* ` : `*${p1.trim()}* `
+  })
+  formattedText = formattedText.replace(/<strong>(.*?)<\/strong>/gi, (_, p1) => {
+    return p1.trim().endsWith(' ') ? `*${p1.trim()}* ` : `*${p1.trim()}* `
+  })
 
-  // Replace <i> tags with _
-  formattedText = formattedText.replace(/<i>(.*?)<\/i>/gi, (_, p1) => `_${p1.trim()}_ `)
-  formattedText = formattedText.replace(/<em>(.*?)<\/em>/gi, (_, p1) => `_${p1.trim()}_ `)
+  // Replace <i> and <em> tags with _
+  formattedText = formattedText.replace(/<i>(.*?)<\/i>/gi, (_, p1) => {
+    return p1.trim().endsWith(' ') ? `_${p1.trim()}_ ` : `_${p1.trim()}_ `
+  })
+  formattedText = formattedText.replace(/<em>(.*?)<\/em>/gi, (_, p1) => {
+    return p1.trim().endsWith(' ') ? `_${p1.trim()}_ ` : `_${p1.trim()}_ `
+  })
 
+
+  formattedText = formattedText.replace(/\s{2,}/g, ' ')
   // Handle lists
   // Replace <ul> and <ol> tags with new lines
   formattedText = formattedText.replace(/<\/?ul.*?>/gi, '')
@@ -122,9 +132,9 @@ function formatText (html: string, indent: number) {
 
   // Remove any remaining HTML tags
   // formattedText = formattedText.replace(/\n{3,}/g, '\n\n')
-  // formattedText = formattedText.replace(/<[^>]+>/g, '')
   formattedText = formattedText.replace(/<br\s*\/?>/gi, '\n')
   formattedText = formattedText.replace(/&nbsp;/gi, '')
+  formattedText = formattedText.replace(/<[^>]+>/g, '')
 
   return formattedText.trim()
 }
