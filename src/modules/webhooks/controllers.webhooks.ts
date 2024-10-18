@@ -599,6 +599,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         case "10":
           field = await redisClient.get(fieldKey)
           const dt = await redisClient.get(keyLastRequest)
+          console.log(field, dt, enrollment)
           if (field && field === "tz") {
             let selected = timezones[Number(response) - 1]
             if (selected) {
