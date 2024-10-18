@@ -453,7 +453,7 @@ export const sendMessage = async function (message: Message, team?: TeamsInterfa
   const subscription = await Subscriptions.findOne({ owner: team?.id }).populate("plan")
   let token = config.whatsapp.token
   let phoneId = config.whatsapp.phoneNumberId
-
+  console.log(subscription, team, "send message")
   if (subscription && typeof subscription.plan !== "string") {
     const value = subscription.plan.price
 
@@ -1142,6 +1142,7 @@ export const sendMultiSurvey = async (item: CourseFlowItem, phoneNumber: string,
 
 export const sendFreeformSurvey = async (item: CourseFlowItem, phoneNumber: string, team: string): Promise<void> => {
   try {
+    console.log(team, "send free form survey")
     if (item.surveyQuestion) {
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
         to: phoneNumber,
