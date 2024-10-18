@@ -453,7 +453,6 @@ export const sendMessage = async function (message: Message, team?: TeamsInterfa
   const subscription = await Subscriptions.findOne({ owner: team?.id }).populate("plan")
   let token = config.whatsapp.token
   let phoneId = config.whatsapp.phoneNumberId
-  console.log(subscription, team, "send message")
   if (subscription && typeof subscription.plan !== "string") {
     const value = subscription.plan.price
 
