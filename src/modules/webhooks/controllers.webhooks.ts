@@ -5,7 +5,7 @@ import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { ENROLL_STUDENT_DEFAULT_DATE, RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { CONTINUE, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow, RESUME_COURSE_TOMORROW } from './interfaces.webhooks'
-import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement, reloadTemplates } from "./service.webhooks"
+import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement, reloadTemplates, handleHelp } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
@@ -18,6 +18,7 @@ import Courses from '../courses/model.courses'
 import { courseService } from '../courses'
 import { teamService } from '../teams'
 import { resolveCohortWithShortCode } from '../cohorts/service.cohorts'
+import Teams from '../teams/model.teams'
 // import { logger } from '../logger'
 
 const timezones = [
@@ -131,6 +132,11 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         // }
         let today = moment().add(24, 'hours').format('YYYY-MM-DD')
         switch (btnId) {
+          case "HELP":
+            if(enrollment){
+              await handleHelp(destination, enrollment.id)
+            }
+            break;
           case START:
           case RESUME_COURSE:
           case RESUME_COURSE_TOMORROW:
@@ -507,6 +513,38 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       let field: string | null
       let fieldsRaw: string | null
       switch (response) {
+        case "HELP":
+        case "help":
+        case "Help":
+        case "hElp":
+        case "heLp":
+        case "helP":
+        case "HElp":
+        case "HeLp":
+        case "HelP":
+        case "hELp":
+        case "hElP":
+        case "heLP":
+        case "HElP":
+        case "HELp":
+        case "'help'":
+        case "'HELP'":
+        case "'Help'":
+        case "'hElp'":
+        case "'heLp'":
+        case "'helP'":
+        case "'HElp'":
+        case "'HeLp'":
+        case "'HelP'":
+        case "'hELp'":
+        case "'hElP'":
+        case "'heLP'":
+        case "'HElP'":
+        case "'HELp'":
+          if(enrollment){
+            await handleHelp(destination, enrollment.id)
+          }
+          break;
         case "/sos":
           if (enrollment) {
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -609,19 +647,33 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               let courseId = await redisClient.get(keySelected)
               const course = await Courses.findById(courseId)
               if (courseId && course && student) {
-                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-                  to: destination,
-                  type: "text",
-                  messaging_product: "whatsapp",
-                  recipient_type: "individual",
-                  text: {
-                    body: `Thank you for your message! Your enrollment to the course *${course.title.trim()}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
-                  }
-                })
-                await studentService.enrollStudentToCourse(student.id, courseId, "qr")
-                redisClient.del(fieldKey)
-                redisClient.del(fieldsKey)
-                redisClient.del(keySelected)
+                const team = await Teams.findById(course.owner).select('status').exec();
+
+                if (team && team.status === 'DEACTIVATED') {
+                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                    to: destination,
+                    type: "text",
+                    messaging_product: "whatsapp",
+                    recipient_type: "individual",
+                    text: {
+                      body: `Enrollment link is expired.`
+                    }
+                  })
+                }else{
+                  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                    to: destination,
+                    type: "text",
+                    messaging_product: "whatsapp",
+                    recipient_type: "individual",
+                    text: {
+                      body: `Thank you for your message! Your enrollment to the course *${course.title.trim()}* has started 🎉\n\nYou shall receive the course in the next 10 seconds ⏰`
+                    }
+                  })
+                  await studentService.enrollStudentToCourse(student.id, courseId, "qr")
+                  redisClient.del(fieldKey)
+                  redisClient.del(fieldsKey)
+                  redisClient.del(keySelected)
+                } 
               }
             }
           } else if (dt) {

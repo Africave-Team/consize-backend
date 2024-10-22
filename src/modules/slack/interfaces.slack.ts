@@ -85,6 +85,7 @@ export interface SlackMessageBlock {
 
 export interface SlackActionBlock {
   type: SlackActionType
+  url?: string
   text?: SlackTextMessage
   style?: MessageActionButtonStyle
   value?: string
