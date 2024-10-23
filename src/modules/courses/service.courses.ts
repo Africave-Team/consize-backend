@@ -1420,12 +1420,33 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
 
   let additionInfoData: RowData[][] = []
   if (courseSettings && courseSettings.enrollmentFormFields) {
+    let stds = await Students.find({ _id: { $in: enrollments.map(e => e.studentId) } })
     let additionalFields = courseSettings.enrollmentFormFields.filter(e => !e.defaultField)
     if (additionalFields.length > 0) {
       additionInfoData = [
         [
           {
             v: "Student name",
+            t: "s",
+            s: {
+              font: {
+                sz: 10,
+                bold: true
+              },
+            }
+          },
+          {
+            v: "Phone number",
+            t: "s",
+            s: {
+              font: {
+                sz: 10,
+                bold: true
+              },
+            }
+          },
+          {
+            v: "Email Address",
             t: "s",
             s: {
               font: {
@@ -1450,6 +1471,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
           })),
         ],
         ...enrollments.map((r) => {
+          let student = stds.find(e => e.id === r.studentId)
           let fieldValues = additionalFields.map((e) => {
             let value = r.custom && r.custom[e.variableName]
               ? typeof r.custom[e.variableName] === "string" ? r.custom[e.variableName].toString().charAt(0).toUpperCase() + r.custom[e.variableName].toString().slice(1) : r.custom[e.variableName]
@@ -1472,6 +1494,34 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
           return [
             {
               v: r.name,
+              t: "s",
+              s: {
+                alignment: {
+                  horizontal: 'left',
+                  vertical: 'center',
+                },
+                font: {
+                  bold: false,
+                  sz: 10
+                }
+              }
+            },
+            {
+              v: r.phoneNumber,
+              t: "s",
+              s: {
+                alignment: {
+                  horizontal: 'left',
+                  vertical: 'center',
+                },
+                font: {
+                  bold: false,
+                  sz: 10
+                }
+              }
+            },
+            {
+              v: student?.email || "None",
               t: "s",
               s: {
                 alignment: {
