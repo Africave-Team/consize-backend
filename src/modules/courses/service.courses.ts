@@ -1451,7 +1451,7 @@ export const exportCourseStats = async (courseId: string): Promise<{ file: strin
         ],
         ...enrollments.map((r) => {
           let fieldValues = additionalFields.map((e) => {
-            let value = r.custom[e.variableName]
+            let value = r.custom && r.custom[e.variableName]
               ? r.custom[e.variableName].charAt(0).toUpperCase() + r.custom[e.variableName].slice(1)
               : "No"
             return {

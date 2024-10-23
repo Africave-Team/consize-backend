@@ -9,16 +9,8 @@ export enum CertificatesStatus {
 
 export interface CertificatesInterface extends Document {
     _id: string,
-    template: string,
+    name: string,
     teamId: string,
-    colors: string[],
-    text: string[],
-    status: CertificatesStatus,
-    signatories: string[]
-}
-
-export interface CreateCertificatesInterface {
-    template: string,//template name
     colors: string[],
     text: string[],
     status: CertificatesStatus,
