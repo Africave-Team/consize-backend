@@ -28,7 +28,7 @@ const FacebookDataSchema = new Schema<FacebookIntegrationData>(
     {
         status: {
             type: String,
-            enum: ["PENDING", "CONFIRMED"],
+            enum: ["PENDING", "CONFIRMED", "DEACTIVATED"],
             default: "PENDING"
         },
         businessId: {
@@ -53,6 +53,11 @@ const FacebookDataSchema = new Schema<FacebookIntegrationData>(
 export const TeamSchema = new Schema<TeamsInterface, ITeamModel>(
     {
         _id: { type: String, default: () => v4() },
+        status: {
+            type: String,
+            enum: ["PENDING", "CONFIRMED", "DEACTIVATED", "ACTIVATED"],
+            default: "PENDING"
+        },
         name: {
             type: Schema.Types.String
         },

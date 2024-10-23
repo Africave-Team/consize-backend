@@ -18,11 +18,15 @@ interface MessageBody {
 }
 
 export interface ReplyButton {
-  type: "reply"
-  reply: {
+  type?: "reply" | "web_url"
+  name?: "cta_url"
+  parameters?: any
+  reply?: {
     id: string
     title: string
-  }
+  },
+  url?: string,
+  title?: string
 }
 
 export interface InteractiveMessageSectionRow {
@@ -39,13 +43,15 @@ interface InteractiveMessageSection {
 export interface InteractiveMessage {
   type: "interactive"
   interactive: {
-    type: "button" | "list"
+    type: "button" | "list" | "cta_url"
     header?: Header
     body: MessageBody
     action: {
       buttons?: ReplyButton[]
       button?: string
       sections?: InteractiveMessageSection[]
+      name?: string
+      parameters?: any
     }
   }
 }
@@ -169,6 +175,9 @@ export const RESUME_COURSE_TOMORROW = "RESUME_COURSE_TOMORROW"
 // slack
 export const ACCEPT_INVITATION = "accept_invitation"
 export const REJECT_INVITATION = "reject_invitation"
+
+//help
+export const HELP = "HELP"
 
 
 export interface DailyReminderNotificationPayload {
