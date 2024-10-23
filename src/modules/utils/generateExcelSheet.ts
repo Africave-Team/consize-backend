@@ -80,11 +80,11 @@ const createWorkbook = ({ statsData, tableData, reviewData, assessmentData, addi
 
     const colWidths4 = additionalQuestionsData[0]?.map((_, index) => {
       if (index === 0) {
-        return { wch: 50 }
+        return { wch: 40 }
       } else if (index < 2) {
         return { wch: 30 }
       }
-      return { wch: 80 }
+      return { wch: 50 }
     })
 
     // Apply column widths to the worksheet
