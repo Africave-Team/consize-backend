@@ -20,4 +20,6 @@ export interface GenerateCertificatePayload {
   signatory1: string,
   signature2: string,
   signatory2: string,
+  certificateId?: string
+  template?: boolean
 }
