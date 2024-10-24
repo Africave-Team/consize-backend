@@ -8,7 +8,7 @@ const router: Router = express.Router()
 router.use(auth())
 
 router.post('/', validate(certificatesValidator.createCertificates), certificatesControllers.createCertificates)
-router.get('/', certificatesControllers.getCertificate)
+router.get('/', certificatesControllers.getCertificates)
 router.put('/:id', validate(certificatesValidator.updateCertificates), certificatesControllers.updateCertificate)
 
 export default router

@@ -7,7 +7,7 @@ import { CertificatesInterface, CertificatesInterfaceModel, CertificatesStatus }
 const CertificatesSchema = new Schema<CertificatesInterface, CertificatesInterfaceModel>(
     {
         _id: { type: String, default: () => v4() },
-        template: {
+        name: {
             type: String
         },
         teamId: {
@@ -20,12 +20,15 @@ const CertificatesSchema = new Schema<CertificatesInterface, CertificatesInterfa
         },
         colors: {
             type: [String],
+            default: []
         },
         text: {
             type: [String],
+            default: []
         },
         signatories: {
             type: [String],
+            ref: "Signatures"
         },
 
     },

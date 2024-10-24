@@ -20,17 +20,9 @@ export const deleteCertificate = catchAsync(async (req: Request, res: Response) 
 
 
 
-export const getCertificate = catchAsync(async (req: Request, res: Response) => {
-
-    const { certificate } = req.params
-
-    if (certificate) {
-        const certificates = await certificatesService.fetchCertificate(certificate)
-        res.status(httpStatus.OK).send({ data: certificates })
-    } else {
-        res.status(404).send({ message: "Certificates not found" })
-    }
-
+export const getCertificates = catchAsync(async (req: Request, res: Response) => {
+    const certificates = await certificatesService.fetchTeamCertificates(req.user.team)
+    res.status(httpStatus.OK).send({ data: certificates })
 })
 
 export const updateCertificate = catchAsync(async (req: Request, res: Response) => {

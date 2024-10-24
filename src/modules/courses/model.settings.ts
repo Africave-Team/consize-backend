@@ -148,6 +148,9 @@ const SettingSchema = new Schema<CourseSettingsInterface, CourseSettingsInterfac
     reminderSchedule: {
       type: [String]
     },
+    certificateId: {
+      type: String
+    },
     dropoutWaitPeriod: {
       type: PeriodSchema
     },

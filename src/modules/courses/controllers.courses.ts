@@ -12,6 +12,7 @@ import QuestionGroup from './model.question-group'
 import { transitionMessages as defaultTransitionMessage } from './interfaces.transition-messages'
 import TransitionMessage from './model.transition-message'
 import { teamService } from '../teams'
+import { generateCourseFlow } from '../webhooks/service.webhooks'
 // import { agenda } from '../scheduler'
 // import { unlinkSync } from "fs"
 
@@ -483,6 +484,15 @@ export const fetchQuizQuestionsByCourseId = catchAsync(async (req: Request, res:
     questions = await courseService.fetchQuestionsByCourseId({ course, assessment })
   }
   res.status(200).send({ message: "questions retrieved", data: questions })
+})
+
+
+export const generateCourseRedisData = catchAsync(async (req: Request, res: Response) => {
+  const { course } = req.params
+  if (course) {
+    await generateCourseFlow(course)
+  }
+  res.status(200).send({ message: "generated" })
 })
 
 export const fetchQuestionGroups = catchAsync(async (req: Request, res: Response) => {

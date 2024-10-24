@@ -26,6 +26,7 @@ import { handleContinueSlack } from '../slack/slack.services'
 import Students from '../students/model.students'
 import Courses from '../courses/model.courses'
 import Settings from '../courses/model.settings'
+import { CourseSettingsInterface } from '../courses/interfaces.settings'
 
 const projectRoot = process.cwd()
 const localVideoPath = path.join(projectRoot, 'generated-files')
@@ -265,7 +266,7 @@ export const generateCourseLeaderboardURL = async (course: CourseInterface, stud
   return `${config.clientUrl}/templates/leaderboard?data=${query}`
 }
 
-export const generateCourseCertificateURL = async (course: CourseInterface, student: StudentInterface, owner: TeamsInterface): Promise<string> => {
+export const generateCourseCertificateURL = async (course: CourseInterface, student: StudentInterface, owner: TeamsInterface, settings: CourseSettingsInterface): Promise<string> => {
   const signatories = await fetchSignatures(owner.id)
   let payload: GenerateCertificatePayload = {
     studentName: `${student.firstName} ${student.otherNames}`,
@@ -290,6 +291,11 @@ export const generateCourseCertificateURL = async (course: CourseInterface, stud
       payload.signature2 = second.signature || second.name
     }
   }
+  if (settings.certificateId) {
+    payload.template = true
+    payload.certificateId = settings.certificateId
+  }
+
   const query = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
 
   return `${config.clientUrl}/templates/certificate?data=${query}`
@@ -303,8 +309,8 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
   if (course && student) {
     const settings = await Settings.findById(course.settings)
     const owner = await Teams.findById(course.owner)
-    if (owner) {
-      const url = await generateCourseCertificate(course, student, owner)
+    if (owner && settings) {
+      const url = await generateCourseCertificate(course, student, owner, settings)
       completeCourse(course.owner, studentId, courseId, url)
       if (url.includes('https://')) {
         // send media message with continue button
@@ -346,8 +352,8 @@ export const sendCourseCertificateSlack = async (courseId: string, studentId: st
   if (course && student) {
     const settings = await Settings.findById(course.settings)
     const owner = await Teams.findById(course.owner)
-    if (owner && owner.slackToken) {
-      const url = await generateCourseCertificate(course, student, owner)
+    if (owner && owner.slackToken && settings) {
+      const url = await generateCourseCertificate(course, student, owner, settings)
       completeCourse(course.owner, studentId, courseId, url)
       if (url.includes('https://')) {
         // send media message with continue button
@@ -390,7 +396,7 @@ export const sendCourseCertificateSlack = async (courseId: string, studentId: st
   }
 }
 
-export const generateCourseCertificate = async (course: CourseInterface, student: StudentInterface, owner: TeamsInterface): Promise<string> => {
+export const generateCourseCertificate = async (course: CourseInterface, student: StudentInterface, owner: TeamsInterface, settings: CourseSettingsInterface): Promise<string> => {
   try {
     // get existing data
     let launchConfig: { args: any[], executablePath?: string } = {
@@ -402,7 +408,7 @@ export const generateCourseCertificate = async (course: CourseInterface, student
     const browser = await puppeteer.launch(launchConfig)
     const timestamp = new Date().getTime()
     const page = await browser.newPage()
-    const url = await generateCourseCertificateURL(course, student, owner)
+    const url = await generateCourseCertificateURL(course, student, owner, settings)
     await page.goto(url, { waitUntil: "networkidle0" })
     await page.setViewport({
       width: 1520, height: 980, deviceScaleFactor: 5

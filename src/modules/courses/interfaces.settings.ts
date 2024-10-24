@@ -90,7 +90,7 @@ export interface CourseSettings {
   dropoutEvent: DropoutEvents
   resumption: CourseResumptionSettings
   disableReminders?: CourseDisableDays
-
+  certificateId?: string
 }
 
 export interface CourseSettingsInterface extends CourseSettings, Document {
