@@ -19,6 +19,7 @@ import { courseService } from '../courses'
 import { teamService } from '../teams'
 import { resolveCohortWithShortCode } from '../cohorts/service.cohorts'
 import Teams from '../teams/model.teams'
+import { CourseFlowMessageType, CourseFlowItem } from './service.webhooks'
 // import { logger } from '../logger'
 
 const timezones = [
@@ -312,7 +313,17 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 enrollment.active = enrollment.id === courseId
                 await redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId }))
                 if (enrollment.id === courseId) {
-                  await handleContinue(enrollment.currentBlock, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, { ...enrollment, currentBlock: enrollment.currentBlock - 1, nextBlock: enrollment.currentBlock })
+                  const courseKey = `${config.redisBaseKey}courses:${enrollment.id}`
+                  const flow = await redisClient.get(courseKey)
+                  let nextIndex = enrollment.currentBlock
+                  if (flow) {
+                    const flowData: CourseFlowItem[] = JSON.parse(flow)
+                    let item = flowData[nextIndex]
+                    if (item && item.type === CourseFlowMessageType.ENDLESSON) {
+                      nextIndex = nextIndex + 1
+                    }
+                  }
+                  await handleContinue(nextIndex, courseKey, destination, msgId, { ...enrollment, currentBlock: enrollment.currentBlock - 1, nextBlock: enrollment.currentBlock })
                 }
 
               }))
