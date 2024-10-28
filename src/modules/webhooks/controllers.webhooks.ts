@@ -320,7 +320,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                     const flowData: CourseFlowItem[] = JSON.parse(flow)
                     let item = flowData[nextIndex]
                     if (item && item.type === CourseFlowMessageType.ENDLESSON) {
-                      nextIndex = nextIndex + 1
+                      nextIndex = nextIndex
                     }
                   }
                   await handleContinue(nextIndex, courseKey, destination, msgId, { ...enrollment, currentBlock: enrollment.currentBlock - 1, nextBlock: enrollment.currentBlock })
