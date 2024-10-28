@@ -319,8 +319,9 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   if (flow) {
                     const flowData: CourseFlowItem[] = JSON.parse(flow)
                     let item = flowData[nextIndex]
-                    if (item && item.type === CourseFlowMessageType.ENDLESSON) {
-                      nextIndex = nextIndex
+                    if (item && item.type === CourseFlowMessageType.ENDLESSON && enrollment.resumeTomorrow) {
+                      nextIndex = nextIndex + 1
+                      await redisClient.set(key, JSON.stringify({ ...enrollment, resumeTomorrow: false }))
                     }
                   }
                   await handleContinue(nextIndex, courseKey, destination, msgId, { ...enrollment, currentBlock: enrollment.currentBlock - 1, nextBlock: enrollment.currentBlock })
