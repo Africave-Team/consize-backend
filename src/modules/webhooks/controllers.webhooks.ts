@@ -271,6 +271,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const now = moment.tz(enrollment.tz)
               const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
               agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+              await redisClient.set(`${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`, JSON.stringify({ ...enrollment, resumeTomorrow: true }))
               sendScheduleAcknowledgement(destination, "9:00am", enrollment.team)
             }
             break
@@ -281,6 +282,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const now = moment.tz(enrollment.tz)
               const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
               agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+              await redisClient.set(`${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`, JSON.stringify({ ...enrollment, resumeTomorrow: true }))
               sendScheduleAcknowledgement(destination, "3:00pm", enrollment.team)
             }
             break
@@ -291,6 +293,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const now = moment.tz(enrollment.tz)
               const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
               agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+              await redisClient.set(`${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`, JSON.stringify({ ...enrollment, resumeTomorrow: true }))
               sendScheduleAcknowledgement(destination, "8:00pm", enrollment.team)
             }
             break

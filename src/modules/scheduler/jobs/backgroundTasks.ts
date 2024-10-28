@@ -39,7 +39,7 @@ const handleContinueTomorrow: Processor<{ enrollment: CourseEnrollment, phoneNum
         key = `${config.redisBaseKey}enrollments:slack:${channelId}:${enrollment.id}`
         sendResumptionMessageSlack(channelId, key, enrollment)
       }
-      await redisClient.set(key, JSON.stringify({ ...enrollment, resumeTomorrow: true }))
+      await redisClient.set(key, JSON.stringify({ ...enrollment, resumeTomorrow: false }))
     }
   } catch (error) {
     console.log(error, "error send message")
