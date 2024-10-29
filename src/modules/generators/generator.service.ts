@@ -294,6 +294,13 @@ export const generateCourseCertificateURL = async (course: CourseInterface, stud
   if (settings.certificateId) {
     payload.template = true
     payload.certificateId = settings.certificateId
+  } else {
+    if (owner.defaultCertificateId) {
+      payload.template = true
+      payload.certificateId = owner.defaultCertificateId
+    } else {
+      return "NO CERTIFICATE FOUND"
+    }
   }
 
   const query = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
@@ -310,22 +317,24 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
     const settings = await Settings.findById(course.settings)
     const owner = await Teams.findById(course.owner)
     if (owner && settings) {
-      const url = await generateCourseCertificate(course, student, owner, settings)
-      completeCourse(course.owner, studentId, courseId, url)
-      if (url.includes('https://')) {
-        // send media message with continue button
-        agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-          to: student.phoneNumber,
-          team: course.owner,
-          type: "image",
-          messaging_product: "whatsapp",
-          recipient_type: "individual",
-          image: {
-            link: url
-          }
-        })
-      } else {
-        console.log("Failed to generate certificate")
+      if (settings.disableCertificates) {
+        const url = await generateCourseCertificate(course, student, owner, settings)
+        completeCourse(course.owner, studentId, courseId, url)
+        if (url.includes('https://')) {
+          // send media message with continue button
+          agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+            to: student.phoneNumber,
+            team: course.owner,
+            type: "image",
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            image: {
+              link: url
+            }
+          })
+        } else {
+          console.log("Failed to generate certificate")
+        }
       }
       if (settings) {
         if (settings.courseMaterials.length > 0) {
@@ -353,25 +362,27 @@ export const sendCourseCertificateSlack = async (courseId: string, studentId: st
     const settings = await Settings.findById(course.settings)
     const owner = await Teams.findById(course.owner)
     if (owner && owner.slackToken && settings) {
-      const url = await generateCourseCertificate(course, student, owner, settings)
-      completeCourse(course.owner, studentId, courseId, url)
-      if (url.includes('https://')) {
-        // send media message with continue button
-        agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
-          accessToken: owner.slackToken,
-          channel: student.channelId,
-          message: {
-            blocks: [
-              {
-                type: MessageBlockType.IMAGE,
-                image_url: url,
-                alt_text: "Student course certificate"
-              }
-            ]
-          }
-        })
-      } else {
-        console.log("Failed to generate certificate")
+      if (!settings.disableCertificates) {
+        const url = await generateCourseCertificate(course, student, owner, settings)
+        completeCourse(course.owner, studentId, courseId, url)
+        if (url.includes('https://')) {
+          // send media message with continue button
+          agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+            accessToken: owner.slackToken,
+            channel: student.channelId,
+            message: {
+              blocks: [
+                {
+                  type: MessageBlockType.IMAGE,
+                  image_url: url,
+                  alt_text: "Student course certificate"
+                }
+              ]
+            }
+          })
+        } else {
+          console.log("Failed to generate certificate")
+        }
       }
       if (settings) {
         if (settings.courseMaterials.length > 0) {

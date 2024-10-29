@@ -134,10 +134,10 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         let today = moment().add(24, 'hours').format('YYYY-MM-DD')
         switch (btnId) {
           case "HELP":
-            if(enrollment){
+            if (enrollment) {
               await handleHelp(destination, enrollment.id)
             }
-            break;
+            break
           case START:
           case RESUME_COURSE:
           case RESUME_COURSE_TOMORROW:
@@ -556,10 +556,10 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         case "'heLP'":
         case "'HElP'":
         case "'HELp'":
-          if(enrollment){
+          if (enrollment) {
             await handleHelp(destination, enrollment.id)
           }
-          break;
+          break
         case "/sos":
           if (enrollment) {
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -662,7 +662,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               let courseId = await redisClient.get(keySelected)
               const course = await Courses.findById(courseId)
               if (courseId && course && student) {
-                const team = await Teams.findById(course.owner).select('status').exec();
+                const team = await Teams.findById(course.owner).select('status').exec()
 
                 if (team && team.status === 'DEACTIVATED') {
                   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -674,7 +674,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                       body: `Enrollment link is expired.`
                     }
                   })
-                }else{
+                } else {
                   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                     to: destination,
                     type: "text",
@@ -688,7 +688,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   redisClient.del(fieldKey)
                   redisClient.del(fieldsKey)
                   redisClient.del(keySelected)
-                } 
+                }
               }
             }
           } else if (dt) {
