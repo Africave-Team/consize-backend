@@ -25,6 +25,7 @@ export interface TeamsInterface extends Document {
     channels: DistributionChannel[]
     status?: "PENDING" | "CONFIRMED" | "DEACTIVATED" | "ACTIVATED"
     defaultCertificateId?: string
+    certificateBackgrounds?: string[]
     logo?: string
     color?: {
         primary: string

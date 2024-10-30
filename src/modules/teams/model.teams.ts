@@ -88,6 +88,9 @@ export const TeamSchema = new Schema<TeamsInterface, ITeamModel>(
         defaultCertificateId: {
             type: String
         },
+        certificateBackgrounds: {
+            type: [String]
+        },
         owner: {
             type: String,
             ref: "User"
