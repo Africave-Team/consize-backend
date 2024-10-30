@@ -321,7 +321,7 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
       completeCourse(course.owner, studentId, courseId, url)
       if (url.includes('https://')) {
         // send media message with continue button
-        if (settings.disableCertificates) {
+        if (!settings.disableCertificates) {
           agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
             to: student.phoneNumber,
             team: course.owner,
