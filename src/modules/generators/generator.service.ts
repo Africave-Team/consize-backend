@@ -317,11 +317,11 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
     const settings = await Settings.findById(course.settings)
     const owner = await Teams.findById(course.owner)
     if (owner && settings) {
-      if (settings.disableCertificates) {
-        const url = await generateCourseCertificate(course, student, owner, settings)
-        completeCourse(course.owner, studentId, courseId, url)
-        if (url.includes('https://')) {
-          // send media message with continue button
+      const url = await generateCourseCertificate(course, student, owner, settings)
+      completeCourse(course.owner, studentId, courseId, url)
+      if (url.includes('https://')) {
+        // send media message with continue button
+        if (settings.disableCertificates) {
           agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
             to: student.phoneNumber,
             team: course.owner,
@@ -332,9 +332,9 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
               link: url
             }
           })
-        } else {
-          console.log("Failed to generate certificate")
         }
+      } else {
+        console.log("Failed to generate certificate")
       }
       if (settings) {
         if (settings.courseMaterials.length > 0) {
