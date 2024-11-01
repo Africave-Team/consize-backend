@@ -164,6 +164,10 @@ const SettingSchema = new Schema<CourseSettingsInterface, CourseSettingsInterfac
       type: String,
       enum: Object.values(DropoutEvents)
     },
+    disableCertificates: {
+      type: Boolean,
+      default: false
+    },
     resumption: {
       type: CourseResumptionSettingsSchema
     },

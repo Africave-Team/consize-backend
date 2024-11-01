@@ -24,6 +24,8 @@ export interface TeamsInterface extends Document {
     facebookData: FacebookIntegrationData | null
     channels: DistributionChannel[]
     status?: "PENDING" | "CONFIRMED" | "DEACTIVATED" | "ACTIVATED"
+    defaultCertificateId?: string
+    certificateBackgrounds?: string[]
     logo?: string
     color?: {
         primary: string

@@ -177,6 +177,7 @@ const setInitialCourseSettings = async function (id: string) {
       type: PeriodTypes.MINUTES
     },
     dropoutEvent: DropoutEvents.LESSON_COMPLETION,
+    disableCertificates: true,
     resumption: {
       days: 3,
       time: "08:00",

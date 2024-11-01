@@ -138,6 +138,7 @@ export interface CourseEnrollment {
     }
   },
   surveyData?: SendSlackModalPayload
+  resumeTomorrow?: boolean
 }
 
 

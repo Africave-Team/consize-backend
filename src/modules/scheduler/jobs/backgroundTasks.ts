@@ -11,6 +11,7 @@ import { Distribution } from '../../courses/interfaces.courses'
 import { handleTerminateSubscription, handleTerminateSubscriptionGracePeriod } from '../../subscriptions/subscriptions.services'
 import { studentService } from '../../students'
 import { courseService } from '../../courses'
+import { redisClient } from '../../redis'
 
 export const handleCourseTrends: Processor<{ courseId: string, teamId: string }> = async (job: Job<{ courseId: string, teamId: string }>) => {
   try {
@@ -29,12 +30,16 @@ const handleContinueTomorrow: Processor<{ enrollment: CourseEnrollment, phoneNum
     if (AppConfig.server !== "test") {
       const data = job.attrs.data
       const { enrollment, phoneNumber, channelId } = data
+      let key = ''
       if (phoneNumber && !channelId) {
-        await sendResumptionMessage(phoneNumber, `${config.redisBaseKey}enrollments:${phoneNumber}:${enrollment.id}`, enrollment)
+        key = `${config.redisBaseKey}enrollments:${phoneNumber}:${enrollment.id}`
+        await sendResumptionMessage(phoneNumber, key, enrollment)
       }
       if (channelId && !phoneNumber) {
-        sendResumptionMessageSlack(channelId, `${config.redisBaseKey}enrollments:slack:${channelId}:${enrollment.id}`, enrollment)
+        key = `${config.redisBaseKey}enrollments:slack:${channelId}:${enrollment.id}`
+        sendResumptionMessageSlack(channelId, key, enrollment)
       }
+      await redisClient.set(key, JSON.stringify({ ...enrollment, resumeTomorrow: false }))
     }
   } catch (error) {
     console.log(error, "error send message")

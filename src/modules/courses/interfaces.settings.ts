@@ -91,6 +91,7 @@ export interface CourseSettings {
   resumption: CourseResumptionSettings
   disableReminders?: CourseDisableDays
   certificateId?: string
+  disableCertificates?: boolean
 }
 
 export interface CourseSettingsInterface extends CourseSettings, Document {

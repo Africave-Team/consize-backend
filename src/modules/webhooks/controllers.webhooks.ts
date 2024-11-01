@@ -19,6 +19,7 @@ import { courseService } from '../courses'
 import { teamService } from '../teams'
 import { resolveCohortWithShortCode } from '../cohorts/service.cohorts'
 import Teams from '../teams/model.teams'
+import { CourseFlowMessageType, CourseFlowItem } from './service.webhooks'
 // import { logger } from '../logger'
 
 const timezones = [
@@ -133,10 +134,10 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         let today = moment().add(24, 'hours').format('YYYY-MM-DD')
         switch (btnId) {
           case "HELP":
-            if(enrollment){
+            if (enrollment) {
               await handleHelp(destination, enrollment.id)
             }
-            break;
+            break
           case START:
           case RESUME_COURSE:
           case RESUME_COURSE_TOMORROW:
@@ -270,6 +271,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const now = moment.tz(enrollment.tz)
               const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
               agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+              await redisClient.set(`${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`, JSON.stringify({ ...enrollment, resumeTomorrow: true }))
               sendScheduleAcknowledgement(destination, "9:00am", enrollment.team)
             }
             break
@@ -280,6 +282,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const now = moment.tz(enrollment.tz)
               const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
               agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+              await redisClient.set(`${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`, JSON.stringify({ ...enrollment, resumeTomorrow: true }))
               sendScheduleAcknowledgement(destination, "3:00pm", enrollment.team)
             }
             break
@@ -290,6 +293,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               const now = moment.tz(enrollment.tz)
               const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
               agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, phoneNumber: destination })
+              await redisClient.set(`${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`, JSON.stringify({ ...enrollment, resumeTomorrow: true }))
               sendScheduleAcknowledgement(destination, "8:00pm", enrollment.team)
             }
             break
@@ -312,7 +316,18 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 enrollment.active = enrollment.id === courseId
                 await redisClient.set(key, JSON.stringify({ ...enrollment, active: enrollment.id === courseId }))
                 if (enrollment.id === courseId) {
-                  await handleContinue(enrollment.currentBlock, `${config.redisBaseKey}courses:${enrollment.id}`, destination, msgId, { ...enrollment, currentBlock: enrollment.currentBlock - 1, nextBlock: enrollment.currentBlock })
+                  const courseKey = `${config.redisBaseKey}courses:${enrollment.id}`
+                  const flow = await redisClient.get(courseKey)
+                  let nextIndex = enrollment.currentBlock
+                  if (flow) {
+                    const flowData: CourseFlowItem[] = JSON.parse(flow)
+                    let item = flowData[nextIndex]
+                    if (item && item.type === CourseFlowMessageType.ENDLESSON && enrollment.resumeTomorrow) {
+                      nextIndex = nextIndex + 1
+                      await redisClient.set(key, JSON.stringify({ ...enrollment, resumeTomorrow: false }))
+                    }
+                  }
+                  await handleContinue(nextIndex, courseKey, destination, msgId, { ...enrollment, currentBlock: enrollment.currentBlock - 1, nextBlock: enrollment.currentBlock })
                 }
 
               }))
@@ -541,10 +556,10 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         case "'heLP'":
         case "'HElP'":
         case "'HELp'":
-          if(enrollment){
+          if (enrollment) {
             await handleHelp(destination, enrollment.id)
           }
-          break;
+          break
         case "/sos":
           if (enrollment) {
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -647,7 +662,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               let courseId = await redisClient.get(keySelected)
               const course = await Courses.findById(courseId)
               if (courseId && course && student) {
-                const team = await Teams.findById(course.owner).select('status').exec();
+                const team = await Teams.findById(course.owner).select('status').exec()
 
                 if (team && team.status === 'DEACTIVATED') {
                   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -659,7 +674,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                       body: `Enrollment link is expired.`
                     }
                   })
-                }else{
+                } else {
                   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                     to: destination,
                     type: "text",
@@ -673,7 +688,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   redisClient.del(fieldKey)
                   redisClient.del(fieldsKey)
                   redisClient.del(keySelected)
-                } 
+                }
               }
             }
           } else if (dt) {

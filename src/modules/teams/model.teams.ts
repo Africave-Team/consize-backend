@@ -85,6 +85,12 @@ export const TeamSchema = new Schema<TeamsInterface, ITeamModel>(
         facebookData: {
             type: FacebookDataSchema
         },
+        defaultCertificateId: {
+            type: String
+        },
+        certificateBackgrounds: {
+            type: [String]
+        },
         owner: {
             type: String,
             ref: "User"

@@ -408,8 +408,15 @@ export const generateCourseFlow = async function (courseId: string) {
       type: CourseFlowMessageType.ENDCOURSE,
       content: `That was the last lesson 🎊\n\nWell done on finishing the course 🤝\n\nYou’ll be getting your certificate 📄 soon so that you can brag about it😎 `
     }
+    if (settings?.disableCertificates) {
+      load.content = `That was the last lesson 🎊\n\nWell done on finishing the course 🤝\n\n `
+    }
     if (course.survey) {
-      load.content = load.content + `but first, we want to get your feedback on the course.\n\nWe’ll be sending you a quick survey next 🔎`
+      if (settings?.disableCertificates) {
+        load.content = `That was the last lesson 🎊\n\nWell done on finishing the course 🤝\n\nWe want to get your feedback on the course.\n\nWe’ll be sending you a quick survey next 🔎`
+      } else {
+        load.content = load.content + `but first, we want to get your feedback on the course.\n\nWe’ll be sending you a quick survey next 🔎`
+      }
     }
     flow.push(load)
 

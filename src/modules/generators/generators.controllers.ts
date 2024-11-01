@@ -5,6 +5,7 @@ import { courseService } from "../courses"
 import { teamService } from '../teams'
 import { studentService } from '../students'
 import { generatorService } from './index'
+import Settings from '../courses/model.settings'
 
 
 export const generateCertificate = catchAsync(async (req: Request, res: Response) => {
@@ -16,9 +17,10 @@ export const generateCertificate = catchAsync(async (req: Request, res: Response
     }
     const owner = await teamService.fetchTeamById(course.owner)
     const student = await studentService.findStudentById(studentId)
+    const settings = await Settings.findById(course.settings)
     let url = ''
-    if (owner && student) {
-      url = await generatorService.generateCourseCertificate(course, student, owner)
+    if (owner && student && settings) {
+      url = await generatorService.generateCourseCertificate(course, student, owner, settings)
     }
     return res.status(httpStatus.OK).send({ data: url, message: "Your certificate has been created successfully" })
   }
@@ -52,9 +54,10 @@ export const getCertificateURL = catchAsync(async (req: Request, res: Response) 
     }
     const owner = await teamService.fetchTeamById(course.owner)
     const student = await studentService.findStudentById(studentId)
+    const settings = await Settings.findById(course.settings)
     let url = ''
-    if (owner && student) {
-      url = await generatorService.generateCourseCertificateURL(course, student, owner)
+    if (owner && student && settings) {
+      url = await generatorService.generateCourseCertificateURL(course, student, owner, settings)
     }
     return res.status(httpStatus.OK).send({ data: url, message: "Your certificate url has been created successfully" })
   }
