@@ -27,7 +27,6 @@ import Students from '../students/model.students'
 import Courses from '../courses/model.courses'
 import Settings from '../courses/model.settings'
 import { CourseSettingsInterface } from '../courses/interfaces.settings'
-import { Certificates } from '../certificates'
 
 const projectRoot = process.cwd()
 const localVideoPath = path.join(projectRoot, 'generated-files')
