@@ -1,4 +1,4 @@
-import { DistributionChannel, ITeamModel, TeamsInterface, FacebookIntegrationData } from './interfaces.teams'
+import { DistributionChannel, ITeamModel, TeamsInterface, FacebookIntegrationData, CertificateMediaTypes } from './interfaces.teams'
 import mongoose, { Schema } from 'mongoose'
 import { v4 } from "uuid"
 import { toJSON } from '../toJSON'
@@ -20,6 +20,25 @@ const ChannelSchema = new Schema<DistributionChannel>(
         }
     },
     {
+        _id: false
+    }
+)
+
+const CertificateMediaSchema = new Schema<{
+    type: CertificateMediaTypes,
+    url: string
+}>(
+    {
+        type: {
+            type: String,
+            enum: Object.values(CertificateMediaTypes)
+        },
+        url: {
+            type: String
+        }
+    },
+    {
+        timestamps: false,
         _id: false
     }
 )
@@ -90,6 +109,9 @@ export const TeamSchema = new Schema<TeamsInterface, ITeamModel>(
         },
         certificateBackgrounds: {
             type: [String]
+        },
+        certificateMedia: {
+            type: [CertificateMediaSchema]
         },
         owner: {
             type: String,
