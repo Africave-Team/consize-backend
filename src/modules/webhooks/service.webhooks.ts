@@ -35,6 +35,7 @@ import { studentService } from '../students'
 import Subscriptions from '../subscriptions/subscriptions.models'
 import QuestionGroup from '../courses/model.question-group'
 import { QuestionGroupsInterface } from '../courses/interfaces.question-group'
+import Enrollments from '../sessions/model'
 // import Teams from '../teams/model.teams'
 // import { convertTo24Hour } from '../utils'
 // import { convertTo24Hour } from '../utils'
@@ -2837,3 +2838,25 @@ export const handleHelp = async (phoneNumber: string, courseId: string): Promise
   }
 }
 
+export const handleSearch = async (phoneNumber: string, search: string): Promise<void> => {
+  const coursesCompleted: string[] = await Enrollments.find({
+      phoneNumber: phoneNumber,
+      completed: true
+    }, 'courseId');
+
+  try {
+    if(coursesCompleted[0]){
+        agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+          to: phoneNumber,
+          type: "text",
+          messaging_product: "whatsapp",
+          recipient_type: "individual",
+          text: {
+            body: coursesCompleted[0]+search
+          }
+        })
+    }
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+  }
+}
