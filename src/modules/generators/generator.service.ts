@@ -300,6 +300,7 @@ export const generateCourseCertificateURL = async (course: CourseInterface, stud
       payload.certificateId = v4()
     }
   }
+  payload.template = true
 
   const query = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
 
