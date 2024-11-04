@@ -11,6 +11,12 @@ export interface FacebookIntegrationData {
     token: string | null
     status: "PENDING" | "CONFIRMED"
 }
+
+export enum CertificateMediaTypes {
+    SIGNATURE = 'signature',
+    IMAGE = 'image',
+    FONT = 'font'
+}
 export interface TeamsInterface extends Document {
     _id: string
     name: string
@@ -26,6 +32,10 @@ export interface TeamsInterface extends Document {
     status?: "PENDING" | "CONFIRMED" | "DEACTIVATED" | "ACTIVATED"
     defaultCertificateId?: string
     certificateBackgrounds?: string[]
+    certificateMedia?: {
+        type: CertificateMediaTypes,
+        url: string
+    }[]
     logo?: string
     color?: {
         primary: string

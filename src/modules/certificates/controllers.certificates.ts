@@ -25,6 +25,18 @@ export const getCertificates = catchAsync(async (req: Request, res: Response) =>
     res.status(httpStatus.OK).send({ data: certificates })
 })
 
+
+
+
+export const getCertificateById = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params
+
+    if (id) {
+        const certificates = await certificatesService.fetchCertificate(id)
+        res.status(httpStatus.OK).send({ data: certificates })
+    }
+})
+
 export const updateCertificate = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params
     if (id) {

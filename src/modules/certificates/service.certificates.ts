@@ -11,7 +11,7 @@ export const createCertificate = async ({ name, status, signatories }: Pick<Cert
 }
 
 export const fetchCertificate = async (certificateId: string): Promise<CertificatesInterface | null> => {
-    const certificates = await Certificates.findById(certificateId)
+    const certificates = await Certificates.findById(certificateId).populate("signatories")
     return certificates
 }
 
@@ -24,7 +24,7 @@ export const deleteCertificate = async (certificateId: string): Promise<void> =>
     await Certificates.deleteOne({ _id: certificateId })
 }
 
-export const updateCertificate = async (certificatesPayload: Partial<Pick<CertificatesInterface, "name" | "status" | "signatories">>, id: string): Promise<CertificatesInterface> => {
+export const updateCertificate = async (certificatesPayload: Partial<Pick<CertificatesInterface, "name" | "components">>, id: string): Promise<CertificatesInterface> => {
     const updatedSignature = await Certificates.findByIdAndUpdate(id, { $set: certificatesPayload })
     if (!updatedSignature) throw new ApiError(httpStatus.NOT_FOUND, "Could not find this certificate to update")
     return updatedSignature
