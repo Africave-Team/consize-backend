@@ -179,6 +179,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
+                await redisClient.set(`${config.redisBaseKey}enrollments:slack:${channel.id}:${enrollment.id}`, JSON.stringify({ ...enrollment, resumeTomorrow: true }))
                 sendScheduleAcknowledgement(response_url, "9:00AM")
               }
               break
@@ -189,6 +190,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
+                await redisClient.set(`${config.redisBaseKey}enrollments:slack:${channel.id}:${enrollment.id}`, JSON.stringify({ ...enrollment, resumeTomorrow: true }))
                 sendScheduleAcknowledgement(response_url, "3:00PM")
               }
               break
@@ -199,6 +201,7 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 const now = moment.tz(enrollment.tz)
                 const time = moment(dateTimeString).subtract(now.utcOffset(), 'minutes')
                 agenda.schedule(time.toDate(), RESUME_TOMORROW, { messageId: msgId, enrollment, channelId: channel.id })
+                await redisClient.set(`${config.redisBaseKey}enrollments:slack:${channel.id}:${enrollment.id}`, JSON.stringify({ ...enrollment, resumeTomorrow: true }))
                 sendScheduleAcknowledgement(response_url, "8:00PM")
               }
               break
