@@ -303,7 +303,11 @@ export const generateCourseCertificateURL = async (course: CourseInterface, stud
   }
   const certificate = await Certificates.findById(payload.certificateId)
   if (certificate) {
-
+    if (certificate.components && certificate.components.components.length > 0) {
+      payload.template = false
+    } else {
+      payload.template = true
+    }
   } else {
     payload.template = true
   }
