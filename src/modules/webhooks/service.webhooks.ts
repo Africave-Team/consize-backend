@@ -2849,15 +2849,10 @@ export const handleSearch = async (phoneNumber: string, search: string): Promise
 
   coursesCompleted.forEach(async(course) => {
     let courseContent: any = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`)
-    console.log(courseContent,1233434545345)
-    if(courseContent){
-      courseContent = JSON.parse(courseContent)
-      console.log(courseContent)
-      completedCourseContent.push(courseContent)
-    }
+    completedCourseContent.push(courseContent)
   });
-
-  console.log(23221333423433,completedCourseContent, 1234213123212321)
+  console.log(12345678887654)
+  console.log(completedCourseContent)
 
   try {
 
