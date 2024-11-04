@@ -543,7 +543,48 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       let field: string | null
       let fieldsRaw: string | null
       switch (response) {
-        case /^search$/i.test(response):
+        case "SEARCH":
+        case "search":
+        case "Search":
+        case "sEarch":
+        case "seArch":
+        case "seaRch":
+        case "searCh":
+        case "searcH":
+        case "SEarch":
+        case "SeArch":
+        case "SeaRch":
+        case "SearCh":
+        case "SearcH":
+        case "sEArch":
+        case "sEARch":
+        case "sEArCh":
+        case "sEArcH":
+        case "SEArch":
+        case "SEARch":
+        case "SEArCh":
+        case "SEArcH":
+        case "'search'":
+        case "'SEARCH'":
+        case "'Search'":
+        case "'sEarch'":
+        case "'seArch'":
+        case "'seaRch'":
+        case "'searCh'":
+        case "'searcH'":
+        case "'SEarch'":
+        case "'SeArch'":
+        case "'SeaRch'":
+        case "'SearCh'":
+        case "'SearcH'":
+        case "'sEArch'":
+        case "'sEARch'":
+        case "'sEArCh'":
+        case "'sEArcH'":
+        case "'SEArch'":
+        case "'SEARch'":
+        case "'SEArCh'":
+        case "'SEArcH'":
           if (enrollment) {
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
               to: destination,
