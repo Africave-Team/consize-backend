@@ -2849,25 +2849,14 @@ export const handleSearch = async (phoneNumber: string, search: string): Promise
 
   coursesCompleted.forEach(async(course) => {
     let courseContent: any = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`)
-    console.log(courseContent)
-    console.log(111111111111111111111111111)
 
     if(courseContent){
       courseContent = JSON.parse(courseContent)
-      if(courseContent && courseContent.bundle){
-        const bundleCourses = await Courses.findById(course).select('courses')
-        if(bundleCourses){
-          bundleCourses.courses.forEach(async(bundleCourseId)=>{
-            courseContent = await redisClient.get(`${config.redisBaseKey}courses:${bundleCourseId}`)
-            courseContent = JSON.parse(courseContent)
-            completedCourseContent.push(courseContent)
-          })
-        }
-      }else{
-        completedCourseContent.push(courseContent)
-      }
+      completedCourseContent.push(courseContent)
     }
   });
+
+  console.log(23221333423433,completedCourseContent, 1234213123212321)
 
   try {
 
