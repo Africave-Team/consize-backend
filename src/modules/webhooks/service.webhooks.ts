@@ -2843,11 +2843,13 @@ export const handleSearch = async (phoneNumber: string, search: string): Promise
       phoneNumber: phoneNumber,
       completed: true
     }, 'courseId');
+    console.log(coursesCompleted,67876676)
   
   const completedCourseContent: any[] = []
 
   coursesCompleted.forEach(async(course) => {
     let courseContent: any = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`)
+    console.log(courseContent, 1222334434443343)
     if(courseContent){
       courseContent = JSON.parse(courseContent)
       if(courseContent && courseContent.bundle){
