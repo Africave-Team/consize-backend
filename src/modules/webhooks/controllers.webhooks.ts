@@ -145,7 +145,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 body: `Please input a search word or ask a question based on what you want to be reminded of...`
               }
             })
-              await redisClient.set(`${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`, JSON.stringify({ ...enrollment, search: true }))
+            await redisClient.set(`${config.redisBaseKey}user:${destination}`, JSON.stringify({ search: true }))
             }
             break
           case "HELP":
@@ -555,7 +555,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 body: `Please input a search word or ask a question based on what you want to be reminded of...`
               }
             })
-            await redisClient.set(`${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`, JSON.stringify({ ...enrollment, search: true }))
+            await redisClient.set(`${config.redisBaseKey}user:${destination}`, JSON.stringify({ search: true }))
           }
           break
         case /^help$/i.test(response):
