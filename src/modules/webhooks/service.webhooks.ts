@@ -2849,6 +2849,9 @@ export const handleSearch = async (phoneNumber: string, search: string): Promise
 
   coursesCompleted.forEach(async(course) => {
     let courseContent: any = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`)
+    console.log(courseContent)
+    console.log(111111111111111111111111111)
+
     if(courseContent){
       courseContent = JSON.parse(courseContent)
       if(courseContent && courseContent.bundle){
