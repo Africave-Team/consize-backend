@@ -2839,12 +2839,34 @@ export const handleHelp = async (phoneNumber: string, courseId: string): Promise
 }
 
 export const handleSearch = async (phoneNumber: string, search: string): Promise<void> => {
-  const coursesCompleted: string[] = await Enrollments.find({
+  const coursesCompleted: any[] = await Enrollments.find({
       phoneNumber: phoneNumber,
       completed: true
     }, 'courseId');
+  
+  const completedCourseContent: any[] = []
+
+  coursesCompleted.forEach(async(course) => {
+    let courseContent: any = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`)
+    if(courseContent){
+      courseContent = JSON.parse(courseContent)
+      if(courseContent && courseContent.bundle){
+        const bundleCourses = await Courses.findById(course).select('courses')
+        if(bundleCourses){
+          bundleCourses.courses.forEach(async(bundleCourseId)=>{
+            courseContent = await redisClient.get(`${config.redisBaseKey}courses:${bundleCourseId}`)
+            courseContent = JSON.parse(courseContent)
+            completedCourseContent.push(courseContent)
+          })
+        }
+      }else{
+        completedCourseContent.push(courseContent)
+      }
+    }
+  });
 
   try {
+
     if(coursesCompleted[0]){
         agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
           to: phoneNumber,
@@ -2852,7 +2874,7 @@ export const handleSearch = async (phoneNumber: string, search: string): Promise
           messaging_product: "whatsapp",
           recipient_type: "individual",
           text: {
-            body: coursesCompleted[0]+search
+            body: JSON.stringify(completedCourseContent) + search
           }
         })
     }
