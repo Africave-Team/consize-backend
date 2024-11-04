@@ -558,7 +558,34 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             await redisClient.set(`${config.redisBaseKey}user:${destination}`, JSON.stringify({ search: true }))
           }
           break
-        case /^help$/i.test(response):
+        case "HELP":
+        case "help":
+        case "Help":
+        case "hElp":
+        case "heLp":
+        case "helP":
+        case "HElp":
+        case "HeLp":
+        case "HelP":
+        case "hELp":
+        case "hElP":
+        case "heLP":
+        case "HElP":
+        case "HELp":
+        case "'help'":
+        case "'HELP'":
+        case "'Help'":
+        case "'hElp'":
+        case "'heLp'":
+        case "'helP'":
+        case "'HElp'":
+        case "'HeLp'":
+        case "'HelP'":
+        case "'hELp'":
+        case "'hElP'":
+        case "'heLP'":
+        case "'HElP'":
+        case "'HELp'":
           if (enrollment) {
             await handleHelp(destination, enrollment.id)
           }
@@ -788,6 +815,19 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           // await sendWelcome("4f260e57-d4d7-45e1-aa17-7754362f7115", destination, messageid)
           break
         default:
+          let userData:any = await redisClient.get(`${config.redisBaseKey}user:${destination}`)
+          userData = JSON.parse(userData)
+          if (userData.search) {
+            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                to: destination,
+                type: "text",
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                text: {
+                  body: "test test"
+                }
+              })
+          }
           let teamCourses = response.includes("want to see courses")
           let singleCourse = response.includes("want to start the course")
           field = await redisClient.get(fieldKey)
