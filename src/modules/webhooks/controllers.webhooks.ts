@@ -133,6 +133,21 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         // }
         let today = moment().add(24, 'hours').format('YYYY-MM-DD')
         switch (btnId) {
+          case "SEARCH":
+            if (enrollment) {
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: destination,
+              team: enrollment.team,
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              type: "text",
+              text: {
+                body: `Please input a search word or ask a question based on what you want to be reminded of...`
+              }
+            })
+              await redisClient.set(`${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`, JSON.stringify({ ...enrollment, search: true }))
+            }
+            break
           case "HELP":
             if (enrollment) {
               await handleHelp(destination, enrollment.id)
@@ -528,34 +543,22 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       let field: string | null
       let fieldsRaw: string | null
       switch (response) {
-        case "HELP":
-        case "help":
-        case "Help":
-        case "hElp":
-        case "heLp":
-        case "helP":
-        case "HElp":
-        case "HeLp":
-        case "HelP":
-        case "hELp":
-        case "hElP":
-        case "heLP":
-        case "HElP":
-        case "HELp":
-        case "'help'":
-        case "'HELP'":
-        case "'Help'":
-        case "'hElp'":
-        case "'heLp'":
-        case "'helP'":
-        case "'HElp'":
-        case "'HeLp'":
-        case "'HelP'":
-        case "'hELp'":
-        case "'hElP'":
-        case "'heLP'":
-        case "'HElP'":
-        case "'HELp'":
+        case /^search$/i.test(response):
+          if (enrollment) {
+            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: destination,
+              team: enrollment.team,
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              type: "text",
+              text: {
+                body: `Please input a search word or ask a question based on what you want to be reminded of...`
+              }
+            })
+            await redisClient.set(`${config.redisBaseKey}enrollments:${destination}:${enrollment.id}`, JSON.stringify({ ...enrollment, search: true }))
+          }
+          break
+        case /^help$/i.test(response):
           if (enrollment) {
             await handleHelp(destination, enrollment.id)
           }
