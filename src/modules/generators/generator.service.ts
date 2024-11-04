@@ -27,6 +27,7 @@ import Students from '../students/model.students'
 import Courses from '../courses/model.courses'
 import Settings from '../courses/model.settings'
 import { CourseSettingsInterface } from '../courses/interfaces.settings'
+import { Certificates } from '../certificates'
 
 const projectRoot = process.cwd()
 const localVideoPath = path.join(projectRoot, 'generated-files')
@@ -292,14 +293,12 @@ export const generateCourseCertificateURL = async (course: CourseInterface, stud
     }
   }
   if (settings.certificateId) {
-    payload.template = true
     payload.certificateId = settings.certificateId
   } else {
     if (owner.defaultCertificateId) {
-      payload.template = true
       payload.certificateId = owner.defaultCertificateId
     } else {
-      return "NO CERTIFICATE FOUND"
+      payload.certificateId = v4()
     }
   }
 
