@@ -5,7 +5,7 @@ import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { ENROLL_STUDENT_DEFAULT_DATE, RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { CONTINUE, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow, RESUME_COURSE_TOMORROW } from './interfaces.webhooks'
-import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement, reloadTemplates, handleHelp, handleSearch } from "./service.webhooks"
+import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement, reloadTemplates, handleHelp, handleSearch, startSearch } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
@@ -20,6 +20,7 @@ import { teamService } from '../teams'
 import { resolveCohortWithShortCode } from '../cohorts/service.cohorts'
 import Teams from '../teams/model.teams'
 import { CourseFlowMessageType, CourseFlowItem } from './service.webhooks'
+
 // import { logger } from '../logger'
 
 const timezones = [
@@ -586,17 +587,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         case "'SEArCh'":
         case "'SEArcH'":
           if (enrollment) {
-            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              to: destination,
-              team: enrollment.team,
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              type: "text",
-              text: {
-                body: `Please input a search word or ask a question based on what you want to be reminded of...`
-              }
-            })
-            await redisClient.set(`${config.redisBaseKey}user:${destination}`, JSON.stringify({ search: true }))
+            startSearch(destination,enrollment.team)
           }
           break
         case "HELP":

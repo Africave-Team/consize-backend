@@ -1,4 +1,5 @@
 import httpStatus from 'http-status'
+import OpenAI from 'openai'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
@@ -36,6 +37,11 @@ import Subscriptions from '../subscriptions/subscriptions.models'
 import QuestionGroup from '../courses/model.question-group'
 import { QuestionGroupsInterface } from '../courses/interfaces.question-group'
 import Enrollments from '../sessions/model'
+const openai = new OpenAI({
+  apiKey: config.openAI.key
+})
+import fs from "fs"
+import path from 'path'
 // import Teams from '../teams/model.teams'
 // import { convertTo24Hour } from '../utils'
 // import { convertTo24Hour } from '../utils'
@@ -2840,24 +2846,16 @@ export const handleHelp = async (phoneNumber: string, courseId: string): Promise
 
 export const handleSearch = async (phoneNumber: string, search: string): Promise<void> => {
   const coursesCompleted: any[] = await Enrollments.find({
-      phoneNumber: phoneNumber,
-      completed: true
-    }, 'courseId');
-    console.log(coursesCompleted,search)
+    phoneNumber: phoneNumber,
+    completed: true
+  }, 'courseId');
   
   const completedCourseContent: any[] = []
 
   coursesCompleted.forEach(async(course) => {
     let courseContent: any = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`)
-    console.log(courseContent,1233434545345)
-    if(courseContent){
-      courseContent = JSON.parse(courseContent)
-      console.log(courseContent)
-      completedCourseContent.push(courseContent)
-    }
+    completedCourseContent.push(courseContent)
   });
-
-  console.log(23221333423433,completedCourseContent, 1234213123212321)
 
   try {
 
@@ -2875,4 +2873,79 @@ export const handleSearch = async (phoneNumber: string, search: string): Promise
   } catch (error) {
     throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
   }
+}
+
+export const startSearch = async (phoneNumber: string, team: string): Promise<void> => {
+  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+    to: phoneNumber,
+    team: team,
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    type: "text",
+    text: {
+      body: `Please input a search word or ask a question based on what you want to be reminded of...`
+    }
+  })
+
+  try {
+    const coursesCompleted: any[] = await Enrollments.find({
+      phoneNumber: phoneNumber,
+      completed: true
+    }, 'courseId');
+    
+    const completedCourseContent: any[] = []
+
+    coursesCompleted.forEach(async(course) => {
+      let courseContent: any = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`)
+      completedCourseContent.push(courseContent)
+    });
+
+    const filePath = path.join(__dirname, + v4() + "search-course-content.json");
+
+    fs.writeFile(filePath, JSON.stringify(completedCourseContent), (err) => {
+      if (err) {
+        console.error('Error writing to file:', err);
+      } else {
+        console.log('File saved successfully at:', filePath);
+      }
+    });
+
+    console.log(filePath);
+
+    const fileStreams = [filePath].map((path) => fs.createReadStream(path))
+
+    const assistant = await openai.beta.assistants.create({
+      name: "Course search assistant",
+      instructions: "You are an expert answering questions based on provided course contents. Use given course content to answer questions provided.",
+      model: "gpt-3.5-turbo",
+      tools: [{ type: "file_search" }],
+    })
+
+    const vectorStore = await openai.beta.vectorStores.create({
+      name: "Course content: " + v4(),
+    })
+
+    const uploadPromises = fileStreams.map(async (stream) => {
+      const file = await openai.files.create({
+        file: stream,
+        purpose: "fine-tune",
+      })
+      return file
+    })
+    // Wait for all uploads to complete
+    const files = await Promise.all(uploadPromises)
+
+    await Promise.all([openai.beta.vectorStores.fileBatches.createAndPoll(vectorStore.id, {
+      file_ids: files.map(e => e.id)
+    }), openai.beta.assistants.update(assistant.id, {
+      tool_resources: { file_search: { vector_store_ids: [vectorStore.id] } },
+    })])
+
+    await redisClient.set(`${config.redisBaseKey}user:${phoneNumber}`, JSON.stringify({ search: true, assistant: assistant.id }))
+    
+  } catch (error) {
+    console.log(error)
+  }
+
+
 }
