@@ -2900,7 +2900,7 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
       completedCourseContent.push(courseContent)
     });
 
-    const filePath = path.join(__dirname, + v4() + "search-course-content.json");
+    const filePath = path.join(__dirname, v4() + "search-course-content.json");
 
     fs.writeFile(filePath, JSON.stringify(completedCourseContent), (err) => {
       if (err) {
