@@ -11,9 +11,9 @@ export const createCertificates = catchAsync(async (req: Request, res: Response)
 })
 
 export const deleteCertificate = catchAsync(async (req: Request, res: Response) => {
-    const { cohortId } = req.params
-    if (cohortId) {
-        await certificatesService.deleteCertificate(cohortId)
+    const { id } = req.params
+    if (id) {
+        await certificatesService.deleteCertificate(id)
     }
     res.status(httpStatus.CREATED).send({ message: "Certificate deleted" })
 })
@@ -40,7 +40,15 @@ export const getCertificateById = catchAsync(async (req: Request, res: Response)
 export const updateCertificate = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params
     if (id) {
-        const updatedCertificate = certificatesService.updateCertificate(req.body, id)
+        const updatedCertificate = await certificatesService.updateCertificate(req.body, id)
         res.status(httpStatus.OK).send({ data: updatedCertificate, message: "certificate updated successfully" })
+    }
+})
+
+export const duplicateCertificate = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params
+    if (id) {
+        const updatedCertificate = await certificatesService.duplicateCertificate({ id, name: req.body.name })
+        res.status(httpStatus.OK).send({ data: updatedCertificate, message: "certificate duplicated successfully" })
     }
 })
