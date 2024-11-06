@@ -27,6 +27,7 @@ import Students from '../students/model.students'
 import Courses from '../courses/model.courses'
 import Settings from '../courses/model.settings'
 import { CourseSettingsInterface } from '../courses/interfaces.settings'
+import { Certificates } from '../certificates'
 
 const projectRoot = process.cwd()
 const localVideoPath = path.join(projectRoot, 'generated-files')
@@ -300,7 +301,16 @@ export const generateCourseCertificateURL = async (course: CourseInterface, stud
       payload.certificateId = v4()
     }
   }
-  payload.template = true
+  const certificate = await Certificates.findById(payload.certificateId)
+  if (certificate) {
+    if (certificate.components && certificate.components.components.length > 0) {
+      payload.template = false
+    } else {
+      payload.template = true
+    }
+  } else {
+    payload.template = true
+  }
 
   const query = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
 

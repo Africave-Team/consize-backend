@@ -5,7 +5,7 @@ import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { ENROLL_STUDENT_DEFAULT_DATE, RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
 import { CONTINUE, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow, RESUME_COURSE_TOMORROW } from './interfaces.webhooks'
-import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement, reloadTemplates, handleHelp } from "./service.webhooks"
+import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement, reloadTemplates, handleHelp, handleSearch, startSearch } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
 import { v4 } from 'uuid'
@@ -20,6 +20,7 @@ import { teamService } from '../teams'
 import { resolveCohortWithShortCode } from '../cohorts/service.cohorts'
 import Teams from '../teams/model.teams'
 import { CourseFlowMessageType, CourseFlowItem } from './service.webhooks'
+
 // import { logger } from '../logger'
 
 const timezones = [
@@ -133,6 +134,21 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         // }
         let today = moment().add(24, 'hours').format('YYYY-MM-DD')
         switch (btnId) {
+          case "SEARCH":
+            if (enrollment) {
+              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: destination,
+              team: enrollment.team,
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              type: "text",
+              text: {
+                body: `Please input a search word or ask a question based on what you want to be reminded of...`
+              }
+            })
+            await redisClient.set(`${config.redisBaseKey}user:${destination}`, JSON.stringify({ search: true }))
+            }
+            break
           case "HELP":
             if (enrollment) {
               await handleHelp(destination, enrollment.id)
@@ -528,6 +544,52 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
       let field: string | null
       let fieldsRaw: string | null
       switch (response) {
+        case "SEARCH":
+        case "search":
+        case "Search":
+        case "sEarch":
+        case "seArch":
+        case "seaRch":
+        case "searCh":
+        case "searcH":
+        case "SEarch":
+        case "SeArch":
+        case "SeaRch":
+        case "SearCh":
+        case "SearcH":
+        case "sEArch":
+        case "sEARch":
+        case "sEArCh":
+        case "sEArcH":
+        case "SEArch":
+        case "SEARch":
+        case "SEArCh":
+        case "SEArcH":
+        case "'search'":
+        case "'SEARCH'":
+        case "'Search'":
+        case "'sEarch'":
+        case "'seArch'":
+        case "'seaRch'":
+        case "'searCh'":
+        case "'searcH'":
+        case "'SEarch'":
+        case "'SeArch'":
+        case "'SeaRch'":
+        case "'SearCh'":
+        case "'SearcH'":
+        case "'sEArch'":
+        case "'sEARch'":
+        case "'sEArCh'":
+        case "'sEArcH'":
+        case "'SEArch'":
+        case "'SEARch'":
+        case "'SEArCh'":
+        case "'SEArcH'":
+          if (enrollment) {
+            startSearch(destination,enrollment.team)
+          }
+          break
         case "HELP":
         case "help":
         case "Help":
@@ -785,6 +847,11 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           // await sendWelcome("4f260e57-d4d7-45e1-aa17-7754362f7115", destination, messageid)
           break
         default:
+          let userData:any = await redisClient.get(`${config.redisBaseKey}user:${destination}`)
+          userData = JSON.parse(userData)
+          if (userData.search) {
+            handleSearch(destination, response)
+          }
           let teamCourses = response.includes("want to see courses")
           let singleCourse = response.includes("want to start the course")
           field = await redisClient.get(fieldKey)
