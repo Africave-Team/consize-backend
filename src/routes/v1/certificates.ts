@@ -9,6 +9,9 @@ router.use(auth())
 
 router.post('/', validate(certificatesValidator.createCertificates), certificatesControllers.createCertificates)
 router.get('/', certificatesControllers.getCertificates)
-router.put('/:id', validate(certificatesValidator.updateCertificates), certificatesControllers.updateCertificate)
+router.route('/:id')
+  .put(validate(certificatesValidator.updateCertificates), certificatesControllers.updateCertificate)
+  .post(certificatesControllers.duplicateCertificate)
+  .delete(certificatesControllers.deleteCertificate)
 
 export default router

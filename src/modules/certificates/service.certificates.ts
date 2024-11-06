@@ -10,6 +10,16 @@ export const createCertificate = async ({ name, status, signatories }: Pick<Cert
     return certificate
 }
 
+export const duplicateCertificate = async ({ name, id }: Pick<CertificatesInterface, "name" | "id">): Promise<CertificatesInterface> => {
+    const oldCertificate = await Certificates.findById(id)
+    if (!oldCertificate) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Failed to find this certificate")
+    }
+    const certificate = new Certificates({ teamId: oldCertificate.teamId, name, status: oldCertificate.status, signatories: oldCertificate.signatories })
+    await certificate.save()
+    return certificate
+}
+
 export const fetchCertificate = async (certificateId: string): Promise<CertificatesInterface | null> => {
     const certificates = await Certificates.findById(certificateId)
     return certificates
