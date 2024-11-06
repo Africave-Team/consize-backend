@@ -2941,7 +2941,7 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
       tool_resources: { file_search: { vector_store_ids: [vectorStore.id] } },
     })])
 
-    await redisClient.set(`${config.redisBaseKey}user:${phoneNumber}`, JSON.stringify({ search: true, assistant: assistant.id }))
+    await redisClient.set(`${config.redisBaseKey}user:${phoneNumber}`, JSON.stringify({ search: true, assistant: assistant.id, filePath: filePath }))
     
   } catch (error) {
     console.log(error)
