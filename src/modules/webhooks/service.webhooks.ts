@@ -2897,7 +2897,7 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
       messaging_product: "whatsapp",
       recipient_type: "individual",
       interactive: {
-        body: { text: JSON.stringify(messageContent) + "\n\n\Click Yes if the answer is satisfactory or ask another question." },
+        body: { text: JSON.stringify(messageContent) + "\n\n\Click continue if the answer is satisfactory or ask another question." },
         type: "button",
         action: {
           buttons: [
