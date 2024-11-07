@@ -2952,6 +2952,8 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
 
     const filePath = path.join(__dirname, v4() + "search-course-content.json");
 
+    console.log(completedCourseContent,"got here...............")
+
     fs.writeFile(filePath, JSON.stringify(completedCourseContent), (err) => {
       if (err) {
         console.error('Error writing to file:', err);
