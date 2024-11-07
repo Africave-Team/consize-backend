@@ -2943,13 +2943,12 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
       completed: true
     }, 'courseId');
 
-    const completedCourseContent: any[] = []
-
-    coursesCompleted.forEach(async(course) => {
-      let courseContent: any = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`)
-      console.log(courseContent,"rtyuirerty")
-      completedCourseContent.push(courseContent)
-    });
+    const completedCourseContent: any[] = await Promise.all(
+      coursesCompleted.map(async (course) => {
+        const courseContent = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`);
+        return courseContent;
+      })
+    );
 
     const filePath = path.join(__dirname, v4() + "search-course-content.json");
 
@@ -2962,8 +2961,6 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
         console.log('File saved successfully at:', filePath);
       }
     });
-
-    console.log(filePath);
 
     const fileStreams = [filePath].map((path) => fs.createReadStream(path))
 
