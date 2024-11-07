@@ -2886,7 +2886,6 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
     });
 
     const message:any = messages?.data?.pop();
-    console.log(message.message.content, "message 111111111111111111111111111111")
 
     const messageContent = message?.message?.content || "Your question does not match any of your completed course";
     console.log(112345687654435, messageContent)
@@ -2898,7 +2897,7 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
       messaging_product: "whatsapp",
       recipient_type: "individual",
       interactive: {
-        body: { text: JSON.stringify(messageContent) + "\n\n\ Click Yes if the answer is satisfactory, Click No if you would want to ask another question " },
+        body: { text: JSON.stringify(messageContent) + "\n\n\Click Yes if the answer is satisfactory or ask another question." },
         type: "button",
         action: {
           buttons: [
@@ -2906,16 +2905,9 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
               type: "reply",
               reply: {
                 id: "YES",
-                title: "YES"
+                title: "Continue"
               }
             },
-            {
-              type: "reply",
-              reply: {
-                id: "NO",
-                title: "NO"
-              }
-            }
           ]
         }
       }
