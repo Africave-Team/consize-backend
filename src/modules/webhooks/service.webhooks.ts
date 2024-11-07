@@ -2943,11 +2943,11 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
       completed: true
     }, 'courseId');
 
-    console.log(await redisClient.get(`${config.redisBaseKey}courses:${coursesCompleted[0].courseId}`), "here hrer")
     const completedCourseContent: any[] = []
 
     coursesCompleted.forEach(async(course) => {
       let courseContent: any = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`)
+      console.log(courseContent,"rtyuirerty")
       completedCourseContent.push(courseContent)
     });
 
