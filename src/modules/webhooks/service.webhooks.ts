@@ -2844,34 +2844,76 @@ export const handleHelp = async (phoneNumber: string, courseId: string): Promise
   }
 }
 
-export const handleSearch = async (phoneNumber: string, search: string): Promise<void> => {
-  const coursesCompleted: any[] = await Enrollments.find({
-    phoneNumber: phoneNumber,
-    completed: true
-  }, 'courseId');
-  
-  const completedCourseContent: any[] = []
-
-  coursesCompleted.forEach(async(course) => {
-    let courseContent: any = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`)
-    completedCourseContent.push(courseContent)
-  });
-
-  try {
-
-    if(coursesCompleted[0]){
-        agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-          to: phoneNumber,
-          type: "text",
-          messaging_product: "whatsapp",
-          recipient_type: "individual",
-          text: {
-            body: JSON.stringify(completedCourseContent) + search
-          }
-        })
+export const handleSearch = async (phoneNumber: string, search: string, team: string): Promise<void> => {
+  let userData: any = await redisClient.get(`${config.redisBaseKey}user:${phoneNumber}`)
+  if(userData){
+    userData = JSON.parse(userData)
+    if(!(userData.search && userData.status)){
+      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+        to: phoneNumber,
+        team: team,
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        type: "text",
+        text: {
+          body: `Please wait a momment, while we process your request`
+        }
+      })
     }
-  } catch (error) {
-    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+
+    // Create a conversation thread with the user query
+    const thread = await openai.beta.threads.create({
+      messages: [
+        {
+          role: "user",
+          content: search,
+        },
+      ],
+    });
+
+    // Run the assistant using the assistant ID from Redis and poll for completion
+    const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
+      assistant_id: userData.assistant,
+    });
+
+    // Retrieve messages from the thread and get the assistant's latest response
+    const messages = await openai.beta.threads.messages.list(thread.id, {
+      run_id: run.id,
+    });
+
+    const message = messages.data.pop()!
+
+    const messageContent = message.content[0] || "Your question does not match any of your completed course";
+
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: phoneNumber,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        body: { text: JSON.stringify(messageContent) + "\n\n\ Click Yes if the answer is satisfactory, Click No if you would want to ask another question " },
+        type: "button",
+        action: {
+          buttons: [
+            {
+              type: "reply",
+              reply: {
+                id: "YES",
+                title: "YES"
+              }
+            },
+            {
+              type: "reply",
+              reply: {
+                id: "NO",
+                title: "NO"
+              }
+            }
+          ]
+        }
+      }
+    })
+
   }
 }
 
