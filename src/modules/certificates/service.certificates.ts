@@ -3,6 +3,7 @@ import Certificates from "./model.certificates"
 import httpStatus from "http-status"
 import { ApiError } from '../errors'
 import { defaultCertificateComponents } from '../utils/constants'
+import { Team } from '../teams'
 
 
 
@@ -10,6 +11,13 @@ export const createCertificate = async ({ name, status, signatories }: Pick<Cert
     try {
         const certificate = new Certificates({ teamId, name, status, signatories, components: defaultCertificateComponents })
         await certificate.save()
+        const team = await Team.findById(teamId)
+        if (team) {
+            if (!team.defaultCertificateId) {
+                team.defaultCertificateId = certificate.id
+                await team.save()
+            }
+        }
         return certificate
     } catch (error) {
         console.log(error)

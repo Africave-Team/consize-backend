@@ -8,6 +8,8 @@ import { teamService } from '../teams'
 import httpStatus from 'http-status'
 import { FetchApiInterface } from './admin.interfaces'
 import { subscriptionService } from '../subscriptions'
+import { certificatesService } from '../certificates'
+import { CertificatesStatus } from '../certificates/interface.certificates'
 
 export const enrollCompany = catchAsync(async (req: Request, res: Response) => {
   const { email, companyName, name } = req.body
@@ -26,6 +28,7 @@ export const enrollCompany = catchAsync(async (req: Request, res: Response) => {
       numberOfMonths: 24
     }, team.id)
   }
+  await certificatesService.createCertificate({ name: "Default certificate", signatories: [], status: CertificatesStatus.ACTIVE }, team.id)
   res.status(httpStatus.CREATED).send({ message: "Company onboarded successfully" })
 })
 
