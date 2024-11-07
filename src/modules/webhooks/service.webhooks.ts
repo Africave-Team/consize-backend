@@ -2886,6 +2886,7 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
     });
 
     const message:any = messages?.data?.pop();
+    console.log(message,"message 111111111111111111111111111111")
 
     const messageContent = message?.message?.content || "Your question does not match any of your completed course";
     console.log(112345687654435, messageContent)
@@ -2951,8 +2952,6 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
     );
 
     const filePath = path.join(__dirname, v4() + "search-course-content.json");
-
-    console.log(completedCourseContent,"got here...............")
 
     fs.writeFile(filePath, JSON.stringify(completedCourseContent), (err) => {
       if (err) {
