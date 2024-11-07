@@ -2942,6 +2942,8 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
       phoneNumber: phoneNumber,
       completed: true
     }, 'courseId');
+
+    console.log(coursesCompleted,"gotten here")
     
     const completedCourseContent: any[] = []
 
