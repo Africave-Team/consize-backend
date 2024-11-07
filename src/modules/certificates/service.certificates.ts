@@ -2,10 +2,12 @@ import { CertificatesInterface } from './interface.certificates'
 import Certificates from "./model.certificates"
 import httpStatus from "http-status"
 import { ApiError } from '../errors'
+import { defaultCertificateComponents } from '../utils/constants'
+
 
 
 export const createCertificate = async ({ name, status, signatories }: Pick<CertificatesInterface, "name" | "status" | "signatories">, teamId: string): Promise<CertificatesInterface> => {
-    const certificate = new Certificates({ teamId, name, status, signatories })
+    const certificate = new Certificates({ teamId, name, status, signatories, components: defaultCertificateComponents })
     await certificate.save()
     return certificate
 }
