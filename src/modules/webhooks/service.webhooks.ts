@@ -2886,6 +2886,7 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
     });
 
     const message:any = messages?.data?.pop();
+    console.log(message,"message 111111111111111111111111111111")
 
     const messageContent = message?.message?.content || "Your question does not match any of your completed course";
     console.log(112345687654435, messageContent)
