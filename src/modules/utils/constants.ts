@@ -82,46 +82,6 @@ export const defaultCertificateComponents = {
       "default": "Enter text here"
     },
     {
-      "type": "image",
-      "position": {
-        "x": 34,
-        "y": 27
-      },
-      "properties": {
-        "height": 90,
-        "width": 130,
-        "color": "#000",
-        "radius": {
-          "rt": 0,
-          "rb": 0,
-          "lb": 0,
-          "lt": 0
-        },
-        "url": "https://storage.googleapis.com/kippa-cdn-public/microlearn-images/1730716741374.png"
-      },
-      "default": "Image"
-    },
-    {
-      "type": "image",
-      "position": {
-        "x": 739,
-        "y": 25
-      },
-      "properties": {
-        "height": 90,
-        "width": 130,
-        "color": "#000",
-        "radius": {
-          "rt": 0,
-          "rb": 0,
-          "lb": 0,
-          "lt": 0
-        },
-        "url": "https://storage.googleapis.com/kippa-cdn-public/microlearn-images/1730716727025.png"
-      },
-      "default": "Image"
-    },
-    {
       "type": "text",
       "position": {
         "x": 322,

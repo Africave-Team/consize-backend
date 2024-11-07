@@ -7,9 +7,14 @@ import { defaultCertificateComponents } from '../utils/constants'
 
 
 export const createCertificate = async ({ name, status, signatories }: Pick<CertificatesInterface, "name" | "status" | "signatories">, teamId: string): Promise<CertificatesInterface> => {
-    const certificate = new Certificates({ teamId, name, status, signatories, components: defaultCertificateComponents })
-    await certificate.save()
-    return certificate
+    try {
+        const certificate = new Certificates({ teamId, name, status, signatories, components: defaultCertificateComponents })
+        await certificate.save()
+        return certificate
+    } catch (error) {
+        console.log(error)
+        throw new ApiError(httpStatus.BAD_REQUEST, "Failed to create this certificate")
+    }
 }
 
 export const duplicateCertificate = async ({ name, id }: Pick<CertificatesInterface, "name" | "id">): Promise<CertificatesInterface> => {
