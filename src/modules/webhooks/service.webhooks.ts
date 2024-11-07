@@ -2876,6 +2876,8 @@ export const handleSearch = async (phoneNumber: string, search: string): Promise
 }
 
 export const startSearch = async (phoneNumber: string, team: string): Promise<void> => {
+  await redisClient.set(`${config.redisBaseKey}user:${phoneNumber}`, JSON.stringify({ search: true, status: false }))
+
   agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
     to: phoneNumber,
     team: team,
@@ -2941,11 +2943,10 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
       tool_resources: { file_search: { vector_store_ids: [vectorStore.id] } },
     })])
 
-    await redisClient.set(`${config.redisBaseKey}user:${phoneNumber}`, JSON.stringify({ search: true, assistant: assistant.id, filePath: filePath }))
+    await redisClient.set(`${config.redisBaseKey}user:${phoneNumber}`, JSON.stringify({ search: true, assistant: assistant.id, filePath: filePath, status: true }))
     
   } catch (error) {
     console.log(error)
   }
-
 
 }
