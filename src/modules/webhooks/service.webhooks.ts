@@ -2862,7 +2862,7 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
     }
 
     const userQuery = `Please answer the following question based on completed courses in plain text without any sources or references:
-                  Question: ${search} Response should only contain plain text with no additional formatting or sources. Always use completed courses to reference uploaded files.`
+                  Question: ${search}: Response should only contain plain text with no additional formatting or sources: Always use completed courses inplace of reference uploaded files.`
 
     console.log(112345687654435,"got here 1")
     // Create a conversation thread with the user query
