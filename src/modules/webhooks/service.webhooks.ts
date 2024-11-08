@@ -2861,11 +2861,11 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
       })
     }
 
-    const userQuery = `Please answer the following question based on completed courses in plain text without any sources or references:
-                  Question: ${search}: Response should only contain plain text with no additional formatting or sources: Always use completed courses inplace of reference uploaded files.`
+    const userQuery = `Please answer the following question in plain text using only "completed courses content" instead of any "uploaded course content." 
+    Question: ${search}
+    If "completed courses content" cannot be used to answer the question, return an empty string. The response should contain only plain text, with no references, sources, citations, or special formatting.`
 
-    console.log(112345687654435,"got here 1")
-    // Create a conversation thread with the user query
+// Create a conversation thread with the user query
     const thread = await openai.beta.threads.create({
       messages: [
         {
@@ -2874,14 +2874,11 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
         },
       ],
     });
-    console.log(112345687654435,"got here 2")
-
+    
     // Run the assistant using the assistant ID from Redis and poll for completion
     const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
       assistant_id: userData.assistant,
     });
-
-    console.log(112345687654435,"got here 3")
 
     // Retrieve messages from the thread and get the assistant's latest response
     const messages = await openai.beta.threads.messages.list(thread.id, {
@@ -2891,8 +2888,6 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
     const message:any = messages?.data?.pop();
 
     const messageContent = message?.content[0]?.text?.value || "Your question does not match any of your completed course";
-    console.log(112345687654435, messageContent)
-
 
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
