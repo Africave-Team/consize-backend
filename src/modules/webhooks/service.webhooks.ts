@@ -2922,17 +2922,6 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
 export const startSearch = async (phoneNumber: string, team: string): Promise<void> => {
   await redisClient.set(`${config.redisBaseKey}user:${phoneNumber}`, JSON.stringify({ search: true, status: false }))
 
-  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-    to: phoneNumber,
-    team: team,
-    messaging_product: "whatsapp",
-    recipient_type: "individual",
-    type: "text",
-    text: {
-      body: `Please input a search word or ask a question based on what you want to be reminded of...`
-    }
-  })
-
   try {
     const projectRoot = process.cwd()
     const localFilePath = path.join(projectRoot, 'generated-files')
@@ -2995,5 +2984,16 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
   } catch (error) {
     console.log(error)
   }
+
+  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+    to: phoneNumber,
+    team: team,
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    type: "text",
+    text: {
+      body: `Please input a search word or ask a question based on what you want to be reminded of...`
+    }
+  })
 
 }
