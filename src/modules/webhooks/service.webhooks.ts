@@ -2861,13 +2861,16 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
       })
     }
 
+    const userQuery = `Please answer the following question based on completed courses in plain text without any sources or references:
+                  Question: ${search} Response should only contain plain text with no additional formatting or sources. Always use completed courses to reference uploaded files.`
+
     console.log(112345687654435,"got here 1")
     // Create a conversation thread with the user query
     const thread = await openai.beta.threads.create({
       messages: [
         {
           role: "user",
-          content: search,
+          content: userQuery,
         },
       ],
     });
@@ -2887,7 +2890,7 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
 
     const message:any = messages?.data?.pop();
 
-    const messageContent = message?.message?.content || "Your question does not match any of your completed course";
+    const messageContent = message?.content[0]?.text?.value || "Your question does not match any of your completed course";
     console.log(112345687654435, messageContent)
 
 
@@ -2931,6 +2934,8 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
   })
 
   try {
+    const projectRoot = process.cwd()
+    const localFilePath = path.join(projectRoot, 'generated-files')
     const coursesCompleted: any[] = await Enrollments.find({
       phoneNumber: phoneNumber,
       completed: true
@@ -2943,7 +2948,10 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
       })
     );
 
-    const filePath = path.join(__dirname, v4() + "search-course-content.json");
+    const filePath = path.join(localFilePath, v4() + "-search-course-content.json");
+    if (!fs.existsSync(localFilePath)) {
+      fs.mkdirSync(localFilePath)
+    }
 
     fs.writeFile(filePath, JSON.stringify(completedCourseContent), (err) => {
       if (err) {
@@ -2983,7 +2991,7 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
     })])
 
     await redisClient.set(`${config.redisBaseKey}user:${phoneNumber}`, JSON.stringify({ search: true, assistant: assistant.id, filePath: filePath, status: true }))
-    
+
   } catch (error) {
     console.log(error)
   }
