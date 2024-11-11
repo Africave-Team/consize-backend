@@ -5,6 +5,8 @@ import { certificatesControllers, certificatesValidator } from "../../modules/ce
 
 
 const router: Router = express.Router()
+router.route('/open/:id')
+  .get(certificatesControllers.getCertificateById)
 router.use(auth())
 
 router.post('/', validate(certificatesValidator.createCertificates), certificatesControllers.createCertificates)
