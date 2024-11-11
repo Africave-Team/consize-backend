@@ -136,17 +136,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         switch (btnId) {
           case "SEARCH":
             if (enrollment) {
-              agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              to: destination,
-              team: enrollment.team,
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              type: "text",
-              text: {
-                body: `Please input a search word or ask a question based on what you want to be reminded of...`
-              }
-            })
-            await redisClient.set(`${config.redisBaseKey}user:${destination}`, JSON.stringify({ search: true }))
+              startSearch(destination,enrollment.team)
             }
             break
           case "HELP":
