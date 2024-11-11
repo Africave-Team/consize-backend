@@ -2888,7 +2888,6 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
     });
 
     const message:any = messages?.data?.pop();
-
     const messageContent = message?.content[0]?.text?.value || "Your question does not match any of your completed course";
 
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -2897,7 +2896,7 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
       messaging_product: "whatsapp",
       recipient_type: "individual",
       interactive: {
-        body: { text: messageContent + "\n\n\Click the button below if the answer is satisfactory or ask another question." },
+        body: { text: messageContent.replace(/【\d+:\d+†source】/g, "") + "\n\n\Click the button below if the answer is satisfactory or ask another question." },
         type: "button",
         action: {
           buttons: [
