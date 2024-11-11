@@ -2865,7 +2865,7 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
 
     Question: ${search}
     
-    If "completed courses content" can answer the question, return only the exact title and content of the most appropriate block from the JSON data in plain text. If no answer can be derived from "completed courses content," return an empty string. Do not include any references, sources, citations, or special formatting in the response.`
+    If "completed courses content" can answer the question, return only the exact content of the most appropriate block from the JSON data in plain text. If no answer can be derived from "completed courses content," return an empty string. Do not include any references, sources, citations, or special formatting in the response.`
 
 // Create a conversation thread with the user query
     const thread = await openai.beta.threads.create({
