@@ -30,7 +30,7 @@ export const duplicateCertificate = async ({ name, id }: Pick<CertificatesInterf
     if (!oldCertificate) {
         throw new ApiError(httpStatus.BAD_REQUEST, "Failed to find this certificate")
     }
-    const certificate = new Certificates({ teamId: oldCertificate.teamId, name, status: oldCertificate.status, signatories: oldCertificate.signatories })
+    const certificate = new Certificates({ teamId: oldCertificate.teamId, name, status: oldCertificate.status, signatories: oldCertificate.signatories, components: oldCertificate.components })
     await certificate.save()
     return certificate
 }
