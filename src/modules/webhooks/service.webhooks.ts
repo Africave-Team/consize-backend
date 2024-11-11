@@ -2905,7 +2905,7 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
               type: "reply",
               reply: {
                 id: `end_search_${phoneNumber}`,
-                title: "Continue"
+                title: "I am done"
               }
             },
           ]
