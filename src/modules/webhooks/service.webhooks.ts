@@ -2897,7 +2897,7 @@ If "completed courses content" can answer the question, return only the content 
       messaging_product: "whatsapp",
       recipient_type: "individual",
       interactive: {
-        body: { text: JSON.stringify(messageContent) + "\n\n\Click the button below if the answer is satisfactory or ask another question." },
+        body: { text: messageContent + "\n\n\Click the button below if the answer is satisfactory or ask another question." },
         type: "button",
         action: {
           buttons: [
