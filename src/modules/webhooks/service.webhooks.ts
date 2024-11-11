@@ -2861,9 +2861,11 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
       })
     }
 
-    const userQuery = `Please answer the following question in plain text using only "completed courses content" instead of any "uploaded course content." 
+    const userQuery = `Please answer the following question in plain text using only "completed courses content" in place of any "uploaded course content."
+
     Question: ${search}
-    If "completed courses content" cannot be used to answer the question, return an empty string. The response should contain only plain text, with no references, sources, citations, or special formatting.`
+    
+    If "completed courses content" can answer the question, return only the exact title and content of the most appropriate block from the JSON data in plain text. If no answer can be derived from "completed courses content," return an empty string. Do not include any references, sources, citations, or special formatting in the response.`
 
 // Create a conversation thread with the user query
     const thread = await openai.beta.threads.create({
@@ -2874,7 +2876,7 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
         },
       ],
     });
-    
+
     // Run the assistant using the assistant ID from Redis and poll for completion
     const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
       assistant_id: userData.assistant,
