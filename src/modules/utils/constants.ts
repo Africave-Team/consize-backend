@@ -1,32 +1,12 @@
 export const defaultCertificateComponents = {
-  "bg": "https://storage.googleapis.com/kippa-cdn-public/microlearn-images/1730577552462.32",
+  "bg": "https://storage.googleapis.com/kippa-cdn-public/microlearn-images/Green%20and%20White%20Modern%20Certificate%20of%20Appreciation_cleanup.webp",
   "components": [
     {
-      "type": "image",
       "position": {
-        "x": 420,
-        "y": 402
+        "x": 200,
+        "y": 73
       },
-      "properties": {
-        "height": 100,
-        "width": 90,
-        "color": "#000",
-        "radius": {
-          "rt": 0,
-          "rb": 0,
-          "lb": 0,
-          "lt": 0
-        },
-        "url": "https://storage.googleapis.com/kippa-cdn-public/microlearn-images/1730577405184.35"
-      },
-      "default": "Image"
-    },
-    {
       "type": "text",
-      "position": {
-        "x": 267,
-        "y": 59
-      },
       "properties": {
         "height": 40,
         "width": 80,
@@ -42,11 +22,11 @@ export const defaultCertificateComponents = {
       "default": "Enter text here"
     },
     {
-      "type": "text",
       "position": {
-        "x": 334,
-        "y": 107
+        "x": 269,
+        "y": 123
       },
+      "type": "text",
       "properties": {
         "height": 40,
         "width": 270,
@@ -62,11 +42,11 @@ export const defaultCertificateComponents = {
       "default": "Enter text here"
     },
     {
-      "type": "text",
       "position": {
-        "x": 322,
-        "y": 162
+        "x": 263,
+        "y": 176
       },
+      "type": "text",
       "properties": {
         "height": 40,
         "width": 250,
@@ -82,11 +62,11 @@ export const defaultCertificateComponents = {
       "default": "Enter text here"
     },
     {
-      "type": "text",
       "position": {
-        "x": 322,
-        "y": 209
+        "x": 267,
+        "y": 224
       },
+      "type": "text",
       "properties": {
         "height": 40,
         "width": 280,
@@ -102,11 +82,11 @@ export const defaultCertificateComponents = {
       "default": "Enter text here"
     },
     {
-      "type": "course-title",
       "position": {
-        "x": 129,
-        "y": 309
+        "x": 91,
+        "y": 331
       },
+      "type": "course-title",
       "properties": {
         "height": 40,
         "width": 650,
@@ -122,11 +102,11 @@ export const defaultCertificateComponents = {
       "default": ""
     },
     {
-      "type": "name",
       "position": {
-        "x": 205,
-        "y": 239
+        "x": 168,
+        "y": 259
       },
+      "type": "name",
       "properties": {
         "height": 40,
         "width": 480,
@@ -149,11 +129,11 @@ export const defaultCertificateComponents = {
       "default": "Josep Blatter"
     },
     {
-      "type": "text",
       "position": {
-        "x": 233,
-        "y": 278
+        "x": 193,
+        "y": 304
       },
+      "type": "text",
       "properties": {
         "height": 40,
         "width": 430,
@@ -169,11 +149,11 @@ export const defaultCertificateComponents = {
       "default": "Enter text here"
     },
     {
-      "type": "date",
       "position": {
-        "x": 451,
-        "y": 355
+        "x": 421,
+        "y": 380
       },
+      "type": "date",
       "properties": {
         "height": 40,
         "width": 180,
@@ -196,11 +176,11 @@ export const defaultCertificateComponents = {
       "default": ""
     },
     {
-      "type": "text",
       "position": {
-        "x": 303,
-        "y": 354
+        "x": 271,
+        "y": 379
       },
+      "type": "text",
       "properties": {
         "height": 40,
         "width": 180,
@@ -216,51 +196,11 @@ export const defaultCertificateComponents = {
       "default": "Enter text here"
     },
     {
-      "type": "image",
       "position": {
-        "x": 243,
-        "y": 420
+        "x": 187,
+        "y": 497
       },
-      "properties": {
-        "height": 35,
-        "width": 70,
-        "color": "#000",
-        "radius": {
-          "rt": 0,
-          "rb": 0,
-          "lb": 0,
-          "lt": 0
-        },
-        "url": "https://storage.googleapis.com/kippa-cdn-public/microlearn-images/1730577081700.51"
-      },
-      "default": "Image"
-    },
-    {
-      "type": "image",
-      "position": {
-        "x": 602,
-        "y": 422
-      },
-      "properties": {
-        "height": 35,
-        "width": 70,
-        "color": "#000",
-        "radius": {
-          "rt": 0,
-          "rb": 0,
-          "lb": 0,
-          "lt": 0
-        },
-        "url": "https://storage.googleapis.com/kippa-cdn-public/microlearn-images/1730577854245.56"
-      },
-      "default": "Image"
-    },
-    {
       "type": "text",
-      "position": {
-        "x": 179,
-        "y": 461
-      },
       "properties": {
         "height": 40,
         "width": 210,
@@ -276,18 +216,18 @@ export const defaultCertificateComponents = {
           "weight": 500,
           "family": "Montserrat",
           "color": "#000",
-          "value": "Bambo Adebowale",
+          "value": "Jason Omobamidele",
           "align": "center"
         }
       },
       "default": "Enter text here"
     },
     {
-      "type": "text",
       "position": {
-        "x": 536,
-        "y": 460
+        "x": 501,
+        "y": 498
       },
+      "type": "text",
       "properties": {
         "height": 40,
         "width": 210,
@@ -303,21 +243,21 @@ export const defaultCertificateComponents = {
           "weight": 500,
           "family": "Inter",
           "color": "#000",
-          "value": "Adenike Adeyemi",
+          "value": "Ophelia Imogen",
           "align": "center"
         }
       },
       "default": "Enter text here"
     },
     {
-      "type": "image",
       "position": {
-        "x": 421,
-        "y": 527
+        "x": 553,
+        "y": 442
       },
+      "type": "image",
       "properties": {
-        "height": 50,
-        "width": 90,
+        "height": 70,
+        "width": 70,
         "color": "#000",
         "radius": {
           "rt": 0,
@@ -325,29 +265,29 @@ export const defaultCertificateComponents = {
           "lb": 0,
           "lt": 0
         },
-        "url": "https://storage.googleapis.com/kippa-cdn-public/microlearn-images/1730718486529.png"
+        "url": "https://storage.googleapis.com/kippa-cdn-public/microlearn-images/1731325909010.png"
       },
       "default": "Image"
     },
     {
-      "type": "text",
       "position": {
-        "x": 371,
-        "y": 512
+        "x": 245,
+        "y": 439
       },
+      "type": "image",
       "properties": {
-        "height": 40,
-        "width": 180,
-        "text": {
-          "size": 16,
-          "weight": 500,
-          "family": "Montserrat",
-          "color": "#000",
-          "value": "With support from",
-          "align": "center"
-        }
+        "height": 70,
+        "width": 70,
+        "color": "#000",
+        "radius": {
+          "rt": 0,
+          "rb": 0,
+          "lb": 0,
+          "lt": 0
+        },
+        "url": "https://storage.googleapis.com/kippa-cdn-public/microlearn-images/1731325909010.png"
       },
-      "default": "Enter text here"
+      "default": "Image"
     }
   ]
 }
