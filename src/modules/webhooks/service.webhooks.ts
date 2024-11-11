@@ -2861,24 +2861,26 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
       })
     }
 
-    console.log(112345687654435,"got here 1")
-    // Create a conversation thread with the user query
+    const userQuery = `Please answer the following question in plain text using only "completed courses content" in place of any "uploaded course content."
+
+    Question: ${search}
+    
+    If "completed courses content" can answer the question, return only the exact content of the most appropriate block from the JSON data in plain text. If no answer can be derived from "completed courses content," return an empty string. Do not include any references, sources, citations, or special formatting in the response.`
+
+// Create a conversation thread with the user query
     const thread = await openai.beta.threads.create({
       messages: [
         {
           role: "user",
-          content: search,
+          content: userQuery,
         },
       ],
     });
-    console.log(112345687654435,"got here 2")
 
     // Run the assistant using the assistant ID from Redis and poll for completion
     const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
       assistant_id: userData.assistant,
     });
-
-    console.log(112345687654435,"got here 3")
 
     // Retrieve messages from the thread and get the assistant's latest response
     const messages = await openai.beta.threads.messages.list(thread.id, {
@@ -2887,9 +2889,7 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
 
     const message:any = messages?.data?.pop();
 
-    const messageContent = message?.message?.content || "Your question does not match any of your completed course";
-    console.log(112345687654435, messageContent)
-
+    const messageContent = message?.content[0]?.text?.value || "Your question does not match any of your completed course";
 
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
@@ -2897,15 +2897,15 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
       messaging_product: "whatsapp",
       recipient_type: "individual",
       interactive: {
-        body: { text: JSON.stringify(messageContent) + "\n\n\Click Yes if the answer is satisfactory or ask another question." },
+        body: { text: JSON.stringify(messageContent) + "\n\n\Click the button below if the answer is satisfactory or ask another question." },
         type: "button",
         action: {
           buttons: [
             {
               type: "reply",
               reply: {
-                id: "YES",
-                title: "Continue"
+                id: `end_search_${phoneNumber}`,
+                title: "I am done"
               }
             },
           ]
@@ -2919,18 +2919,9 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
 export const startSearch = async (phoneNumber: string, team: string): Promise<void> => {
   await redisClient.set(`${config.redisBaseKey}user:${phoneNumber}`, JSON.stringify({ search: true, status: false }))
 
-  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-    to: phoneNumber,
-    team: team,
-    messaging_product: "whatsapp",
-    recipient_type: "individual",
-    type: "text",
-    text: {
-      body: `Please input a search word or ask a question based on what you want to be reminded of...`
-    }
-  })
-
   try {
+    const projectRoot = process.cwd()
+    const localFilePath = path.join(projectRoot, 'generated-files')
     const coursesCompleted: any[] = await Enrollments.find({
       phoneNumber: phoneNumber,
       completed: true
@@ -2943,7 +2934,10 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
       })
     );
 
-    const filePath = path.join(__dirname, v4() + "search-course-content.json");
+    const filePath = path.join(localFilePath, v4() + "-search-course-content.json");
+    if (!fs.existsSync(localFilePath)) {
+      fs.mkdirSync(localFilePath)
+    }
 
     fs.writeFile(filePath, JSON.stringify(completedCourseContent), (err) => {
       if (err) {
@@ -2983,9 +2977,20 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
     })])
 
     await redisClient.set(`${config.redisBaseKey}user:${phoneNumber}`, JSON.stringify({ search: true, assistant: assistant.id, filePath: filePath, status: true }))
-    
+
   } catch (error) {
     console.log(error)
   }
+
+  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+    to: phoneNumber,
+    team: team,
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    type: "text",
+    text: {
+      body: `Please input a search word or ask a question based on what you want to be reminded of...`
+    }
+  })
 
 }
