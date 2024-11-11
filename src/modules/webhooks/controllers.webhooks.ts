@@ -434,6 +434,50 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                 })
               }
             }
+
+            if (btnId.startsWith('end_search_')){
+              const phoneNumber = btnId.replace("end_search_", "")
+              let enrollments: CourseEnrollment[] = await fetchEnrollments(destination)
+              let active: CourseEnrollment[] = enrollments.filter(e => e.active)
+              const userData: any = await redisClient.get(`${config.redisBaseKey}user:${destination}`)
+
+              if (active.length < 0) {
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: destination,
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  type: "text",
+                  text: {
+                    body: `Thank you for using Consize Queries. Please respond with a “Search” if you would like to ask another question`
+                  }
+                })
+                await redisClient.set(`${config.redisBaseKey}user:${destination}`, JSON.stringify({assistant: userData?.assisstant, search: false, status: false }))
+
+              }else{
+                agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+                  to: phoneNumber,
+                  type: "interactive",
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  interactive: {
+                    body: { text: "You were mid way through a course before asking the query. Would you like to restart the course " },
+                    type: "button",
+                    action: {
+                      buttons: [
+                        {
+                          type: "reply",
+                          reply: {
+                            id: COURSES,
+                            title: "Yes"
+                          }
+                        },
+                      ]
+                    }
+                  }
+                })
+      
+              }
+            }
             break
         }
       }
