@@ -883,7 +883,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         default:
           let userData:any = await redisClient.get(`${config.redisBaseKey}user:${destination}`)
           userData = JSON.parse(userData)
-          if (userData.search && enrollment) {
+          if (userData && userData.search && enrollment) {
             handleSearch(destination, response, enrollment.team)
           }
           let teamCourses = response.includes("want to see courses")
