@@ -451,7 +451,6 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                     body: `Thank you for using Consize Queries. Please respond with a “Search” if you would like to ask another question`
                   }
                 })
-                await redisClient.set(`${config.redisBaseKey}user:${destination}`, JSON.stringify({assistant: userData?.assisstant, search: false, status: false }))
 
               }else{
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -475,8 +474,9 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                     }
                   }
                 })
-      
               }
+              await redisClient.set(`${config.redisBaseKey}user:${destination}`, JSON.stringify({assistant: userData?.assisstant, search: false, status: false }))
+
             }
             break
         }
