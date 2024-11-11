@@ -2861,11 +2861,11 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
       })
     }
 
-    const userQuery = `Please answer the following question in plain text using only "completed courses content" in place of any "uploaded course content, without any references, sources, or citations"
+    const userQuery = `Please answer the following question in plain text, using only "completed courses content" instead of "uploaded course content" and excluding any references, sources, or citation markers such as 【4:0†source】 or simila"
 
-Question: ${search}
+      Question: ${search}
 
-If "completed courses content" can answer the question, return only the content of the most relevant block from the JSON data as plain text without any references, sources, or citations. If no answer can be derived from "completed courses content," return an empty string.`
+      If "completed courses content" can answer the question, return only the content of the most relevant block from the JSON data as plain text without any references, sources, or citations. If no answer can be derived from "completed courses content," return an empty string.`
 
 // Create a conversation thread with the user query
     const thread = await openai.beta.threads.create({
