@@ -2863,10 +2863,10 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
 
     const userQuery = `Please answer the following question in plain text, using only "completed courses content" instead of "uploaded course content" and excluding any references, sources, or citation markers such as 【4:0†source】 or simila"
 
-      Question: ${search}
+      Question: ${search}?.
 
       If "completed courses content" cannot be used to answer the question, return an empty string. The response should contain only plain text, with no references, sources, citations, or special formatting.`
-      
+
 // Create a conversation thread with the user query
     const thread = await openai.beta.threads.create({
       messages: [
