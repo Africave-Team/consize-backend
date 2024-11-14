@@ -1613,6 +1613,8 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
                   ...updatedData,
                 })
+                updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
+                handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
               }
             }
             break
@@ -1874,6 +1876,9 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
               ...updatedData
             })
+
+            updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
+            handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
             break
           case CourseFlowMessageType.SEARCH:
             agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
