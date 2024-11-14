@@ -67,7 +67,8 @@ export enum CourseFlowMessageType {
   END_OF_BUNDLE = 'end-of-bundle',
   STARTASSESSMENT = 'start-of-assessment',
   ENDASSESSMENT = 'end-of-assessment',
-  ASSESSMENT = 'assessment'
+  ASSESSMENT = 'assessment',
+  SEARCH ='search'
 }
 
 export interface CourseFlowItem {
@@ -455,6 +456,12 @@ export const generateCourseFlow = async function (courseId: string) {
         flow.push(load)
       }
     }
+
+    flow.push({
+      type: CourseFlowMessageType.SEARCH,
+      content: `To search through completed courses, type "Search" or Tap the button below`
+    })
+
     if (redisClient.isReady) {
       await redisClient.del(courseKey)
       await redisClient.set(courseKey, JSON.stringify(flow))
@@ -1866,6 +1873,32 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             await delay(5000)
             agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
               ...updatedData
+            })
+            break
+          case CourseFlowMessageType.SEARCH:
+            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+              to: phoneNumber,
+              team: data.team,
+              type: "interactive",
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              interactive: {
+                body: {
+                  text: item.content
+                },
+                type: "button",
+                action: {
+                  buttons: [
+                    {
+                      type: "reply",
+                      reply: {
+                        id: "search",
+                        title: "Search"
+                      }
+                    }
+                  ]
+                }
+              }
             })
             break
           default:
