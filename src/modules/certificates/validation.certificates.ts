@@ -4,7 +4,7 @@ import { CertificatesInterface, CertificatesStatus } from './interface.certifica
 const createCertificatesRequest: Record<keyof Pick<CertificatesInterface, "name" | "status" | "signatories">, any> = {
   name: Joi.string().required(),
   status: Joi.string().valid(...Object.values(CertificatesStatus)),
-  signatories: Joi.array().items(Joi.string()).required().max(2).min(1)
+  signatories: Joi.array().items(Joi.string())
 }
 
 export const updateCertificates = {
