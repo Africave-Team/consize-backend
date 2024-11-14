@@ -134,7 +134,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         // }
         let today = moment().add(24, 'hours').format('YYYY-MM-DD')
         switch (btnId) {
-          case "SEARCH":
+          case "search":
             if (enrollment) {
               startSearch(destination,enrollment.team)
             }
