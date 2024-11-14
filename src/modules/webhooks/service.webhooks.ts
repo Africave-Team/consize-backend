@@ -1878,7 +1878,7 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
               ...updatedData
             })
 
-            await delay(10000)
+            await delay(20000)
             updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
             handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
             break
