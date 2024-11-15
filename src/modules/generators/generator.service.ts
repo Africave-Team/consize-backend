@@ -474,7 +474,7 @@ export const generateCourseCertificate = async (course: CourseInterface, student
               clip: {
                 x: boundingBox.x,
                 y: boundingBox.y,
-                width: boundingBox.width,
+                width: boundingBox.width > 900 ? 900 : boundingBox.width,
                 height: boundingBox.height,
               },
             })
