@@ -430,9 +430,9 @@ export const generateCourseCertificate = async (course: CourseInterface, student
     const page = await browser.newPage()
     const url = await generateCourseCertificateURL(course, student, owner, settings)
     await page.goto(url, { waitUntil: "networkidle0" })
-    await page.setViewport({
-      width: 1520, height: 980, deviceScaleFactor: 5
-    })
+    // await page.setViewport({
+    //   width: 1520, height: 980, deviceScaleFactor: 5
+    // })
     const divSelector = '.template' // Replace with your actual div selector
     await page.waitForSelector(divSelector)
     const divHandle = await page.$(divSelector)
@@ -443,6 +443,7 @@ export const generateCourseCertificate = async (course: CourseInterface, student
           const boundingBox = await divHandle.boundingBox()
 
           if (boundingBox) {
+            console.log(boundingBox)
             const imageBuffer = await page.screenshot({
               clip: {
                 x: boundingBox.x,
