@@ -361,6 +361,32 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
       }
 
     }
+
+    await delay(15000)
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: student.phoneNumber,
+      team: course.owner,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        body: {
+          text: `To search through completed courses, type "Search" or Tap the button below`
+        },
+        type: "button",
+        action: {
+          buttons: [
+            {
+              type: "reply",
+              reply: {
+                id: "search",
+                title: "Search"
+              }
+            }
+          ]
+        }
+      }
+    })
   }
 }
 
