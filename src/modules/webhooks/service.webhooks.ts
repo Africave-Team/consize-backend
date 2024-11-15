@@ -456,12 +456,6 @@ export const generateCourseFlow = async function (courseId: string) {
         flow.push(load)
       }
     }
-
-    flow.push({
-      type: CourseFlowMessageType.SEARCH,
-      content: `To search through completed courses, type "Search" or Tap the button below`
-    })
-
     if (redisClient.isReady) {
       await redisClient.del(courseKey)
       await redisClient.set(courseKey, JSON.stringify(flow))
@@ -1613,9 +1607,6 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
                 agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
                   ...updatedData,
                 })
-                await delay(10000)
-                updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
-                handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
               }
             }
             break
@@ -1876,36 +1867,6 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             await delay(5000)
             agenda.now<CourseEnrollment>(SEND_CERTIFICATE, {
               ...updatedData
-            })
-
-            await delay(20000)
-            updatedData = { ...updatedData, nextBlock: updatedData.nextBlock + 1, currentBlock: nextIndex + 1 }
-            handleContinue(nextIndex + 1, courseKey, phoneNumber, v4(), updatedData)
-            break
-          case CourseFlowMessageType.SEARCH:
-            agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-              to: phoneNumber,
-              team: data.team,
-              type: "interactive",
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              interactive: {
-                body: {
-                  text: item.content
-                },
-                type: "button",
-                action: {
-                  buttons: [
-                    {
-                      type: "reply",
-                      reply: {
-                        id: "search",
-                        title: "Search"
-                      }
-                    }
-                  ]
-                }
-              }
             })
             break
           default:
