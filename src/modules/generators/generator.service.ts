@@ -353,6 +353,7 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
 
     }
 
+    await delay(15000)
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: student.phoneNumber,
       team: course.owner,
