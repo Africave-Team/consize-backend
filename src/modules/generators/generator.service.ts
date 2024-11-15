@@ -467,12 +467,11 @@ export const generateCourseCertificate = async (course: CourseInterface, student
           const boundingBox = await divHandle.boundingBox()
 
           if (boundingBox) {
-            console.log(boundingBox)
             const imageBuffer = await page.screenshot({
               clip: {
                 x: boundingBox.x,
                 y: boundingBox.y,
-                width: boundingBox.width > 900 ? 900 : boundingBox.width,
+                width: boundingBox.width,
                 height: boundingBox.height,
               },
             })
