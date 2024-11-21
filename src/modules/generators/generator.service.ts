@@ -456,7 +456,7 @@ export const generateCourseCertificate = async (course: CourseInterface, student
     const page = await browser.newPage()
     const url = await generateCourseCertificateURL(course, student, owner, settings)
     await page.goto(url, { waitUntil: "networkidle0" })
-    await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 1 })
+    await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 2, })
     const divSelector = '.template' // Replace with your actual div selector
     await page.waitForSelector(divSelector)
     const divHandle = await page.$(divSelector)
