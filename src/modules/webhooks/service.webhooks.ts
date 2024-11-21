@@ -273,9 +273,9 @@ export const generateCourseFlow = async function (courseId: string) {
                 const quiz = await Quizzes.findById(blockData.quiz)
                 if (quiz) {
                   if(quiz.choices.length <= 2){
-                    content = content + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
-                  }else{
                     content = content + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]}`
+                  }else{
+                    content = content + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
                   }
                   flo.quiz = quiz
                   flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
