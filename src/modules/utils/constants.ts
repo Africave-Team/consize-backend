@@ -3,26 +3,6 @@ export const defaultCertificateComponents = {
   "components": [
     {
       "position": {
-        "x": 200,
-        "y": 73
-      },
-      "type": "text",
-      "properties": {
-        "height": 40,
-        "width": 80,
-        "text": {
-          "size": 100,
-          "weight": 600,
-          "family": "Sloop",
-          "color": "#000",
-          "value": "C",
-          "align": "left"
-        }
-      },
-      "default": "Enter text here"
-    },
-    {
-      "position": {
         "x": 269,
         "y": 123
       },
@@ -35,7 +15,7 @@ export const defaultCertificateComponents = {
           "weight": 600,
           "family": "The Seasons",
           "color": "#000",
-          "value": "ERTIFICATE",
+          "value": "CERTIFICATE",
           "align": "left"
         }
       },
