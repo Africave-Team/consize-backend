@@ -272,7 +272,11 @@ export const generateCourseFlow = async function (courseId: string) {
               if (blockData.quiz) {
                 const quiz = await Quizzes.findById(blockData.quiz)
                 if (quiz) {
-                  content += `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
+                  if(quiz.choices.length <= 2){
+                    content = content + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]}`
+                  }else{
+                    content = content + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
+                  }
                   flo.quiz = quiz
                   flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
                 }
@@ -775,7 +779,7 @@ export const handleRemindMeTrigger = async function () {
   }
 }
 
-export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
+export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string, messageId: string, team: string ): Promise<void> => {
   try {
     let buttons: ReplyButton[] = []
     if (data.type === CourseFlowMessageType.BLOCK) {
