@@ -1982,7 +1982,10 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ph
       }
     }
     if (item && item.quiz) {
-      let correctAnswer = item.quiz.choices[item.quiz.correctAnswerIndex]
+      let correctAnswer = typeof item.quiz.choices[item.quiz.correctAnswerIndex] === 'string' 
+      ? item.quiz.choices[item.quiz.correctAnswerIndex] 
+      : item.quiz.choices[item.quiz.correctAnswerIndex]?.toString();
+
       if (payload.interactive) {
         if (correctAnswer === answer) {
           // send correct answer context
