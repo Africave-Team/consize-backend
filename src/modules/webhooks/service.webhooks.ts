@@ -279,7 +279,7 @@ export const generateCourseFlow = async function (courseId: string) {
                   if(quiz.choices.length === 3){
                     blockQuizData = `The question below is used to access your understanding of the section above`+ `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
                     flo.quiz = quiz
-                    flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
+                    flo.type = CourseFlowMessageType.BLOCK
                   }else{
                     content = content + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
                     flo.quiz = quiz
