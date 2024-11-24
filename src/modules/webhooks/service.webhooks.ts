@@ -3,7 +3,7 @@ import OpenAI from 'openai'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
+import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C } from './interfaces.webhooks'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -1109,6 +1109,51 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
   }
 }
 
+export const sendBlockQuiz = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
+  try {
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: phoneNumber,
+      team,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        body: {
+          text: item.content
+        },
+        type: "button",
+        action: {
+          buttons: [
+            {
+              type: "reply",
+              reply: {
+                id: BLOCK_QUIZ_A + `|${messageId}`,
+                title: "A"
+              }
+            },
+            {
+              type: "reply",
+              reply: {
+                id: BLOCK_QUIZ_B + `|${messageId}`,
+                title: "B"
+              }
+            },
+            {
+              type: "reply",
+              reply: {
+                id: BLOCK_QUIZ_C + `|${messageId}`,
+                title: "C"
+              }
+            }
+          ]
+        }
+      }
+    })
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+  }
+}
+
 export const sendAssessment = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -1857,6 +1902,11 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             await sendBlockContent(item, phoneNumber, messageId, data.team)
             updatedData = { ...updatedData, blockStartTime: new Date().toISOString() }
             console.log(updatedData)
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            break
+          case CourseFlowMessageType.BLOCKFOLLOWUPQUIZ:
+            await sendBlockQuiz(item, phoneNumber, messageId, data.team)
+            updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.SURVEY_MULTI_CHOICE:
