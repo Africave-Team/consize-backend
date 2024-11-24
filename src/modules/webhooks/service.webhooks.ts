@@ -321,10 +321,12 @@ export const generateCourseFlow = async function (courseId: string) {
               } else {
                 flo.content = content
                 flow.push(flo)
+                let floCopy = {...flo}
                 if(blockQuizData && quiz){
-                  flo.content = blockQuizData
-                  flo.quiz = quiz
-                  flo.type = CourseFlowMessageType.BLOCKFOLLOWUPQUIZ
+                  floCopy.content = blockQuizData
+                  floCopy.quiz = quiz
+                  floCopy.type = CourseFlowMessageType.BLOCKFOLLOWUPQUIZ
+                  flow.push(floCopy)
                 }
               }
               blockIndex++
@@ -1906,7 +1908,6 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             break
           case CourseFlowMessageType.BLOCKFOLLOWUPQUIZ:
             await sendBlockQuiz(item, phoneNumber, messageId, data.team)
-            updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.SURVEY_MULTI_CHOICE:
