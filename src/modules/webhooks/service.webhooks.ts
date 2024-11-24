@@ -3,7 +3,7 @@ import OpenAI from 'openai'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
+import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C } from './interfaces.webhooks'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -68,7 +68,8 @@ export enum CourseFlowMessageType {
   STARTASSESSMENT = 'start-of-assessment',
   ENDASSESSMENT = 'end-of-assessment',
   ASSESSMENT = 'assessment',
-  SEARCH ='search'
+  SEARCH ='search',
+  BLOCKFOLLOWUPQUIZ = 'block-follow-up-quiz'
 }
 
 export interface CourseFlowItem {
@@ -261,6 +262,9 @@ export const generateCourseFlow = async function (courseId: string) {
             }
 
             const blockData = await Blocks.findById(blockId)
+            let blockQuizData = null
+            let quiz = null
+
             if (blockData) {
               let flo: CourseFlowItem = {
                 type: CourseFlowMessageType.BLOCK,
@@ -270,15 +274,17 @@ export const generateCourseFlow = async function (courseId: string) {
               }
               content += ` \n\n*Section ${blockIndex + 1}: ${blockData.title.trim()}* \n\n${convertToWhatsAppString(he.decode(blockData.content))}`
               if (blockData.quiz) {
-                const quiz = await Quizzes.findById(blockData.quiz)
+                quiz = await Quizzes.findById(blockData.quiz)
                 if (quiz) {
-                  if(quiz.choices.length <= 2){
-                    content = content + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]}`
+                  if(quiz.choices.length === 3){
+                    blockQuizData = `The question below is used to access your understanding of the section above`+ `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
+                    flo.quiz = quiz
+                    flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
                   }else{
-                    content = content + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
+                    content = content + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
+                    flo.quiz = quiz
+                    flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
                   }
-                  flo.quiz = quiz
-                  flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
                 }
               }
               if (blockData.bodyMedia && blockData.bodyMedia.url) {
@@ -315,6 +321,11 @@ export const generateCourseFlow = async function (courseId: string) {
               } else {
                 flo.content = content
                 flow.push(flo)
+                if(blockQuizData && quiz){
+                  flo.content = blockQuizData
+                  flo.quiz = quiz
+                  flo.type = CourseFlowMessageType.BLOCKFOLLOWUPQUIZ
+                }
               }
               blockIndex++
             }
@@ -1098,6 +1109,51 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
   }
 }
 
+export const sendBlockQuiz = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
+  try {
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: phoneNumber,
+      team,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        body: {
+          text: item.content
+        },
+        type: "button",
+        action: {
+          buttons: [
+            {
+              type: "reply",
+              reply: {
+                id: BLOCK_QUIZ_A + `|${messageId}`,
+                title: "A"
+              }
+            },
+            {
+              type: "reply",
+              reply: {
+                id: BLOCK_QUIZ_B + `|${messageId}`,
+                title: "B"
+              }
+            },
+            {
+              type: "reply",
+              reply: {
+                id: BLOCK_QUIZ_C + `|${messageId}`,
+                title: "C"
+              }
+            }
+          ]
+        }
+      }
+    })
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+  }
+}
+
 export const sendAssessment = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
@@ -1846,6 +1902,11 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             await sendBlockContent(item, phoneNumber, messageId, data.team)
             updatedData = { ...updatedData, blockStartTime: new Date().toISOString() }
             console.log(updatedData)
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            break
+          case CourseFlowMessageType.BLOCKFOLLOWUPQUIZ:
+            await sendBlockQuiz(item, phoneNumber, messageId, data.team)
+            updatedData = { ...updatedData, quizAttempts: 0, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
           case CourseFlowMessageType.SURVEY_MULTI_CHOICE:
