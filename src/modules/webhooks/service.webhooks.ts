@@ -68,7 +68,8 @@ export enum CourseFlowMessageType {
   STARTASSESSMENT = 'start-of-assessment',
   ENDASSESSMENT = 'end-of-assessment',
   ASSESSMENT = 'assessment',
-  SEARCH ='search'
+  SEARCH ='search',
+  BLOCKFOLLOWUPQUIZ = 'block-follow-up-quiz'
 }
 
 export interface CourseFlowItem {
@@ -261,6 +262,9 @@ export const generateCourseFlow = async function (courseId: string) {
             }
 
             const blockData = await Blocks.findById(blockId)
+            let blockQuizData = null
+            let quiz = null
+
             if (blockData) {
               let flo: CourseFlowItem = {
                 type: CourseFlowMessageType.BLOCK,
@@ -270,15 +274,17 @@ export const generateCourseFlow = async function (courseId: string) {
               }
               content += ` \n\n*Section ${blockIndex + 1}: ${blockData.title.trim()}* \n\n${convertToWhatsAppString(he.decode(blockData.content))}`
               if (blockData.quiz) {
-                const quiz = await Quizzes.findById(blockData.quiz)
+                quiz = await Quizzes.findById(blockData.quiz)
                 if (quiz) {
-                  if(quiz.choices.length <= 2){
-                    content = content + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]}`
+                  if(quiz.choices.length === 3){
+                    blockQuizData = `The question below is used to access your understanding of the section above`+ `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
+                    flo.quiz = quiz
+                    flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
                   }else{
-                    content = content + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
+                    content = content + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
+                    flo.quiz = quiz
+                    flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
                   }
-                  flo.quiz = quiz
-                  flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
                 }
               }
               if (blockData.bodyMedia && blockData.bodyMedia.url) {
@@ -315,6 +321,11 @@ export const generateCourseFlow = async function (courseId: string) {
               } else {
                 flo.content = content
                 flow.push(flo)
+                if(blockQuizData && quiz){
+                  flo.content = blockQuizData
+                  flo.quiz = quiz
+                  flo.type = CourseFlowMessageType.BLOCKFOLLOWUPQUIZ
+                }
               }
               blockIndex++
             }
