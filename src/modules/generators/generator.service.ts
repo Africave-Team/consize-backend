@@ -27,6 +27,7 @@ import Students from '../students/model.students'
 import Courses from '../courses/model.courses'
 import Settings from '../courses/model.settings'
 import { CourseSettingsInterface } from '../courses/interfaces.settings'
+import { Certificates } from '../certificates'
 
 const projectRoot = process.cwd()
 const localVideoPath = path.join(projectRoot, 'generated-files')
@@ -300,7 +301,16 @@ export const generateCourseCertificateURL = async (course: CourseInterface, stud
       payload.certificateId = v4()
     }
   }
-  payload.template = true
+  const certificate = await Certificates.findById(payload.certificateId)
+  if (certificate) {
+    if (certificate.components && certificate.components.components.length > 0) {
+      payload.template = false
+    } else {
+      payload.template = true
+    }
+  } else {
+    payload.template = true
+  }
 
   const query = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
 
@@ -351,6 +361,32 @@ export const sendCourseCertificate = async (courseId: string, studentId: string)
       }
 
     }
+
+    await delay(15000)
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: student.phoneNumber,
+      team: course.owner,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        body: {
+          text: `To search through completed courses, type "Search" or Tap the button below`
+        },
+        type: "button",
+        action: {
+          buttons: [
+            {
+              type: "reply",
+              reply: {
+                id: "search",
+                title: "Search"
+              }
+            }
+          ]
+        }
+      }
+    })
   }
 }
 
@@ -420,9 +456,7 @@ export const generateCourseCertificate = async (course: CourseInterface, student
     const page = await browser.newPage()
     const url = await generateCourseCertificateURL(course, student, owner, settings)
     await page.goto(url, { waitUntil: "networkidle0" })
-    await page.setViewport({
-      width: 1520, height: 980, deviceScaleFactor: 5
-    })
+    await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 2, })
     const divSelector = '.template' // Replace with your actual div selector
     await page.waitForSelector(divSelector)
     const divHandle = await page.$(divSelector)

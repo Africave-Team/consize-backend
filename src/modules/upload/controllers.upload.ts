@@ -39,7 +39,13 @@ export const uploadFile = catchAsync(async (req: Request, res: Response) => {
   const uploads: { url?: string, filename?: string, error?: string }[] = [] // To track multiple file uploads if needed
   let destination = 'microlearn-images/'
   busboy.on('file', async (_, file, { mimeType, filename: fileName }) => {
-    let filename = new Date().getTime().toString() + '.' + fileName.split('.')[1]
+    let brightness = ''
+    let sections = fileName.split('-')
+    let section = sections[0] ? sections[0] : ''
+    if (section.startsWith('x')) {
+      brightness = section + '-'
+    }
+    let filename = brightness + new Date().getTime().toString() + '.' + fileName.split('.')[1]
     if (mimeType === 'application/pdf') {
       destination = 'microlearn-pdfs/'
     }
