@@ -262,7 +262,6 @@ export const generateCourseFlow = async function (courseId: string) {
             }
 
             const blockData = await Blocks.findById(blockId)
-            let quiz = null
 
             if (blockData) {
               let flo: CourseFlowItem = {
@@ -311,7 +310,7 @@ export const generateCourseFlow = async function (courseId: string) {
               }
 
               if (blockData.quiz) {
-                quiz = await Quizzes.findById(blockData.quiz)
+                let quiz = await Quizzes.findById(blockData.quiz)
                 if (quiz) {
                   if(quiz.choices.length === 3){
                     flo.content = `The question below is used to access your understanding of the section above`+ `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
