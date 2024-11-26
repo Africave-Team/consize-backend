@@ -319,7 +319,7 @@ export const generateCourseFlow = async function (courseId: string) {
                     flo.type = CourseFlowMessageType.BLOCKFOLLOWUPQUIZ
                     flow.push(flo)
                   }else{
-                    flo.content = `The question below is used to access your understanding of the section above`+`${convertToWhatsAppString(he.decode(quiz.question))}`
+                    flo.content = `The question below is used to access your understanding of the section above`+`\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
                     flo.quiz = quiz
                     flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
                     flow.push(flo)
