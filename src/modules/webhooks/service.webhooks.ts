@@ -262,7 +262,6 @@ export const generateCourseFlow = async function (courseId: string) {
             }
 
             const blockData = await Blocks.findById(blockId)
-            let blockQuizData = null
             let quiz = null
 
             if (blockData) {
@@ -273,20 +272,7 @@ export const generateCourseFlow = async function (courseId: string) {
                 lesson: lessonData
               }
               content += ` \n\n*Section ${blockIndex + 1}: ${blockData.title.trim()}* \n\n${convertToWhatsAppString(he.decode(blockData.content))}`
-              if (blockData.quiz) {
-                quiz = await Quizzes.findById(blockData.quiz)
-                if (quiz) {
-                  if(quiz.choices.length === 3){
-                    blockQuizData = `The question below is used to access your understanding of the section above`+ `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
-                    flo.quiz = quiz
-                    flo.type = CourseFlowMessageType.BLOCK
-                  }else{
-                    content = content + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
-                    flo.quiz = quiz
-                    flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
-                  }
-                }
-              }
+
               if (blockData.bodyMedia && blockData.bodyMedia.url) {
                 flo.mediaType = blockData.bodyMedia.mediaType
                 flo.mediaUrl = blockData.bodyMedia.url
@@ -320,15 +306,27 @@ export const generateCourseFlow = async function (courseId: string) {
                 }
               } else {
                 flo.content = content
+                flo.type = CourseFlowMessageType.BLOCK
                 flow.push(flo)
-                let floCopy = {...flo}
-                if(blockQuizData && quiz){
-                  floCopy.content = blockQuizData
-                  floCopy.quiz = quiz
-                  floCopy.type = CourseFlowMessageType.BLOCKFOLLOWUPQUIZ
-                  flow.push(floCopy)
+              }
+
+              if (blockData.quiz) {
+                quiz = await Quizzes.findById(blockData.quiz)
+                if (quiz) {
+                  if(quiz.choices.length === 3){
+                    flo.content = `The question below is used to access your understanding of the section above`+ `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
+                    flo.quiz = quiz
+                    flo.type = CourseFlowMessageType.BLOCKFOLLOWUPQUIZ
+                    flow.push(flo)
+                  }else{
+                    flo.content = `The question below is used to access your understanding of the section above`+`${convertToWhatsAppString(he.decode(quiz.question))}`
+                    flo.quiz = quiz
+                    flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
+                    flow.push(flo)
+                  }
                 }
               }
+              
               blockIndex++
             }
           }
