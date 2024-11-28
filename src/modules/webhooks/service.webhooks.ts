@@ -2,7 +2,7 @@ import httpStatus from 'http-status'
 import OpenAI from 'openai'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
-import { QuizInterface } from '../courses/interfaces.quizzes'
+import { QuestionTypes, QuizInterface } from '../courses/interfaces.quizzes'
 import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C } from './interfaces.webhooks'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
@@ -312,8 +312,13 @@ export const generateCourseFlow = async function (courseId: string) {
               if (blockData.quiz) {
                 let quiz = await Quizzes.findById(blockData.quiz)
                 if (quiz) {
-                  if(quiz.choices.length === 3){
+                  if(quiz.choices.length === 3 && quiz.questionType === QuestionTypes.OBJECTIVE){
                     flo.content = `The question below is used to access your understanding of the section above`+ `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
+                    flo.quiz = quiz
+                    flo.type = CourseFlowMessageType.BLOCKFOLLOWUPQUIZ
+                    flow.push(flo)
+                  }else if(quiz.choices.length === 2 && quiz.questionType === QuestionTypes.OBJECTIVE){
+                    flo.content = `The question below is used to access your understanding of the section above`+ `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]}`
                     flo.quiz = quiz
                     flo.type = CourseFlowMessageType.BLOCKFOLLOWUPQUIZ
                     flow.push(flo)
@@ -801,22 +806,76 @@ export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string
         }
       })
     } else {
-      buttons = [
-        {
-          type: "reply",
-          reply: {
-            id: QUIZ_YES + `|${messageId}`,
-            title: "Yes"
-          }
-        },
-        {
-          type: "reply",
-          reply: {
-            id: QUIZ_NO + `|${messageId}`,
-            title: "No"
-          }
-        },
-      ]
+      if(data.quiz?.questionType === QuestionTypes.TRUE_FALSE){
+        buttons = [
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_YES + `|${messageId}`,
+              title: "True"
+            }
+          },
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_NO + `|${messageId}`,
+              title: "False"
+            }
+          },
+        ]
+      }else if(data.quiz?.questionType === QuestionTypes.YES_NO){
+        buttons = [
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_YES + `|${messageId}`,
+              title: "Yes"
+            }
+          },
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_NO + `|${messageId}`,
+              title: "No"
+            }
+          },
+        ]
+      }else if(data.quiz?.questionType === QuestionTypes.POLARITY){
+        buttons = [
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_YES + `|${messageId}`,
+              title: "Agree"
+            }
+          },
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_NO + `|${messageId}`,
+              title: "Disagree"
+            }
+          },
+        ]
+      }else{
+        buttons = [
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_YES + `|${messageId}`,
+              title: "Yes"
+            }
+          },
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_NO + `|${messageId}`,
+              title: "No"
+            }
+          },
+        ]
+      }
+      
     }
     let payload: Message = {
       to: phoneNumber,
