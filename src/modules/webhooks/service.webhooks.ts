@@ -1124,6 +1124,79 @@ export async function fetchEnrollments (phoneNumber: string): Promise<CourseEnro
 
 export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
+    let buttons: ReplyButton[] = []
+    if(item && item.quiz?.choices.length === 3 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+      buttons = [
+        {
+          type: "reply",
+          reply: {
+            id: QUIZ_A + `|${messageId}`,
+            title: "A"
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: QUIZ_B + `|${messageId}`,
+            title: "B"
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: QUIZ_C + `|${messageId}`,
+            title: "C"
+          }
+        }
+      ]
+    }else if(item && item.quiz?.choices.length === 2 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+      buttons = [
+        {
+          type: "reply",
+          reply: {
+            id: QUIZ_A + `|${messageId}`,
+            title: "A"
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: QUIZ_B + `|${messageId}`,
+            title: "B"
+          }
+        }
+      ]
+    }else{
+      let optionA: string= "YES"
+      let optionB: string= "NO"
+
+      if(item.quiz?.questionType === QuestionTypes.TRUE_FALSE){
+        optionA = "TRUE"
+        optionB = "FALSE"
+      }
+
+      if(item.quiz?.questionType === QuestionTypes.POLARITY){
+        optionA = "AGREE"
+        optionB = "DISAGREE"
+      }
+
+      buttons = [
+        {
+          type: "reply",
+          reply: {
+            id: 'YES'+ `|${messageId}`,
+            title: optionA
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: "NO" + `|${messageId}`,
+            title: optionB
+          }
+        }
+      ]
+    }
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
       team,
@@ -1136,29 +1209,7 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
         },
         type: "button",
         action: {
-          buttons: [
-            {
-              type: "reply",
-              reply: {
-                id: QUIZ_A + `|${messageId}`,
-                title: "A"
-              }
-            },
-            {
-              type: "reply",
-              reply: {
-                id: QUIZ_B + `|${messageId}`,
-                title: "B"
-              }
-            },
-            {
-              type: "reply",
-              reply: {
-                id: QUIZ_C + `|${messageId}`,
-                title: "C"
-              }
-            }
-          ]
+          buttons: buttons
         }
       }
     })
