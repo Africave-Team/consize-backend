@@ -2127,7 +2127,7 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ph
   redisClient.set(key, JSON.stringify({ ...updatedData }))
 }
 
-export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, phoneNumber: string, messageId: string): Promise<void> => {
+export const handleLessonQuiz = async (answer: string, data: CourseEnrollment, phoneNumber: string, messageId: string): Promise<void> => {
   const courseKey = `${config.redisBaseKey}courses:${data.id}`
   const courseFlow = await redisClient.get(courseKey)
   if (courseFlow) {
@@ -2162,7 +2162,7 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
       let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId }
       let duration = 0, retakes = 0, saveStats = false, score = 0
       if (payload.interactive) {
-        if (item.quiz.correctAnswerIndex === answer) {
+        if (item.quiz.correctAnswerIndex.toString() === answer) {
           // send correct answer context
           payload.interactive['body'].text = `That is correct!. ${convertToWhatsAppString(he.decode(item.quiz.correctAnswerContext))}`
           // update stats(retakes and duration)
