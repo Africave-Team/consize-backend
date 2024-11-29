@@ -415,7 +415,7 @@ export const generateCourseFlow = async function (courseId: string) {
       if (!settings?.disableCertificates) {
         load.content = `That was the last lesson 🎊\n\nWell done on finishing the course 🤝\n\nYou’ll be getting your certificate 📄 soon so that you can brag about it😎 but first, we want to get your feedback on the course.\n\nWe’ll be sending you a quick survey next 🔎`
       } else {
-        load.content = load.content + `but first, we want to get your feedback on the course.\n\nWe’ll be sending you a quick survey next 🔎`
+        load.content = load.content + `We'd love to get your feedback on the course. We’ll be sending you a quick survey next 🔎`
       }
     }
     flow.push(load)
