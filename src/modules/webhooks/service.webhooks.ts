@@ -347,13 +347,21 @@ export const generateCourseFlow = async function (courseId: string) {
           for (let quizId of lessonData.quizzes) {
             const quizData = await Quizzes.findById(quizId)
             if (quizData) {
-              let content = `End of lesson quiz ${quizIndex + 1}/${quizzes.length}\n\nQuestion:\n${convertToWhatsAppString(he.decode(quizData.question))}\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]} \n\nC: ${quizData.choices[2]}`
+              let content = `End of lesson quiz ${quizIndex + 1}/${quizzes.length}\n\nQuestion:\n${convertToWhatsAppString(he.decode(quizData.question))}`
+
+              if(quizData.choices.length === 3 && quizData.questionType === QuestionTypes.OBJECTIVE){
+                content = content + `\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]} \n\nC: ${quizData.choices[2]}`
+              }else if(quizData.choices.length === 2 && quizData.questionType === QuestionTypes.OBJECTIVE){
+                content = content + `\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]}`
+              }
+
               flow.push({
                 type: CourseFlowMessageType.QUIZ,
                 content,
                 lesson: lessonData,
                 quiz: quizData
               })
+              
               quizIndex++
             }
 
