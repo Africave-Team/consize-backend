@@ -1,8 +1,9 @@
 import httpStatus from 'http-status'
+import OpenAI from 'openai'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuizInterface } from '../courses/interfaces.quizzes'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from './interfaces.webhooks'
+import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C } from './interfaces.webhooks'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -35,6 +36,12 @@ import { studentService } from '../students'
 import Subscriptions from '../subscriptions/subscriptions.models'
 import QuestionGroup from '../courses/model.question-group'
 import { QuestionGroupsInterface } from '../courses/interfaces.question-group'
+import Enrollments from '../sessions/model'
+const openai = new OpenAI({
+  apiKey: config.openAI.key
+})
+import fs from "fs"
+import path from 'path'
 // import Teams from '../teams/model.teams'
 // import { convertTo24Hour } from '../utils'
 // import { convertTo24Hour } from '../utils'
@@ -60,7 +67,9 @@ export enum CourseFlowMessageType {
   END_OF_BUNDLE = 'end-of-bundle',
   STARTASSESSMENT = 'start-of-assessment',
   ENDASSESSMENT = 'end-of-assessment',
-  ASSESSMENT = 'assessment'
+  ASSESSMENT = 'assessment',
+  SEARCH ='search',
+  BLOCKFOLLOWUPQUIZ = 'block-follow-up-quiz'
 }
 
 export interface CourseFlowItem {
@@ -253,6 +262,9 @@ export const generateCourseFlow = async function (courseId: string) {
             }
 
             const blockData = await Blocks.findById(blockId)
+            let blockQuizData = null
+            let quiz = null
+
             if (blockData) {
               let flo: CourseFlowItem = {
                 type: CourseFlowMessageType.BLOCK,
@@ -262,11 +274,17 @@ export const generateCourseFlow = async function (courseId: string) {
               }
               content += ` \n\n*Section ${blockIndex + 1}: ${blockData.title.trim()}* \n\n${convertToWhatsAppString(he.decode(blockData.content))}`
               if (blockData.quiz) {
-                const quiz = await Quizzes.findById(blockData.quiz)
+                quiz = await Quizzes.findById(blockData.quiz)
                 if (quiz) {
-                  content += `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
-                  flo.quiz = quiz
-                  flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
+                  if(quiz.choices.length === 3){
+                    blockQuizData = `The question below is used to access your understanding of the section above`+ `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
+                    flo.quiz = quiz
+                    flo.type = CourseFlowMessageType.BLOCK
+                  }else{
+                    content = content + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
+                    flo.quiz = quiz
+                    flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
+                  }
                 }
               }
               if (blockData.bodyMedia && blockData.bodyMedia.url) {
@@ -303,6 +321,13 @@ export const generateCourseFlow = async function (courseId: string) {
               } else {
                 flo.content = content
                 flow.push(flo)
+                let floCopy = {...flo}
+                if(blockQuizData && quiz){
+                  floCopy.content = blockQuizData
+                  floCopy.quiz = quiz
+                  floCopy.type = CourseFlowMessageType.BLOCKFOLLOWUPQUIZ
+                  flow.push(floCopy)
+                }
               }
               blockIndex++
             }
@@ -767,7 +792,7 @@ export const handleRemindMeTrigger = async function () {
   }
 }
 
-export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
+export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string, messageId: string, team: string ): Promise<void> => {
   try {
     let buttons: ReplyButton[] = []
     if (data.type === CourseFlowMessageType.BLOCK) {
@@ -1074,6 +1099,51 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
               type: "reply",
               reply: {
                 id: QUIZ_C + `|${messageId}`,
+                title: "C"
+              }
+            }
+          ]
+        }
+      }
+    })
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+  }
+}
+
+export const sendBlockQuiz = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
+  try {
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: phoneNumber,
+      team,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        body: {
+          text: item.content
+        },
+        type: "button",
+        action: {
+          buttons: [
+            {
+              type: "reply",
+              reply: {
+                id: BLOCK_QUIZ_A + `|${messageId}`,
+                title: "A"
+              }
+            },
+            {
+              type: "reply",
+              reply: {
+                id: BLOCK_QUIZ_B + `|${messageId}`,
+                title: "B"
+              }
+            },
+            {
+              type: "reply",
+              reply: {
+                id: BLOCK_QUIZ_C + `|${messageId}`,
                 title: "C"
               }
             }
@@ -1836,6 +1906,10 @@ export const handleContinue = async (nextIndex: number, courseKey: string, phone
             console.log(updatedData)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
+          case CourseFlowMessageType.BLOCKFOLLOWUPQUIZ:
+            await sendBlockQuiz(item, phoneNumber, messageId, data.team)
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            break
           case CourseFlowMessageType.SURVEY_MULTI_CHOICE:
             await sendMultiSurvey(item, phoneNumber, messageId, data.team)
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
@@ -1908,7 +1982,10 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ph
       }
     }
     if (item && item.quiz) {
-      let correctAnswer = item.quiz.choices[item.quiz.correctAnswerIndex]
+      let correctAnswer = typeof item.quiz.choices[item.quiz.correctAnswerIndex] === 'string' 
+      ? item.quiz.choices[item.quiz.correctAnswerIndex] 
+      : item.quiz.choices[item.quiz.correctAnswerIndex]?.toString();
+
       if (payload.interactive) {
         if (correctAnswer === answer) {
           // send correct answer context
@@ -2837,3 +2914,152 @@ export const handleHelp = async (phoneNumber: string, courseId: string): Promise
   }
 }
 
+export const handleSearch = async (phoneNumber: string, search: string, team: string): Promise<void> => {
+  let userData: any = await redisClient.get(`${config.redisBaseKey}user:${phoneNumber}`)
+  if(userData){
+    userData = JSON.parse(userData)
+    if(!(userData.search && userData.status)){
+      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+        to: phoneNumber,
+        team: team,
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        type: "text",
+        text: {
+          body: `Please wait a momment, while we process your request`
+        }
+      })
+    }
+
+    const userQuery = `Please answer the following question in plain text, using only "completed courses content" instead of "uploaded course content" and excluding any references, sources, or citation markers such as 【4:0†source】 or simila"
+
+      Question: ${search}?.
+
+      If "completed courses content" cannot be used to answer the question, return an empty string. The response should contain only plain text, with no references, sources, citations, or special formatting.`
+
+// Create a conversation thread with the user query
+    const thread = await openai.beta.threads.create({
+      messages: [
+        {
+          role: "user",
+          content: userQuery,
+        },
+      ],
+    });
+
+    // Run the assistant using the assistant ID from Redis and poll for completion
+    const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
+      assistant_id: userData.assistant,
+    });
+
+    // Retrieve messages from the thread and get the assistant's latest response
+    const messages = await openai.beta.threads.messages.list(thread.id, {
+      run_id: run.id,
+    });
+
+    const message:any = messages?.data?.pop();
+    const messageContent = message?.content[0]?.text?.value || "Your question does not match any of your completed course";
+
+    agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+      to: phoneNumber,
+      type: "interactive",
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      interactive: {
+        body: { text: messageContent.replace(/【\d+:\d+†source】/g, "") + "\n\n\Click the button below if the answer is satisfactory or ask another question." },
+        type: "button",
+        action: {
+          buttons: [
+            {
+              type: "reply",
+              reply: {
+                id: `end_search_${phoneNumber}`,
+                title: "I am done"
+              }
+            },
+          ]
+        }
+      }
+    })
+
+  }
+}
+
+export const startSearch = async (phoneNumber: string, team: string): Promise<void> => {
+  await redisClient.set(`${config.redisBaseKey}user:${phoneNumber}`, JSON.stringify({ search: true, status: false }))
+
+  try {
+    const projectRoot = process.cwd()
+    const localFilePath = path.join(projectRoot, 'generated-files')
+    const coursesCompleted: any[] = await Enrollments.find({
+      phoneNumber: phoneNumber,
+      completed: true
+    }, 'courseId');
+
+    const completedCourseContent: any[] = await Promise.all(
+      coursesCompleted.map(async (course) => {
+        const courseContent = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`);
+        return courseContent;
+      })
+    );
+
+    const filePath = path.join(localFilePath, v4() + "-search-course-content.json");
+    if (!fs.existsSync(localFilePath)) {
+      fs.mkdirSync(localFilePath)
+    }
+
+    fs.writeFile(filePath, JSON.stringify(completedCourseContent), (err) => {
+      if (err) {
+        console.error('Error writing to file:', err);
+      } else {
+        console.log('File saved successfully at:', filePath);
+      }
+    });
+
+    const fileStreams = [filePath].map((path) => fs.createReadStream(path))
+
+    const assistant = await openai.beta.assistants.create({
+      name: "Course search assistant",
+      instructions: "You are an expert answering questions based on provided course contents. Use given course content to answer questions provided.",
+      model: "gpt-3.5-turbo",
+      tools: [{ type: "file_search" }],
+    })
+
+    const vectorStore = await openai.beta.vectorStores.create({
+      name: "Course content: " + v4(),
+    })
+
+    const uploadPromises = fileStreams.map(async (stream) => {
+      const file = await openai.files.create({
+        file: stream,
+        purpose: "fine-tune",
+      })
+      return file
+    })
+    // Wait for all uploads to complete
+    const files = await Promise.all(uploadPromises)
+
+    await Promise.all([openai.beta.vectorStores.fileBatches.createAndPoll(vectorStore.id, {
+      file_ids: files.map(e => e.id)
+    }), openai.beta.assistants.update(assistant.id, {
+      tool_resources: { file_search: { vector_store_ids: [vectorStore.id] } },
+    })])
+
+    await redisClient.set(`${config.redisBaseKey}user:${phoneNumber}`, JSON.stringify({ search: true, assistant: assistant.id, filePath: filePath, status: true, courseContent: completedCourseContent }))
+
+  } catch (error) {
+    console.log(error)
+  }
+
+  agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+    to: phoneNumber,
+    team: team,
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    type: "text",
+    text: {
+      body: `Please input a search word or ask a question based on what you want to be reminded of...`
+    }
+  })
+
+}
