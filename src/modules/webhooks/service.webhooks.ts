@@ -2170,7 +2170,6 @@ export const handleLessonQuiz = async (answer: string, data: CourseEnrollment, p
       let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId }
       let duration = 0, retakes = 0, saveStats = false, score = 0
       if (payload.interactive) {
-        console.log(item.quiz.correctAnswerIndex.toString(),12345676543223111111111111111111111)
         if (item.quiz.correctAnswerIndex.toString() === answer) {
           console.log(item.quiz.correctAnswerIndex.toString(),12345676543223)
 
@@ -2190,7 +2189,6 @@ export const handleLessonQuiz = async (answer: string, data: CourseEnrollment, p
           score = 1
           // compute the score
         } else {
-          console.log(item.quiz.correctAnswerIndex.toString(),1234567654322311111111111111111111122222222)
 
           // update quizAttempts
           updatedData.quizAttempts = data.quizAttempts + 1
