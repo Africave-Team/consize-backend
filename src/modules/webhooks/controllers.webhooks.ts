@@ -172,9 +172,9 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           case NO:
           case YES:
             console.log(btnId,1234565432134565432123456543)
-            let response = "1"
+            let response = "0"
             if (btnId === NO) {
-              response = "2"
+              response = "1"
             }
             if (enrollment) {
               const msgId = v4()

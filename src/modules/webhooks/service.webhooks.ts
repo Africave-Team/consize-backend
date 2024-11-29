@@ -3,7 +3,7 @@ import OpenAI from 'openai'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuestionTypes, QuizInterface } from '../courses/interfaces.quizzes'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C } from './interfaces.webhooks'
+import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C, YES, NO } from './interfaces.webhooks'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -1192,14 +1192,14 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
         {
           type: "reply",
           reply: {
-            id: 'YES'+ `|${messageId}`,
+            id: YES + `|${messageId}`,
             title: optionA
           }
         },
         {
           type: "reply",
           reply: {
-            id: "NO" + `|${messageId}`,
+            id: NO + `|${messageId}`,
             title: optionB
           }
         }
