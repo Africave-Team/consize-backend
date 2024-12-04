@@ -3,7 +3,7 @@ import OpenAI from 'openai'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
 import { QuestionTypes, QuizInterface } from '../courses/interfaces.quizzes'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C, YES, NO } from './interfaces.webhooks'
+import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C, YES, NO, ASSESSMENT_YES, ASSESSMENT_NO } from './interfaces.webhooks'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -1273,6 +1273,81 @@ export const sendBlockQuiz = async (item: CourseFlowItem, phoneNumber: string, m
 
 export const sendAssessment = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
+    let buttons: ReplyButton[] = []
+
+    if(item && item.quiz?.choices.length === 3 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+      buttons = [
+        {
+          type: "reply",
+          reply: {
+            id: QUIZA_A + `|${messageId}`,
+            title: "A"
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: QUIZA_B + `|${messageId}`,
+            title: "B"
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: QUIZA_C + `|${messageId}`,
+            title: "C"
+          }
+        }
+      ]
+    }else if(item && item.quiz?.choices.length === 2 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+      buttons = [
+        {
+          type: "reply",
+          reply: {
+            id: QUIZA_A + `|${messageId}`,
+            title: "A"
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: QUIZA_B + `|${messageId}`,
+            title: "B"
+          }
+        }
+      ]
+    }else{
+      let optionA: string= "YES"
+      let optionB: string= "NO"
+
+      if(item.quiz?.questionType === QuestionTypes.TRUE_FALSE){
+        optionA = "TRUE"
+        optionB = "FALSE"
+      }
+
+      if(item.quiz?.questionType === QuestionTypes.POLARITY){
+        optionA = "AGREE"
+        optionB = "DISAGREE"
+      }
+
+      buttons = [
+        {
+          type: "reply",
+          reply: {
+            id: ASSESSMENT_YES + `|${messageId}`,
+            title: optionA
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: ASSESSMENT_NO + `|${messageId}`,
+            title: optionB
+          }
+        }
+      ]
+    }
+    
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
       team,
@@ -1285,29 +1360,7 @@ export const sendAssessment = async (item: CourseFlowItem, phoneNumber: string, 
         },
         type: "button",
         action: {
-          buttons: [
-            {
-              type: "reply",
-              reply: {
-                id: QUIZA_A + `|${messageId}`,
-                title: "A"
-              }
-            },
-            {
-              type: "reply",
-              reply: {
-                id: QUIZA_B + `|${messageId}`,
-                title: "B"
-              }
-            },
-            {
-              type: "reply",
-              reply: {
-                id: QUIZA_C + `|${messageId}`,
-                title: "C"
-              }
-            }
-          ]
+          buttons: buttons
         }
       }
     })
