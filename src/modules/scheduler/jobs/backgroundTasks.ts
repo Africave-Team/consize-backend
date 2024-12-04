@@ -1,6 +1,6 @@
 import Agenda, { Job, Processor } from "agenda"
 import AppConfig from '../../../config/config'
-import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE, DELAYED_FACEBOOK_INTEGRATION, ENROLL_STUDENT_DEFAULT_DATE, GENERATE_COURSE_TRENDS, HANDLE_SUBSCRIPTION_GRACE_PERIOD_TERMINATION, HANDLE_SUBSCRIPTION_TERMINATION, INACTIVITY_REMINDER, INACTIVITY_REMINDER_SHORT, REMIND_ME, RESUME_TOMORROW, SYNC_STUDENT_ENROLLMENTS } from '../MessageTypes'
+import { COHORT_SCHEDULE, COHORT_SCHEDULE_STUDENT, DAILY_REMINDER, DAILY_ROUTINE, DELAYED_FACEBOOK_INTEGRATION, DELAYED_VERCEL_VERIFICATION, ENROLL_STUDENT_DEFAULT_DATE, GENERATE_COURSE_TRENDS, HANDLE_SUBSCRIPTION_GRACE_PERIOD_TERMINATION, HANDLE_SUBSCRIPTION_TERMINATION, INACTIVITY_REMINDER, INACTIVITY_REMINDER_SHORT, REMIND_ME, RESUME_TOMORROW, SYNC_STUDENT_ENROLLMENTS } from '../MessageTypes'
 import { generateCurrentCourseTrends, handleStudentSlack, handleStudentWhatsapp, initiateDailyRoutine } from '../../courses/service.courses'
 import { CourseEnrollment, DailyReminderNotificationPayload } from '../../webhooks/interfaces.webhooks'
 import config from '../../../config/config'
@@ -12,6 +12,7 @@ import { handleTerminateSubscription, handleTerminateSubscriptionGracePeriod } f
 import { studentService } from '../../students'
 import { courseService } from '../../courses'
 import { redisClient } from '../../redis'
+import { verifyTeamDomain } from '../../teams/service.teams'
 
 export const handleCourseTrends: Processor<{ courseId: string, teamId: string }> = async (job: Job<{ courseId: string, teamId: string }>) => {
   try {
@@ -178,6 +179,17 @@ const delayedFacebookIntegration: Processor<{ teamId: string }> = async (job: Jo
   }
 }
 
+const delayedVercelVerification: Processor<{ teamId: string, host: string }> = async (job: Job<{ teamId: string, host: string }>) => {
+  try {
+    if (AppConfig.server !== "test") {
+      const data = job.attrs.data
+      verifyTeamDomain(data.teamId, data.host)
+    }
+  } catch (error) {
+    console.log(error, "error send message")
+  }
+}
+
 module.exports = (agenda: Agenda) => {
   agenda.define<{ courseId: string, teamId: string }>(GENERATE_COURSE_TRENDS, handleCourseTrends)
   agenda.define<any>(DAILY_ROUTINE, handleStartDailyRoutine)
@@ -200,4 +212,6 @@ module.exports = (agenda: Agenda) => {
 
   // facebook integration
   agenda.define<{ teamId: string }>(DELAYED_FACEBOOK_INTEGRATION, delayedFacebookIntegration)
+  agenda.define<{ teamId: string, host: string }>(DELAYED_VERCEL_VERIFICATION, delayedVercelVerification)
+
 }
