@@ -2194,33 +2194,84 @@ export const handleLessonQuiz = async (answer: string, data: CourseEnrollment, p
           updatedData.quizAttempts = data.quizAttempts + 1
           let textBody = `Not quite right!. \n\n${convertToWhatsAppString(he.decode(item.quiz.revisitChunk))}. \n\n`
           if (data.quizAttempts === 0) {
+
             textBody = `Not quite right!. \n\nHint: ${convertToWhatsAppString(he.decode(item.quiz.hint || ''))}. \n\nPlease try again: \n\n${item.content}`
             if (!item.quiz.hint || item.quiz.hint.length < 2) {
               textBody = `Not quite right!.\n\nPlease try again: \n\n${item.content}`
             }
-            payload.interactive.action.buttons = [
-              {
-                type: "reply",
-                reply: {
-                  id: QUIZ_A + `|${messageId}`,
-                  title: "A"
+
+            if(item && item.quiz?.choices.length === 3 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+              payload.interactive.action.buttons = [
+                {
+                  type: "reply",
+                  reply: {
+                    id: QUIZ_A + `|${messageId}`,
+                    title: "A"
+                  }
+                },
+                {
+                  type: "reply",
+                  reply: {
+                    id: QUIZ_B + `|${messageId}`,
+                    title: "B"
+                  }
+                },
+                {
+                  type: "reply",
+                  reply: {
+                    id: QUIZ_C + `|${messageId}`,
+                    title: "C"
+                  }
                 }
-              },
-              {
-                type: "reply",
-                reply: {
-                  id: QUIZ_B + `|${messageId}`,
-                  title: "B"
+              ]
+            }else if(item && item.quiz?.choices.length === 2 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+              payload.interactive.action.buttons = [
+                {
+                  type: "reply",
+                  reply: {
+                    id: QUIZ_A + `|${messageId}`,
+                    title: "A"
+                  }
+                },
+                {
+                  type: "reply",
+                  reply: {
+                    id: QUIZ_B + `|${messageId}`,
+                    title: "B"
+                  }
                 }
-              },
-              {
-                type: "reply",
-                reply: {
-                  id: QUIZ_C + `|${messageId}`,
-                  title: "C"
-                }
+              ]
+            }else{
+              let optionA: string= "YES"
+              let optionB: string= "NO"
+
+              if(item.quiz?.questionType === QuestionTypes.TRUE_FALSE){
+                optionA = "TRUE"
+                optionB = "FALSE"
               }
-            ]
+
+              if(item.quiz?.questionType === QuestionTypes.POLARITY){
+                optionA = "AGREE"
+                optionB = "DISAGREE"
+              }
+
+              payload.interactive.action.buttons = [
+                {
+                  type: "reply",
+                  reply: {
+                    id: YES + `|${messageId}`,
+                    title: optionA
+                  }
+                },
+                {
+                  type: "reply",
+                  reply: {
+                    id: NO + `|${messageId}`,
+                    title: optionB
+                  }
+                }
+              ]
+            }
           } else {
             retakes = updatedData.quizAttempts
             saveStats = true
