@@ -133,6 +133,7 @@ export const addTeamsDomains = async (teamId: string, host: string) => {
     dnsVerified: false
   })
   await team.save()
+  console.log(config.env)
   let projectId = "prj_2Vl7cXqBhFfybRPZrK92UuYppTJr"
   if (config.env === "development") {
     projectId = "prj_3drbRY0AMW7ms9k6y1kLqjvjNdVB"
