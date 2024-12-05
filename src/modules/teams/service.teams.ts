@@ -154,6 +154,7 @@ export const addTeamsDomains = async (teamId: string, host: string) => {
     return team
   } catch (error) {
     console.log(JSON.stringify(error))
+    return null
   }
 }
 
