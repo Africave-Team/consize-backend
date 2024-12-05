@@ -124,33 +124,37 @@ export const verifyTeamDomain = async function (teamId: string, host: string) {
 }
 
 export const addTeamsDomains = async (teamId: string, host: string) => {
-  const team = await Team.findById(teamId)
-  if (!team) throw new ApiError(httpStatus.NOT_FOUND, 'Team not found')
-  team.domains.push({
-    host,
-    internal: false,
-    vercelVerified: false,
-    dnsVerified: false
-  })
-  await team.save()
-  console.log(config.env)
-  let projectId = "prj_2Vl7cXqBhFfybRPZrK92UuYppTJr"
-  if (config.env === "development") {
-    projectId = "prj_3drbRY0AMW7ms9k6y1kLqjvjNdVB"
-  }
-
-  await axios.post(`https://api.vercel.com/v9/projects/${projectId}/domains`, {
-    name: host
-  }, {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.vercelToken}`
+  try {
+    const team = await Team.findById(teamId)
+    if (!team) throw new ApiError(httpStatus.NOT_FOUND, 'Team not found')
+    team.domains.push({
+      host,
+      internal: false,
+      vercelVerified: false,
+      dnsVerified: false
+    })
+    console.log(config.env)
+    let projectId = "prj_2Vl7cXqBhFfybRPZrK92UuYppTJr"
+    if (config.env === "development") {
+      projectId = "prj_3drbRY0AMW7ms9k6y1kLqjvjNdVB"
     }
-  })
 
-  agenda.schedule<{ teamId: string, host: string }>("in 60 seconds", DELAYED_VERCEL_VERIFICATION, { teamId, host })
+    await axios.post(`https://api.vercel.com/v9/projects/${projectId}/domains`, {
+      name: host
+    }, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${config.vercelToken}`
+      }
+    })
+    await team.save()
 
-  return team
+    agenda.schedule<{ teamId: string, host: string }>("in 60 seconds", DELAYED_VERCEL_VERIFICATION, { teamId, host })
+
+    return team
+  } catch (error) {
+    console.log(JSON.stringify(error))
+  }
 }
 
 export const removeTeamsDomains = async (teamId: string, host: string) => {
