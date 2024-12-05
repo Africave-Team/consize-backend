@@ -55,6 +55,8 @@ if (config.env === 'production') {
   // app.use('/v1/students', authLimiter)
 }
 
+console.log(config.env)
+
 app.use("/v1/agendash", Agendash(agenda))
 
 // v1 api routes
