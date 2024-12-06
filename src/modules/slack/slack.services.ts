@@ -13,7 +13,7 @@ import { GENERATE_COURSE_TRENDS, SEND_CERTIFICATE_SLACK, SEND_LEADERBOARD_SLACK,
 import { CourseInterface, Distribution } from '../courses/interfaces.courses'
 import Courses from '../courses/model.courses'
 import { v4 } from 'uuid'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, MORNING, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, QUIZA_A, QUIZA_B, QUIZA_C, RESUME_COURSE_TOMORROW, SCHEDULE_RESUMPTION, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from '../webhooks/interfaces.webhooks'
+import { AFTERNOON, ASSESSMENT_NO, ASSESSMENT_YES, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C, CONTINUE, CourseEnrollment, EVENING, MORNING, NO, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, QUIZA_A, QUIZA_B, QUIZA_C, RESUME_COURSE_TOMORROW, SCHEDULE_RESUMPTION, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, YES } from '../webhooks/interfaces.webhooks'
 import Students from '../students/model.students'
 import Teams from '../teams/model.teams'
 import { COURSE_STATS } from '../rtdb/nodes'
@@ -28,6 +28,7 @@ import Settings from '../courses/model.settings'
 import { sessionService } from '../sessions'
 import { Cohorts } from '../cohorts'
 import { studentService } from '../students'
+import { QuestionTypes } from '../courses/interfaces.quizzes'
 
 export const handleSlackWebhook = async function () { }
 
@@ -479,9 +480,6 @@ export const startEnrollmentSlack = async (studentId: string, courseId: string, 
 
 }
 
-
-
-
 export const sendBlockContent = async (data: CourseFlowItem, url: string, messageId: string, token: string, channel: string): Promise<void> => {
   try {
     let buttons: SlackActionBlock[] = []
@@ -496,30 +494,99 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
         },
         value: CONTINUE + `|${messageId}`
       })
-    } else {
-      buttons = [
-        {
-          type: SlackActionType.BUTTON,
-          style: MessageActionButtonStyle.PRIMARY,
-          text: {
-            text: "Yes",
-            type: SlackTextMessageTypes.PLAINTEXT,
-            emoji: true
+    } else if(data.quiz?.questionType === QuestionTypes.TRUE_FALSE){
+        buttons = [
+          {
+            type: SlackActionType.BUTTON,
+            style: MessageActionButtonStyle.PRIMARY,
+            text: {
+              text: "True",
+              type: SlackTextMessageTypes.PLAINTEXT,
+              emoji: true
+            },
+            value: QUIZ_YES + `|${messageId}`
           },
-          value: QUIZ_YES + `|${messageId}`
-        },
-        {
-          type: SlackActionType.BUTTON,
-          style: MessageActionButtonStyle.PRIMARY,
-          text: {
-            text: "No",
-            type: SlackTextMessageTypes.PLAINTEXT,
-            emoji: true
+          {
+            type: SlackActionType.BUTTON,
+            style: MessageActionButtonStyle.PRIMARY,
+            text: {
+              text: "False",
+              type: SlackTextMessageTypes.PLAINTEXT,
+              emoji: true
+            },
+            value: QUIZ_NO + `|${messageId}`,
+          }
+        ]
+      }else if(data.quiz?.questionType === QuestionTypes.YES_NO){
+        buttons = [
+          {
+            type: SlackActionType.BUTTON,
+            style: MessageActionButtonStyle.PRIMARY,
+            text: {
+              text: "Yes",
+              type: SlackTextMessageTypes.PLAINTEXT,
+              emoji: true
+            },
+            value: QUIZ_YES + `|${messageId}`
           },
-          value: QUIZ_NO + `|${messageId}`,
-        }
-      ]
-    }
+          {
+            type: SlackActionType.BUTTON,
+            style: MessageActionButtonStyle.PRIMARY,
+            text: {
+              text: "No",
+              type: SlackTextMessageTypes.PLAINTEXT,
+              emoji: true
+            },
+            value: QUIZ_NO + `|${messageId}`,
+          }
+        ]
+      }else if(data.quiz?.questionType === QuestionTypes.POLARITY){
+        buttons = [
+          {
+            type: SlackActionType.BUTTON,
+            style: MessageActionButtonStyle.PRIMARY,
+            text: {
+              text: "Agree",
+              type: SlackTextMessageTypes.PLAINTEXT,
+              emoji: true
+            },
+            value: QUIZ_YES + `|${messageId}`
+          },
+          {
+            type: SlackActionType.BUTTON,
+            style: MessageActionButtonStyle.PRIMARY,
+            text: {
+              text: "Disagree",
+              type: SlackTextMessageTypes.PLAINTEXT,
+              emoji: true
+            },
+            value: QUIZ_NO + `|${messageId}`,
+          }
+        ]
+      }else{
+        buttons = [
+          {
+            type: SlackActionType.BUTTON,
+            style: MessageActionButtonStyle.PRIMARY,
+            text: {
+              text: "Yes",
+              type: SlackTextMessageTypes.PLAINTEXT,
+              emoji: true
+            },
+            value: QUIZ_YES + `|${messageId}`
+          },
+          {
+            type: SlackActionType.BUTTON,
+            style: MessageActionButtonStyle.PRIMARY,
+            text: {
+              text: "No",
+              type: SlackTextMessageTypes.PLAINTEXT,
+              emoji: true
+            },
+            value: QUIZ_NO + `|${messageId}`,
+          }
+        ]
+      }
     let videoPresent = false
 
     let blocks: SlackMessageBlock[] = []
@@ -593,9 +660,7 @@ export const sendBlockContent = async (data: CourseFlowItem, url: string, messag
   }
 }
 
-
-
-export const sendQuiz = async (item: CourseFlowItem, url: string, messageId: string): Promise<void> => {
+export const sendBlockQuiz = async (data: CourseFlowItem, url: string, messageId: string, token: string, channel: string): Promise<void> => {
   try {
     let buttons: SlackActionBlock[] = [
       {
@@ -606,7 +671,7 @@ export const sendQuiz = async (item: CourseFlowItem, url: string, messageId: str
           type: SlackTextMessageTypes.PLAINTEXT,
           emoji: true
         },
-        value: QUIZ_A + `|${messageId}`
+        value: BLOCK_QUIZ_A + `|${messageId}`
       },
       {
         type: SlackActionType.BUTTON,
@@ -616,7 +681,7 @@ export const sendQuiz = async (item: CourseFlowItem, url: string, messageId: str
           type: SlackTextMessageTypes.PLAINTEXT,
           emoji: true
         },
-        value: QUIZ_B + `|${messageId}`,
+        value: BLOCK_QUIZ_B + `|${messageId}`
       },
       {
         type: SlackActionType.BUTTON,
@@ -626,9 +691,201 @@ export const sendQuiz = async (item: CourseFlowItem, url: string, messageId: str
           type: SlackTextMessageTypes.PLAINTEXT,
           emoji: true
         },
-        value: QUIZ_C + `|${messageId}`,
+        value: BLOCK_QUIZ_C + `|${messageId}`
       }
     ]
+
+    if(data.quiz?.choices && data.quiz?.choices.length < 3){
+      buttons = [
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "A",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: BLOCK_QUIZ_A + `|${messageId}`
+        },
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "B",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: BLOCK_QUIZ_B + `|${messageId}`
+        }
+      ]
+    }
+
+    let videoPresent = false
+
+    let blocks: SlackMessageBlock[] = []
+    let content = data.content
+    if (data.mediaUrl) {
+      if (data.mediaType === "image") {
+        blocks.push({
+          type: MessageBlockType.IMAGE,
+          image_url: data.mediaUrl || '',
+          alt_text: 'Block header image'
+        })
+      } else if (data.mediaType === "video" && data.mediaUrlEmbed) {
+        videoPresent = true
+        blocks.push({
+          "type": MessageBlockType.VIDEO,
+          "title": {
+            "type": SlackTextMessageTypes.PLAINTEXT,
+            "text": "Video title",
+            "emoji": true
+          },
+          "title_url": data.mediaUrlEmbed,
+          "description": {
+            "type": SlackTextMessageTypes.PLAINTEXT,
+            "text": "Video title",
+            "emoji": true
+          },
+          "alt_text": "alt text for vide",
+          "thumbnail_url": data.thumbnailUrl || "https://picsum.photos/200/300.jpg",
+          "video_url": data.mediaUrlEmbed
+        })
+      } else {
+
+        content = `${content}\n\n${data.mediaUrl}`
+      }
+    }
+
+    blocks.push({
+      type: MessageBlockType.SECTION,
+      text: {
+        type: SlackTextMessageTypes.MARKDOWN,
+        text: content
+      }
+    }, {
+      type: MessageBlockType.ACTIONS,
+      elements: buttons
+    })
+
+    if (videoPresent) {
+      console.log(blocks, token, channel)
+      agenda.now<SendSlackMessagePayload>(SEND_SLACK_MESSAGE, {
+        channel,
+        accessToken: token,
+        message: {
+          blocks
+        }
+      })
+    } else {
+      agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
+        url,
+        message: {
+          blocks
+        }
+      })
+    }
+    // update the blockStartTime
+  } catch (error) {
+    throw new ApiError(httpStatus.BAD_REQUEST, (error as any).message)
+  }
+}
+
+
+
+export const sendQuiz = async (item: CourseFlowItem, url: string, messageId: string): Promise<void> => {
+  try {
+    let buttons: SlackActionBlock[] = []
+    if(item && item.quiz?.choices.length === 3 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+      buttons = [
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "A",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: QUIZ_A + `|${messageId}`
+        },
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "B",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: QUIZ_B + `|${messageId}`,
+        },
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "C",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: QUIZ_C + `|${messageId}`,
+        }
+      ]
+    }else if(item && item.quiz?.choices.length === 2 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+      buttons = [
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "A",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: QUIZ_A + `|${messageId}`
+        },
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "B",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },value: QUIZ_B + `|${messageId}`,
+        }
+      ]
+    }else{
+      let optionA: string= "YES"
+      let optionB: string= "NO"
+
+      if(item.quiz?.questionType === QuestionTypes.TRUE_FALSE){
+        optionA = "TRUE"
+        optionB = "FALSE"
+      }
+
+      if(item.quiz?.questionType === QuestionTypes.POLARITY){
+        optionA = "AGREE"
+        optionB = "DISAGREE"
+      }
+
+      buttons = [
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: optionA,
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: YES + `|${messageId}`
+        },
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: optionB,
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },value: NO + `|${messageId}`,
+        }
+      ]
+    }
 
     let blocks: SlackMessageBlock[] = []
 
@@ -658,38 +915,99 @@ export const sendQuiz = async (item: CourseFlowItem, url: string, messageId: str
 
 export const sendAssessment = async (item: CourseFlowItem, url: string, messageId: string): Promise<void> => {
   try {
-    let buttons: SlackActionBlock[] = [
-      {
-        type: SlackActionType.BUTTON,
-        style: MessageActionButtonStyle.PRIMARY,
-        text: {
-          text: "A",
-          type: SlackTextMessageTypes.PLAINTEXT,
-          emoji: true
+    let buttons: SlackActionBlock[] = []
+    if(item && item.quiz?.choices.length === 3 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+      buttons = [
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "A",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: QUIZA_A + `|${messageId}`
         },
-        value: QUIZA_A + `|${messageId}`
-      },
-      {
-        type: SlackActionType.BUTTON,
-        style: MessageActionButtonStyle.PRIMARY,
-        text: {
-          text: "B",
-          type: SlackTextMessageTypes.PLAINTEXT,
-          emoji: true
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "B",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: QUIZA_B + `|${messageId}`,
         },
-        value: QUIZA_B + `|${messageId}`,
-      },
-      {
-        type: SlackActionType.BUTTON,
-        style: MessageActionButtonStyle.PRIMARY,
-        text: {
-          text: "C",
-          type: SlackTextMessageTypes.PLAINTEXT,
-          emoji: true
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "C",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: QUIZA_C + `|${messageId}`,
+        }
+      ]
+    }else if(item && item.quiz?.choices.length === 2 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+      buttons = [
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "A",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: QUIZA_A + `|${messageId}`
         },
-        value: QUIZA_C + `|${messageId}`,
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "B",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: QUIZA_B + `|${messageId}`,
+        }
+      ]
+    }else{
+      let optionA: string= "YES"
+      let optionB: string= "NO"
+
+      if(item.quiz?.questionType === QuestionTypes.TRUE_FALSE){
+        optionA = "TRUE"
+        optionB = "FALSE"
       }
-    ]
+
+      if(item.quiz?.questionType === QuestionTypes.POLARITY){
+        optionA = "AGREE"
+        optionB = "DISAGREE"
+      }
+
+      buttons = [
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: optionA,
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: ASSESSMENT_YES + `|${messageId}`
+        },
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: optionB,
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },value: ASSESSMENT_NO + `|${messageId}`,
+        }
+      ]
+    }
 
     let blocks: SlackMessageBlock[] = []
 
@@ -1244,7 +1562,12 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
             updatedData = { ...updatedData, blockStartTime: new Date().toISOString() }
             saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
             break
-
+          case CourseFlowMessageType.BLOCKFOLLOWUPQUIZ:
+            if (data.slackToken) {
+              await sendBlockQuiz(item, url, messageId, data.slackToken, channel)
+            }
+            saveCourseProgress(data.team, data.student, data.id, (data.currentBlock / data.totalBlocks) * 100)
+            break
           case CourseFlowMessageType.END_SURVEY:
             agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
               url,

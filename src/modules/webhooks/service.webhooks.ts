@@ -1228,6 +1228,48 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
 
 export const sendBlockQuiz = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
+    let  buttons: ReplyButton[] = [
+      {
+        type: "reply",
+        reply: {
+          id: BLOCK_QUIZ_A + `|${messageId}`,
+          title: "A"
+        }
+      },
+      {
+        type: "reply",
+        reply: {
+          id: BLOCK_QUIZ_B + `|${messageId}`,
+          title: "B"
+        }
+      },
+      {
+        type: "reply",
+        reply: {
+          id: BLOCK_QUIZ_C + `|${messageId}`,
+          title: "C"
+        }
+      }
+    ]
+
+    if(item.quiz?.choices && item.quiz?.choices.length < 3){
+      buttons = [
+        {
+          type: "reply",
+          reply: {
+            id: BLOCK_QUIZ_A + `|${messageId}`,
+            title: "A"
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: BLOCK_QUIZ_B + `|${messageId}`,
+            title: "B"
+          }
+        }
+      ]
+    }
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
       team,
@@ -1240,29 +1282,7 @@ export const sendBlockQuiz = async (item: CourseFlowItem, phoneNumber: string, m
         },
         type: "button",
         action: {
-          buttons: [
-            {
-              type: "reply",
-              reply: {
-                id: BLOCK_QUIZ_A + `|${messageId}`,
-                title: "A"
-              }
-            },
-            {
-              type: "reply",
-              reply: {
-                id: BLOCK_QUIZ_B + `|${messageId}`,
-                title: "B"
-              }
-            },
-            {
-              type: "reply",
-              reply: {
-                id: BLOCK_QUIZ_C + `|${messageId}`,
-                title: "C"
-              }
-            }
-          ]
+          buttons: buttons
         }
       }
     })
