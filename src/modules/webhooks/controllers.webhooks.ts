@@ -214,25 +214,15 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           case QUIZA_A:
           case QUIZA_B:
           case QUIZA_C:
+          case ASSESSMENT_YES:
+          case ASSESSMENT_NO:
             let choice = 0
-            if (btnId === QUIZA_B) choice = 1
+            if (btnId === QUIZA_B || btnId === ASSESSMENT_NO) choice = 1
             if (btnId === QUIZA_C) choice = 2
             if (enrollment) {
               const msgId = v4()
               console.log(enrollment)
               await handleAssessment(choice, enrollment, destination, msgId)
-              // schedule inactivity message
-              scheduleInactivityMessage(enrollment, destination)
-            }
-            break
-          case ASSESSMENT_YES:
-          case ASSESSMENT_NO:
-            let userChoice = 0
-            if (btnId === ASSESSMENT_NO) userChoice = 1
-            if (enrollment) {
-              const msgId = v4()
-              console.log(enrollment)
-              await handleAssessment(userChoice, enrollment, destination, msgId)
               // schedule inactivity message
               scheduleInactivityMessage(enrollment, destination)
             }

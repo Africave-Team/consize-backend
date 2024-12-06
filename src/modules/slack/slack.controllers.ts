@@ -4,7 +4,7 @@ import { catchAsync } from '../utils'
 import { slackServices } from '.'
 import { teamService } from '../teams'
 import { FetchChannels, Fetchmembers, MessageBlockType, SendSlackMessagePayload, SendSlackResponsePayload, SlackResponse, SlackTextMessageTypes } from './interfaces.slack'
-import { CourseEnrollment, RESUME_COURSE, START, CONTINUE, QUIZ_NO, QUIZ_YES, QUIZ_A, QUIZ_B, QUIZ_C, STATS, COURSES, CERTIFICATES, SURVEY_B, SURVEY_C, TOMORROW, MORNING, AFTERNOON, EVENING, SCHEDULE_RESUMPTION, ACCEPT_INVITATION, REJECT_INVITATION, RESUME_COURSE_TOMORROW, QUIZA_A, QUIZA_B, QUIZA_C, HELP, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C, NO, YES } from '../webhooks/interfaces.webhooks'
+import { CourseEnrollment, RESUME_COURSE, START, CONTINUE, QUIZ_NO, QUIZ_YES, QUIZ_A, QUIZ_B, QUIZ_C, STATS, COURSES, CERTIFICATES, SURVEY_B, SURVEY_C, TOMORROW, MORNING, AFTERNOON, EVENING, SCHEDULE_RESUMPTION, ACCEPT_INVITATION, REJECT_INVITATION, RESUME_COURSE_TOMORROW, QUIZA_A, QUIZA_B, QUIZA_C, HELP, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C, NO, YES, ASSESSMENT_YES, ASSESSMENT_NO } from '../webhooks/interfaces.webhooks'
 import { fetchEnrollmentsSlack, handleContinueSlack, handleBlockQuiz, handleLessonQuiz, handleSurvey, sendResumptionOptions, sendScheduleAcknowledgement, handleSendSurveySlack, handleAssessment, handleHelpSlack } from './slack.services'
 import { Student } from '../students'
 import { agenda } from '../scheduler'
@@ -119,8 +119,10 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
             case QUIZA_A:
             case QUIZA_B:
             case QUIZA_C:
+            case ASSESSMENT_YES:
+            case ASSESSMENT_NO:
               let choice = 0
-              if (btnId === QUIZA_B) choice = 1
+              if (btnId === QUIZA_B || btnId === ASSESSMENT_NO) choice = 1
               if (btnId === QUIZA_C) choice = 2
               if (enrollment) {
                 const msgId = v4()
