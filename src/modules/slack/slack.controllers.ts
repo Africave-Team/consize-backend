@@ -4,7 +4,7 @@ import { catchAsync } from '../utils'
 import { slackServices } from '.'
 import { teamService } from '../teams'
 import { FetchChannels, Fetchmembers, MessageBlockType, SendSlackMessagePayload, SendSlackResponsePayload, SlackResponse, SlackTextMessageTypes } from './interfaces.slack'
-import { CourseEnrollment, RESUME_COURSE, START, CONTINUE, QUIZ_NO, QUIZ_YES, QUIZ_A, QUIZ_B, QUIZ_C, STATS, COURSES, CERTIFICATES, SURVEY_B, SURVEY_C, TOMORROW, MORNING, AFTERNOON, EVENING, SCHEDULE_RESUMPTION, ACCEPT_INVITATION, REJECT_INVITATION, RESUME_COURSE_TOMORROW, QUIZA_A, QUIZA_B, QUIZA_C, HELP, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C } from '../webhooks/interfaces.webhooks'
+import { CourseEnrollment, RESUME_COURSE, START, CONTINUE, QUIZ_NO, QUIZ_YES, QUIZ_A, QUIZ_B, QUIZ_C, STATS, COURSES, CERTIFICATES, SURVEY_B, SURVEY_C, TOMORROW, MORNING, AFTERNOON, EVENING, SCHEDULE_RESUMPTION, ACCEPT_INVITATION, REJECT_INVITATION, RESUME_COURSE_TOMORROW, QUIZA_A, QUIZA_B, QUIZA_C, HELP, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C, NO, YES } from '../webhooks/interfaces.webhooks'
 import { fetchEnrollmentsSlack, handleContinueSlack, handleBlockQuiz, handleLessonQuiz, handleSurvey, sendResumptionOptions, sendScheduleAcknowledgement, handleSendSurveySlack, handleAssessment, handleHelpSlack } from './slack.services'
 import { Student } from '../students'
 import { agenda } from '../scheduler'
@@ -102,6 +102,17 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
                 const msgId = v4()
                 console.log("lesson quiz")
                 await handleLessonQuiz(answerResponse, enrollment, response_url, msgId, channel.id)
+                scheduleInactivityMessage(enrollment, undefined, channel.id)
+              }
+              break
+            case NO:
+            case YES:
+              let response = 0
+              if (btnId === NO) response = 1
+              if (enrollment) {
+                const msgId = v4()
+                console.log("lesson quiz")
+                await handleLessonQuiz(response, enrollment, response_url, msgId, channel.id)
                 scheduleInactivityMessage(enrollment, undefined, channel.id)
               }
               break
