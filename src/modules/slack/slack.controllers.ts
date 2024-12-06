@@ -4,7 +4,7 @@ import { catchAsync } from '../utils'
 import { slackServices } from '.'
 import { teamService } from '../teams'
 import { FetchChannels, Fetchmembers, MessageBlockType, SendSlackMessagePayload, SendSlackResponsePayload, SlackResponse, SlackTextMessageTypes } from './interfaces.slack'
-import { CourseEnrollment, RESUME_COURSE, START, CONTINUE, QUIZ_NO, QUIZ_YES, QUIZ_A, QUIZ_B, QUIZ_C, STATS, COURSES, CERTIFICATES, SURVEY_B, SURVEY_C, TOMORROW, MORNING, AFTERNOON, EVENING, SCHEDULE_RESUMPTION, ACCEPT_INVITATION, REJECT_INVITATION, RESUME_COURSE_TOMORROW, QUIZA_A, QUIZA_B, QUIZA_C, HELP } from '../webhooks/interfaces.webhooks'
+import { CourseEnrollment, RESUME_COURSE, START, CONTINUE, QUIZ_NO, QUIZ_YES, QUIZ_A, QUIZ_B, QUIZ_C, STATS, COURSES, CERTIFICATES, SURVEY_B, SURVEY_C, TOMORROW, MORNING, AFTERNOON, EVENING, SCHEDULE_RESUMPTION, ACCEPT_INVITATION, REJECT_INVITATION, RESUME_COURSE_TOMORROW, QUIZA_A, QUIZA_B, QUIZA_C, HELP, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C } from '../webhooks/interfaces.webhooks'
 import { fetchEnrollmentsSlack, handleContinueSlack, handleBlockQuiz, handleLessonQuiz, handleSurvey, sendResumptionOptions, sendScheduleAcknowledgement, handleSendSurveySlack, handleAssessment, handleHelpSlack } from './slack.services'
 import { Student } from '../students'
 import { agenda } from '../scheduler'
@@ -75,6 +75,20 @@ export const SlackWebhookHandler = catchAsync(async (req: Request, res: Response
               if (enrollment) {
                 const msgId = v4()
                 handleBlockQuiz(answer, enrollment, response_url, msgId, channel.id)
+                scheduleInactivityMessage(enrollment, undefined, channel.id)
+              }
+              break
+            case BLOCK_QUIZ_A:
+            case BLOCK_QUIZ_B:
+            case BLOCK_QUIZ_C:
+              let blockAnswerResponse = '0'
+              if (btnId === BLOCK_QUIZ_B) blockAnswerResponse = '1'
+              if (btnId === BLOCK_QUIZ_C) blockAnswerResponse = '2'
+              if (enrollment) {
+                const msgId = v4()
+                console.log(enrollment)
+                handleBlockQuiz(blockAnswerResponse, enrollment, response_url, msgId, channel.id)
+                // schedule inactivity message
                 scheduleInactivityMessage(enrollment, undefined, channel.id)
               }
               break

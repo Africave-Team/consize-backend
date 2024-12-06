@@ -206,7 +206,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             if (enrollment) {
               const msgId = v4()
               console.log(enrollment)
-              await handleBlockQuiz(blockAnswerResponse, enrollment, destination, msgId)
+              handleBlockQuiz(blockAnswerResponse, enrollment, destination, msgId)
               // schedule inactivity message
               scheduleInactivityMessage(enrollment, destination)
             }
@@ -225,18 +225,18 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               scheduleInactivityMessage(enrollment, destination)
             }
             break
-            case ASSESSMENT_YES:
-            case ASSESSMENT_NO:
-              let userChoice = 0
-              if (btnId === ASSESSMENT_NO) userChoice = 1
-              if (enrollment) {
-                const msgId = v4()
-                console.log(enrollment)
-                await handleAssessment(userChoice, enrollment, destination, msgId)
-                // schedule inactivity message
-                scheduleInactivityMessage(enrollment, destination)
-              }
-              break
+          case ASSESSMENT_YES:
+          case ASSESSMENT_NO:
+            let userChoice = 0
+            if (btnId === ASSESSMENT_NO) userChoice = 1
+            if (enrollment) {
+              const msgId = v4()
+              console.log(enrollment)
+              await handleAssessment(userChoice, enrollment, destination, msgId)
+              // schedule inactivity message
+              scheduleInactivityMessage(enrollment, destination)
+            }
+            break
           case STATS:
 
             break
