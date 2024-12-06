@@ -13,7 +13,7 @@ import { GENERATE_COURSE_TRENDS, SEND_CERTIFICATE_SLACK, SEND_LEADERBOARD_SLACK,
 import { CourseInterface, Distribution } from '../courses/interfaces.courses'
 import Courses from '../courses/model.courses'
 import { v4 } from 'uuid'
-import { AFTERNOON, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C, CONTINUE, CourseEnrollment, EVENING, MORNING, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, QUIZA_A, QUIZA_B, QUIZA_C, RESUME_COURSE_TOMORROW, SCHEDULE_RESUMPTION, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW } from '../webhooks/interfaces.webhooks'
+import { AFTERNOON, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C, CONTINUE, CourseEnrollment, EVENING, MORNING, NO, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, QUIZA_A, QUIZA_B, QUIZA_C, RESUME_COURSE_TOMORROW, SCHEDULE_RESUMPTION, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, YES } from '../webhooks/interfaces.webhooks'
 import Students from '../students/model.students'
 import Teams from '../teams/model.teams'
 import { COURSE_STATS } from '../rtdb/nodes'
@@ -794,38 +794,98 @@ export const sendBlockQuiz = async (data: CourseFlowItem, url: string, messageId
 
 export const sendQuiz = async (item: CourseFlowItem, url: string, messageId: string): Promise<void> => {
   try {
-    let buttons: SlackActionBlock[] = [
-      {
-        type: SlackActionType.BUTTON,
-        style: MessageActionButtonStyle.PRIMARY,
-        text: {
-          text: "A",
-          type: SlackTextMessageTypes.PLAINTEXT,
-          emoji: true
+    let buttons: SlackActionBlock[] = []
+    if(item && item.quiz?.choices.length === 3 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+      buttons = [
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "A",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: QUIZ_A + `|${messageId}`
         },
-        value: QUIZ_A + `|${messageId}`
-      },
-      {
-        type: SlackActionType.BUTTON,
-        style: MessageActionButtonStyle.PRIMARY,
-        text: {
-          text: "B",
-          type: SlackTextMessageTypes.PLAINTEXT,
-          emoji: true
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "B",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: QUIZ_B + `|${messageId}`,
         },
-        value: QUIZ_B + `|${messageId}`,
-      },
-      {
-        type: SlackActionType.BUTTON,
-        style: MessageActionButtonStyle.PRIMARY,
-        text: {
-          text: "C",
-          type: SlackTextMessageTypes.PLAINTEXT,
-          emoji: true
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "C",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: QUIZ_C + `|${messageId}`,
+        }
+      ]
+    }else if(item && item.quiz?.choices.length === 2 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+      buttons = [
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "A",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: QUIZ_A + `|${messageId}`
         },
-        value: QUIZ_C + `|${messageId}`,
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: "B",
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },value: QUIZ_B + `|${messageId}`,
+        }
+      ]
+    }else{
+      let optionA: string= "YES"
+      let optionB: string= "NO"
+
+      if(item.quiz?.questionType === QuestionTypes.TRUE_FALSE){
+        optionA = "TRUE"
+        optionB = "FALSE"
       }
-    ]
+
+      if(item.quiz?.questionType === QuestionTypes.POLARITY){
+        optionA = "AGREE"
+        optionB = "DISAGREE"
+      }
+
+      buttons = [
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: optionA,
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },
+          value: YES + `|${messageId}`
+        },
+        {
+          type: SlackActionType.BUTTON,
+          style: MessageActionButtonStyle.PRIMARY,
+          text: {
+            text: optionB,
+            type: SlackTextMessageTypes.PLAINTEXT,
+            emoji: true
+          },value: NO + `|${messageId}`,
+        }
+      ]
+    }
 
     let blocks: SlackMessageBlock[] = []
 
