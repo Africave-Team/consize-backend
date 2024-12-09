@@ -1280,7 +1280,6 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                 }).sort((a: StudentCourseStats, b: StudentCourseStats) => {
                   return (b.totalScore || 0) - (a.totalScore || 0)
                 })
-                console.log(progress,"  rtdb2")
               } else {
                 rankings = stds
               }
@@ -1301,6 +1300,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                 ]
               }
             })
+            console.log(progress,"  progress4")
             await delay(10000)
             agenda.now<CourseEnrollment>(SEND_LEADERBOARD_SLACK, {
               ...updatedData,
