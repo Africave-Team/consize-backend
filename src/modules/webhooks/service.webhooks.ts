@@ -68,7 +68,7 @@ export enum CourseFlowMessageType {
   STARTASSESSMENT = 'start-of-assessment',
   ENDASSESSMENT = 'end-of-assessment',
   ASSESSMENT = 'assessment',
-  SEARCH ='search',
+  SEARCH = 'search',
   BLOCKFOLLOWUPQUIZ = 'block-follow-up-quiz'
 }
 
@@ -312,25 +312,25 @@ export const generateCourseFlow = async function (courseId: string) {
               if (blockData.quiz) {
                 let quiz = await Quizzes.findById(blockData.quiz)
                 if (quiz) {
-                  if(quiz.choices.length === 3 && quiz.questionType === QuestionTypes.OBJECTIVE){
-                    flo.content = `The question below is used to access your understanding of the section above`+ `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
+                  if (quiz.choices.length === 3 && quiz.questionType === QuestionTypes.OBJECTIVE) {
+                    flo.content = `The question below is used to access your understanding of the section above` + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}` + `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
                     flo.quiz = quiz
                     flo.type = CourseFlowMessageType.BLOCKFOLLOWUPQUIZ
                     flow.push(flo)
-                  }else if(quiz.choices.length === 2 && quiz.questionType === QuestionTypes.OBJECTIVE){
-                    flo.content = `The question below is used to access your understanding of the section above`+ `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]}`
+                  } else if (quiz.choices.length === 2 && quiz.questionType === QuestionTypes.OBJECTIVE) {
+                    flo.content = `The question below is used to access your understanding of the section above` + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}` + `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]}`
                     flo.quiz = quiz
                     flo.type = CourseFlowMessageType.BLOCKFOLLOWUPQUIZ
                     flow.push(flo)
-                  }else{
-                    flo.content = `The question below is used to access your understanding of the section above`+`\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
+                  } else {
+                    flo.content = `The question below is used to access your understanding of the section above` + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
                     flo.quiz = quiz
                     flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
                     flow.push(flo)
                   }
                 }
               }
-              
+
               blockIndex++
             }
           }
@@ -349,9 +349,9 @@ export const generateCourseFlow = async function (courseId: string) {
             if (quizData) {
               let content = `End of lesson quiz ${quizIndex + 1}/${quizzes.length}\n\nQuestion:\n${convertToWhatsAppString(he.decode(quizData.question))}`
 
-              if(quizData.choices.length === 3 && quizData.questionType === QuestionTypes.OBJECTIVE){
+              if (quizData.choices.length === 3 && quizData.questionType === QuestionTypes.OBJECTIVE) {
                 content = content + `\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]} \n\nC: ${quizData.choices[2]}`
-              }else if(quizData.choices.length === 2 && quizData.questionType === QuestionTypes.OBJECTIVE){
+              } else if (quizData.choices.length === 2 && quizData.questionType === QuestionTypes.OBJECTIVE) {
                 content = content + `\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]}`
               }
 
@@ -802,7 +802,7 @@ export const handleRemindMeTrigger = async function () {
   }
 }
 
-export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string, messageId: string, team: string ): Promise<void> => {
+export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
     let buttons: ReplyButton[] = []
     if (data.type === CourseFlowMessageType.BLOCK) {
@@ -814,7 +814,7 @@ export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string
         }
       })
     } else {
-      if(data.quiz?.questionType === QuestionTypes.TRUE_FALSE){
+      if (data.quiz?.questionType === QuestionTypes.TRUE_FALSE) {
         buttons = [
           {
             type: "reply",
@@ -831,7 +831,7 @@ export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string
             }
           },
         ]
-      }else if(data.quiz?.questionType === QuestionTypes.YES_NO){
+      } else if (data.quiz?.questionType === QuestionTypes.YES_NO) {
         buttons = [
           {
             type: "reply",
@@ -848,7 +848,7 @@ export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string
             }
           },
         ]
-      }else if(data.quiz?.questionType === QuestionTypes.POLARITY){
+      } else if (data.quiz?.questionType === QuestionTypes.POLARITY) {
         buttons = [
           {
             type: "reply",
@@ -865,7 +865,7 @@ export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string
             }
           },
         ]
-      }else{
+      } else {
         buttons = [
           {
             type: "reply",
@@ -883,7 +883,7 @@ export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string
           },
         ]
       }
-      
+
     }
     let payload: Message = {
       to: phoneNumber,
@@ -1133,7 +1133,7 @@ export async function fetchEnrollments (phoneNumber: string): Promise<CourseEnro
 export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
     let buttons: ReplyButton[] = []
-    if(item && item.quiz?.choices.length === 3 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+    if (item && item.quiz?.choices.length === 3 && item.quiz.questionType === QuestionTypes.OBJECTIVE) {
       buttons = [
         {
           type: "reply",
@@ -1157,7 +1157,7 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
           }
         }
       ]
-    }else if(item && item.quiz?.choices.length === 2 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+    } else if (item && item.quiz?.choices.length === 2 && item.quiz.questionType === QuestionTypes.OBJECTIVE) {
       buttons = [
         {
           type: "reply",
@@ -1174,16 +1174,16 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
           }
         }
       ]
-    }else{
-      let optionA: string= "YES"
-      let optionB: string= "NO"
+    } else {
+      let optionA: string = "YES"
+      let optionB: string = "NO"
 
-      if(item.quiz?.questionType === QuestionTypes.TRUE_FALSE){
+      if (item.quiz?.questionType === QuestionTypes.TRUE_FALSE) {
         optionA = "TRUE"
         optionB = "FALSE"
       }
 
-      if(item.quiz?.questionType === QuestionTypes.POLARITY){
+      if (item.quiz?.questionType === QuestionTypes.POLARITY) {
         optionA = "AGREE"
         optionB = "DISAGREE"
       }
@@ -1275,7 +1275,7 @@ export const sendAssessment = async (item: CourseFlowItem, phoneNumber: string, 
   try {
     let buttons: ReplyButton[] = []
 
-    if(item && item.quiz?.choices.length === 3 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+    if (item && item.quiz?.choices.length === 3 && item.quiz.questionType === QuestionTypes.OBJECTIVE) {
       buttons = [
         {
           type: "reply",
@@ -1299,7 +1299,7 @@ export const sendAssessment = async (item: CourseFlowItem, phoneNumber: string, 
           }
         }
       ]
-    }else if(item && item.quiz?.choices.length === 2 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+    } else if (item && item.quiz?.choices.length === 2 && item.quiz.questionType === QuestionTypes.OBJECTIVE) {
       buttons = [
         {
           type: "reply",
@@ -1316,16 +1316,16 @@ export const sendAssessment = async (item: CourseFlowItem, phoneNumber: string, 
           }
         }
       ]
-    }else{
-      let optionA: string= "YES"
-      let optionB: string= "NO"
+    } else {
+      let optionA: string = "YES"
+      let optionB: string = "NO"
 
-      if(item.quiz?.questionType === QuestionTypes.TRUE_FALSE){
+      if (item.quiz?.questionType === QuestionTypes.TRUE_FALSE) {
         optionA = "TRUE"
         optionB = "FALSE"
       }
 
-      if(item.quiz?.questionType === QuestionTypes.POLARITY){
+      if (item.quiz?.questionType === QuestionTypes.POLARITY) {
         optionA = "AGREE"
         optionB = "DISAGREE"
       }
@@ -1347,7 +1347,7 @@ export const sendAssessment = async (item: CourseFlowItem, phoneNumber: string, 
         }
       ]
     }
-    
+
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
       team,
@@ -2150,9 +2150,9 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ph
       }
     }
     if (item && item.quiz) {
-      let correctAnswer = typeof item.quiz.choices[item.quiz.correctAnswerIndex] === 'string' 
-      ? item.quiz.choices[item.quiz.correctAnswerIndex] 
-      : item.quiz.choices[item.quiz.correctAnswerIndex]?.toString();
+      let correctAnswer = typeof item.quiz.choices[item.quiz.correctAnswerIndex] === 'string'
+        ? item.quiz.choices[item.quiz.correctAnswerIndex]
+        : item.quiz.choices[item.quiz.correctAnswerIndex]?.toString()
 
       if (payload.interactive) {
         if (correctAnswer === answer) {
@@ -2224,7 +2224,7 @@ export const handleLessonQuiz = async (answer: string, data: CourseEnrollment, p
       let duration = 0, retakes = 0, saveStats = false, score = 0
       if (payload.interactive) {
         if (item.quiz.correctAnswerIndex.toString() === answer) {
-          console.log(item.quiz.correctAnswerIndex.toString(),12345676543223)
+          console.log(item.quiz.correctAnswerIndex.toString(), 12345676543223)
 
           // send correct answer context
           payload.interactive['body'].text = `That is correct!. ${convertToWhatsAppString(he.decode(item.quiz.correctAnswerContext))}`
@@ -2253,7 +2253,7 @@ export const handleLessonQuiz = async (answer: string, data: CourseEnrollment, p
               textBody = `Not quite right!.\n\nPlease try again: \n\n${item.content}`
             }
 
-            if(item && item.quiz?.choices.length === 3 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+            if (item && item.quiz?.choices.length === 3 && item.quiz.questionType === QuestionTypes.OBJECTIVE) {
               payload.interactive.action.buttons = [
                 {
                   type: "reply",
@@ -2277,7 +2277,7 @@ export const handleLessonQuiz = async (answer: string, data: CourseEnrollment, p
                   }
                 }
               ]
-            }else if(item && item.quiz?.choices.length === 2 && item.quiz.questionType === QuestionTypes.OBJECTIVE){
+            } else if (item && item.quiz?.choices.length === 2 && item.quiz.questionType === QuestionTypes.OBJECTIVE) {
               payload.interactive.action.buttons = [
                 {
                   type: "reply",
@@ -2294,16 +2294,16 @@ export const handleLessonQuiz = async (answer: string, data: CourseEnrollment, p
                   }
                 }
               ]
-            }else{
-              let optionA: string= "YES"
-              let optionB: string= "NO"
+            } else {
+              let optionA: string = "YES"
+              let optionB: string = "NO"
 
-              if(item.quiz?.questionType === QuestionTypes.TRUE_FALSE){
+              if (item.quiz?.questionType === QuestionTypes.TRUE_FALSE) {
                 optionA = "TRUE"
                 optionB = "FALSE"
               }
 
-              if(item.quiz?.questionType === QuestionTypes.POLARITY){
+              if (item.quiz?.questionType === QuestionTypes.POLARITY) {
                 optionA = "AGREE"
                 optionB = "DISAGREE"
               }
@@ -2874,7 +2874,6 @@ export const exchangeFacebookToken = async function (code: string, team: string)
   }
 }
 
-
 export const reloadTemplates = async function (team: string) {
   try {
 
@@ -3032,8 +3031,6 @@ export const reloadTemplates = async function (team: string) {
   }
 }
 
-
-
 export const handleDelayedFacebookStatus = async function (team: string) {
   try {
     let teamData = await teamService.fetchTeamById(team)
@@ -3138,9 +3135,9 @@ export const handleHelp = async (phoneNumber: string, courseId: string): Promise
 
 export const handleSearch = async (phoneNumber: string, search: string, team: string): Promise<void> => {
   let userData: any = await redisClient.get(`${config.redisBaseKey}user:${phoneNumber}`)
-  if(userData){
+  if (userData) {
     userData = JSON.parse(userData)
-    if(!(userData.search && userData.status)){
+    if (!(userData.search && userData.status)) {
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
         to: phoneNumber,
         team: team,
@@ -3159,7 +3156,7 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
 
       If "completed courses content" cannot be used to answer the question, return an empty string. The response should contain only plain text, with no references, sources, citations, or special formatting.`
 
-// Create a conversation thread with the user query
+    // Create a conversation thread with the user query
     const thread = await openai.beta.threads.create({
       messages: [
         {
@@ -3167,20 +3164,20 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
           content: userQuery,
         },
       ],
-    });
+    })
 
     // Run the assistant using the assistant ID from Redis and poll for completion
     const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
       assistant_id: userData.assistant,
-    });
+    })
 
     // Retrieve messages from the thread and get the assistant's latest response
     const messages = await openai.beta.threads.messages.list(thread.id, {
       run_id: run.id,
-    });
+    })
 
-    const message:any = messages?.data?.pop();
-    const messageContent = message?.content[0]?.text?.value || "Your question does not match any of your completed course";
+    const message: any = messages?.data?.pop()
+    const messageContent = message?.content[0]?.text?.value || "Your question does not match any of your completed course"
 
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
@@ -3216,27 +3213,27 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
     const coursesCompleted: any[] = await Enrollments.find({
       phoneNumber: phoneNumber,
       completed: true
-    }, 'courseId');
+    }, 'courseId')
 
     const completedCourseContent: any[] = await Promise.all(
       coursesCompleted.map(async (course) => {
-        const courseContent = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`);
-        return courseContent;
+        const courseContent = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`)
+        return courseContent
       })
-    );
+    )
 
-    const filePath = path.join(localFilePath, v4() + "-search-course-content.json");
+    const filePath = path.join(localFilePath, v4() + "-search-course-content.json")
     if (!fs.existsSync(localFilePath)) {
       fs.mkdirSync(localFilePath)
     }
 
     fs.writeFile(filePath, JSON.stringify(completedCourseContent), (err) => {
       if (err) {
-        console.error('Error writing to file:', err);
+        console.error('Error writing to file:', err)
       } else {
-        console.log('File saved successfully at:', filePath);
+        console.log('File saved successfully at:', filePath)
       }
-    });
+    })
 
     const fileStreams = [filePath].map((path) => fs.createReadStream(path))
 
