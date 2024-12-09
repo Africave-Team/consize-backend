@@ -1247,6 +1247,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
             break
           case CourseFlowMessageType.ENDQUIZ:
             const progress = (data.currentBlock / data.totalBlocks) * 100
+            console.log(progress,"  progress1")
             let score = '0'
             let currentItem = flowData[data.currentBlock]
             if (currentItem && currentItem.quiz && currentItem.quiz.lesson && data.lessons) {
@@ -1254,13 +1255,16 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
               if (scores) {
                 score = ((scores.reduce((a, b) => a + b, 0) / scores.length) * 100).toFixed(0)
               }
+              console.log(progress,"  progress2")
             }
             const dbRef = db.ref(COURSE_STATS).child(data.team).child(data.id).child("students")
             // get existing data
             const snapshot = await dbRef.once('value')
+            console.log(progress,"  progress3")
             let rtdb: { [id: string]: StudentCourseStats } | null = snapshot.val()
             let rankings: StudentCourseStats[] = []
             if (rtdb) {
+              console.log(progress,"  rtdb")
               let stds: StudentCourseStats[] = Object.values(rtdb)
               if (stds.length > 1) {
                 rankings = stds.map(student => {
@@ -1279,6 +1283,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                 rankings = stds
               }
             }
+            console.log(progress,"  progress4")
             const rank = rankings.findIndex(e => e.studentId === data.student)
             agenda.now<SendSlackResponsePayload>(SEND_SLACK_RESPONSE, {
               url,
@@ -1595,6 +1600,7 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
             updatedData.nextBlock = data.totalBlocks
             break
           default:
+            console.log("got hereeeee.... no condition met")
             break
         }
         await redisClient.set(key, JSON.stringify({ ...updatedData }))
