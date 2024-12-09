@@ -1266,14 +1266,16 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
             if (rtdb) {
               console.log(progress,"  rtdb")
               let stds: StudentCourseStats[] = Object.values(rtdb)
+              console.log(stds.length,"  stds length")
               if (stds.length > 1) {
+                console.log(progress,"  rtdb1")
                 rankings = stds.map(student => {
                   // Calculate the total score across all lessons and quizzes
                   const totalScore = Object.values(student.lessons).reduce((lessonAcc, lesson) => {
                     const quizScoreSum = Object.values(lesson.quizzes).reduce((quizAcc, quiz) => quizAcc + quiz.score, 0)
                     return lessonAcc + quizScoreSum
                   }, 0)
-
+                  console.log(progress,"  rtdb2")
                   // Attach the total score to the student object
                   return { ...student, totalScore }
                 }).sort((a: StudentCourseStats, b: StudentCourseStats) => {
