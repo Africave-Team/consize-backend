@@ -1275,12 +1275,12 @@ export const handleContinueSlack = async (nextIndex: number, courseKey: string, 
                     const quizScoreSum = Object.values(lesson.quizzes).reduce((quizAcc, quiz) => quizAcc + quiz.score, 0)
                     return lessonAcc + quizScoreSum
                   }, 0)
-                  console.log(progress,"  rtdb2")
                   // Attach the total score to the student object
                   return { ...student, totalScore }
                 }).sort((a: StudentCourseStats, b: StudentCourseStats) => {
                   return (b.totalScore || 0) - (a.totalScore || 0)
                 })
+                console.log(progress,"  rtdb2")
               } else {
                 rankings = stds
               }
