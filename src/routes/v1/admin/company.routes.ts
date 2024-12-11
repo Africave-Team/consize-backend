@@ -21,4 +21,7 @@ router.route('/:teamId/active-subscription')
 
 router.route('/:teamId/activate-subscription')
   .post(companyControllers.subscribeClient)
+
+router.route('/:teamId/extend-subscription')
+  .post(companyControllers.extendClientSubscription)
 export default router

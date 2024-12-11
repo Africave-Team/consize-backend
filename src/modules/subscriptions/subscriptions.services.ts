@@ -145,3 +145,33 @@ export const subscribeClient = async function (payload: SubscribePayload, owner:
   agenda.schedule<{ subscriptionId: string }>(expiration.toDate(), HANDLE_SUBSCRIPTION_TERMINATION, { subscriptionId: subscription.id })
   return subscription
 }
+
+
+export const extendClientSubscription = async function (payload: SubscribePayload, owner: string): Promise<SubscriptionInterface> {
+  const previous = await Subscriptions.findOne({ owner, plan: payload.planId })
+  const plan = await SubscriptionPlans.findById(payload.planId)
+  if (!plan) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Could not find this plan and so we could not create your subscription")
+  }
+  if (!previous) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Could not find an existing subscription to extend")
+  }
+  const expiration = moment(new Date(previous.expires)).add(payload.numberOfMonths, "months").endOf("day")
+
+  const jobs = await agenda.jobs({ name: HANDLE_SUBSCRIPTION_TERMINATION, 'data.subscriptionId': previous.id })
+  // Check if the job exists
+  for (let job of jobs) {
+    await job.remove()
+  }
+
+  await Subscriptions.deleteOne({ '_id': previous.id })
+  const subscription = await Subscriptions.create({
+    owner,
+    plan: payload.planId,
+    status: SubscriptionStatus.ACTIVE,
+    expires: expiration.toDate()
+  })
+  // schedule the unsubscribe event for payload.numberOfMonths into the future
+  agenda.schedule<{ subscriptionId: string }>(expiration.toDate(), HANDLE_SUBSCRIPTION_TERMINATION, { subscriptionId: subscription.id })
+  return subscription
+}
