@@ -27,3 +27,10 @@ export const subscribeClient = catchAsync(async (req: Request, res: Response) =>
   const subscription = await subscriptionService.subscribeClient({ numberOfMonths, planId }, teamId)
   return res.status(200).json({ message: "Your subscription was successfull", data: subscription })
 })
+
+
+export const extendClientSubscription = catchAsync(async (req: Request, res: Response) => {
+  const { numberOfMonths, planId, teamId } = req.body
+  const subscription = await subscriptionService.extendClientSubscription({ numberOfMonths, planId }, teamId)
+  return res.status(200).json({ message: "Subscription extension was successfull", data: subscription })
+})

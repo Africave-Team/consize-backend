@@ -79,6 +79,13 @@ export const subscribeClient = catchAsync(async (req: Request, res: Response) =>
 })
 
 
+export const extendClientSubscription = catchAsync(async (req: Request, res: Response) => {
+  const { numberOfMonths, planId, teamId } = req.body
+  const subscription = await subscriptionService.extendClientSubscription({ numberOfMonths, planId }, teamId)
+  return res.status(200).json({ message: "Subscription extension was successfull", data: subscription })
+})
+
+
 export const transferCompanyOwnership = catchAsync(async (req: Request, res: Response) => {
   const { teamId } = req.params
   if (teamId) {

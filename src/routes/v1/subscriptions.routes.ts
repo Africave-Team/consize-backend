@@ -10,6 +10,7 @@ router.post("/seed", subscriptionControllers.seedPlans)
 router.get('/plans', subscriptionControllers.fetchPlans)
 router.use(auth())
 router.post('/subscribe', subscriptionControllers.subscribeClient)
+router.post('/extend-subscription', subscriptionControllers.extendClientSubscription)
 router.get("/active/", subscriptionControllers.myActiveSubscription)
 
 
