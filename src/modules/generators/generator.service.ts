@@ -311,6 +311,7 @@ export const generateCourseCertificateURL = async (course: CourseInterface, stud
   } else {
     payload.template = true
   }
+  console.log(payload, "CERTIFICATE PAYLOAD")
 
   const query = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64')
 

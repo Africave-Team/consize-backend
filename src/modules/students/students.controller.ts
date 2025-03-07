@@ -2,8 +2,8 @@ import httpStatus from 'http-status'
 import { Request, Response } from 'express'
 import catchAsync from '../utils/catchAsync'
 import { studentService } from './'
-import Quizzes from '../courses/model.quizzes'
-import { QuestionTypes } from '../courses/interfaces.quizzes'
+// import Quizzes from '../courses/model.quizzes'
+// import { QuestionTypes } from '../courses/interfaces.quizzes'
 
 export const getAllStudents = catchAsync(async (req: Request, res: Response) => {
   const students = await studentService.getAllStudents(req.user.team, parseInt(req.query['page'] as string, 10) || 1)
@@ -47,39 +47,39 @@ export const confirmWhatsappOTP = catchAsync(async (req: Request, res: Response)
 
 export const enrollStudentToCourse = catchAsync(async (req: Request, res: Response) => {
   //script to update question types
-  const quizzes = await Quizzes.find();
-  const normalizeText = (text:string) => text.trim().toLowerCase();
+  // const quizzes = await Quizzes.find();
+  // const normalizeText = (text:string) => text.trim().toLowerCase();
 
-  for (const quiz of quizzes) {
-    const { choices } = quiz;
-    let newQuestionType: QuestionTypes = quiz.questionType; // Default to current type
+  // for (const quiz of quizzes) {
+  //   const { choices } = quiz;
+  //   let newQuestionType: QuestionTypes = quiz.questionType; // Default to current type
 
-    if (choices.length === 3) {
-      newQuestionType = QuestionTypes.OBJECTIVE;
-    } else if (choices.length === 2) {
-      const isMultiWord = choices.some(choice => choice.split(' ').length > 1);
-      if (isMultiWord) {
-        newQuestionType = QuestionTypes.OBJECTIVE;
-      } else {
-        const normalizedChoices = choices.map(normalizeText);
+  //   if (choices.length === 3) {
+  //     newQuestionType = QuestionTypes.OBJECTIVE;
+  //   } else if (choices.length === 2) {
+  //     const isMultiWord = choices.some(choice => choice.split(' ').length > 1);
+  //     if (isMultiWord) {
+  //       newQuestionType = QuestionTypes.OBJECTIVE;
+  //     } else {
+  //       const normalizedChoices = choices.map(normalizeText);
 
-        if (normalizedChoices.includes("yes")) {
-          newQuestionType = QuestionTypes.YES_NO;
-        } else if (normalizedChoices.includes("true")) {
-          newQuestionType = QuestionTypes.TRUE_FALSE;
-        } else if (normalizedChoices.includes("agree")) {
-          newQuestionType = QuestionTypes.POLARITY;
-        }
-      }
-    }
+  //       if (normalizedChoices.includes("yes")) {
+  //         newQuestionType = QuestionTypes.YES_NO;
+  //       } else if (normalizedChoices.includes("true")) {
+  //         newQuestionType = QuestionTypes.TRUE_FALSE;
+  //       } else if (normalizedChoices.includes("agree")) {
+  //         newQuestionType = QuestionTypes.POLARITY;
+  //       }
+  //     }
+  //   }
 
-    // Update questionType if it has changed
-    if (quiz.questionType !== newQuestionType) {
-      quiz.questionType = newQuestionType;
-      await quiz.save();
-      console.log(`Updated question: ${quiz._id}, new type: ${newQuestionType}`);
-    }
-  }
+  //   // Update questionType if it has changed
+  //   if (quiz.questionType !== newQuestionType) {
+  //     quiz.questionType = newQuestionType;
+  //     await quiz.save();
+  //     console.log(`Updated question: ${quiz._id}, new type: ${newQuestionType}`);
+  //   }
+  // }
   const { student } = req.params
   const { course, custom, cohortId } = req.body
   if (course && student) {
