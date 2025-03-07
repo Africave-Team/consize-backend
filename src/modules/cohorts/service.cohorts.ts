@@ -276,6 +276,11 @@ export const deleteCohort = async (cohortId: string): Promise<void> => {
     await Cohorts.deleteOne({ _id: cohortId })
 }
 
+export const getCohort = async (cohortId: string): Promise<CohortsInterface | null> => {
+    return await Cohorts.findById(cohortId)
+}
+
+
 
 export const initiateCourseForCohort = async function (cohortId: string) {
     const cohort = await Cohorts.findById(cohortId)

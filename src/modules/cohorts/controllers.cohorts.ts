@@ -23,6 +23,14 @@ export const deleteCohort = catchAsync(async (req: Request, res: Response) => {
     res.status(httpStatus.CREATED).send({ message: "Cohort deleted" })
 })
 
+export const getCohortById = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params
+    if (id) {
+        const cohort = await cohortService.getCohort(id)
+        res.status(httpStatus.CREATED).send({ message: "Cohort found", cohort })
+    }
+})
+
 
 
 export const getCohorts = catchAsync(async (req: Request, res: Response) => {
