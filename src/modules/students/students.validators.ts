@@ -4,6 +4,7 @@ import Joi from 'joi'
 export const fetchStudent = {
   query: Joi.object().keys({
     phoneNumber: Joi.string().required().description("Student phone number"),
+    teamId: Joi.string().required().description("Specify the team"),
   }),
 }
 
