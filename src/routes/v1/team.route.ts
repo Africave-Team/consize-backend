@@ -16,5 +16,9 @@ router.post('/invite', validate(inviteUser), teamControllers.inviteTeamMembers)
 router.post('/resend-invite', validate(resendInvite), teamControllers.resendInvite)
 router.delete('/invite/:userId', teamControllers.removeTeamMember)
 
+router.post('/:teamId/domains', teamControllers.addTeamDomain)
+router.put('/:teamId/domains', teamControllers.updateTeamDomain)
+
+router.delete('/:teamId/domains', teamControllers.removeTeamDomain)
 
 export default router

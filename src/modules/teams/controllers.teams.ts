@@ -68,6 +68,30 @@ export const updateTeamInfoById = catchAsync(async (req: Request, res: Response)
   }
 })
 
+
+export const addTeamDomain = catchAsync(async (req: Request, res: Response) => {
+  if (typeof req.params['teamId'] === 'string') {
+    const team = await teamService.addTeamsDomains(req.params['teamId'], req.body.host)
+    res.status(httpStatus.OK).send({ data: team })
+  }
+})
+
+
+export const updateTeamDomain = catchAsync(async (req: Request, res: Response) => {
+  if (typeof req.params['teamId'] === 'string') {
+    const team = await teamService.updateTeamsDomains(req.params['teamId'], req.body.host)
+    res.status(httpStatus.OK).send({ data: team })
+  }
+})
+
+
+export const removeTeamDomain = catchAsync(async (req: Request, res: Response) => {
+  if (typeof req.params['teamId'] === 'string') {
+    const team = await teamService.removeTeamsDomains(req.params['teamId'], req.body.host)
+    res.status(httpStatus.OK).send({ data: team })
+  }
+})
+
 export const fetchTeamInfo = catchAsync(async (req: Request, res: Response) => {
   const team = await teamService.fetchTeamInfo(req.user.team)
   res.status(httpStatus.OK).send({ data: team })
