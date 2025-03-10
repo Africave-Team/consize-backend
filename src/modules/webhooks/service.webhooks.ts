@@ -2719,7 +2719,13 @@ export const exchangeFacebookToken = async function (code: string, team: string)
     const token = result.data.access_token
     let teamData = await teamService.fetchTeamById(team)
     if (teamData && teamData.facebookBusinessId && teamData.facebookPhoneNumberId) {
-      const updatePayload: FacebookIntegrationData = { phoneNumberId: teamData.facebookPhoneNumberId, businessId: teamData.facebookBusinessId, status: "PENDING", token, phoneNumber: "" }
+      const response = await axios.get(`https://graph.facebook.com/v19.0/${teamData.facebookPhoneNumberId}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      const updatePayload: FacebookIntegrationData = { phoneNumberId: teamData.facebookPhoneNumberId, businessId: teamData.facebookBusinessId, status: "PENDING", token, phoneNumber: response.data.display_phone_number.split(" ").join("").replace("+", "") }
       await teamService.updateTeamInfo(team, {
         facebookData: updatePayload
       })
@@ -2742,6 +2748,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
           'Content-Type': 'application/json'
         }
       })
+
       // copy the auth template to the new waba from main account
       // get the auth template
 
