@@ -495,10 +495,13 @@ export const sendMessage = async function (message: Message, team?: TeamsInterfa
   const subscription = await Subscriptions.findOne({ owner: team?.id }).populate("plan")
   let token = config.whatsapp.token
   let phoneId = config.whatsapp.phoneNumberId
+  console.log("team creds", team)
   if (subscription && typeof subscription.plan !== "string") {
     const value = subscription.plan.price
+    console.log("team creds", team?.facebookData)
 
     if (value > 0 && team?.facebookData && team?.facebookData.status === "CONFIRMED") {
+      console.log("team creds")
       token = team.facebookData.token || config.whatsapp.token
       phoneId = team?.facebookData.phoneNumberId || config.whatsapp.phoneNumberId
     }
