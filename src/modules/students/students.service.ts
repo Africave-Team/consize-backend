@@ -52,13 +52,13 @@ export const bulkAddStudents = async (students: Student[]): Promise<string[]> =>
 }
 
 
-export const findStudentByPhoneNumber = async (phoneNumber: String): Promise<StudentInterface> => {
+export const findStudentByPhoneNumber = async (phoneNumber: String, teamId?: string): Promise<StudentInterface> => {
   const student = await Students.findOne({ phoneNumber })
   if (!student) {
     throw new ApiError(httpStatus.NOT_FOUND, "No student account found for this phone number.")
   }
   if (!student.verified) {
-    await sendOTP(student.id, student.phoneNumber)
+    await sendOTP(student.id, student.phoneNumber, teamId)
     throw new ApiError(httpStatus.BAD_REQUEST, "Student phone number has not been verified.")
   }
   return student
@@ -183,22 +183,22 @@ export const enrollStudentToCourse = async (studentId: string, courseId: string,
     throw new ApiError(httpStatus.NOT_FOUND, "No course found for this id.")
   }
 
-  const team = await Teams.findById(course.owner).select('status').exec();
+  const team = await Teams.findById(course.owner).select('status').exec()
 
   if (team && team.status === 'DEACTIVATED') {
     if (source === "qr") {
-        agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
-          to: student.phoneNumber,
-          type: "text",
-          team: course.owner,
-          messaging_product: "whatsapp",
-          recipient_type: "individual",
-          text: {
-            body: `Enrollment link is deactivated`
-          }
-        })
-        return
-    }else{
+      agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
+        to: student.phoneNumber,
+        type: "text",
+        team: course.owner,
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        text: {
+          body: `Enrollment link is deactivated`
+        }
+      })
+      return
+    } else {
       throw new ApiError(httpStatus.FORBIDDEN, "link expired")
     }
   }
