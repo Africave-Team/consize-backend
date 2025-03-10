@@ -136,7 +136,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         switch (btnId) {
           case "search":
             if (enrollment) {
-              startSearch(destination,enrollment.team)
+              startSearch(destination, enrollment.team)
             }
             break
           case "HELP":
@@ -371,8 +371,9 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
 
             if (btnId.startsWith('enroll_now_')) {
               const courseId = btnId.replace("enroll_now_", "")
+              let course = await Courses.findById(courseId)
               // continue a course from the positions message
-              const student = await studentService.findStudentByPhoneNumber(destination)
+              const student = await studentService.findStudentByPhoneNumber(destination, course?.owner)
               if (student) {
                 studentService.startEnrollmentWhatsapp(student.id, courseId, "qr")
               }
@@ -455,7 +456,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               }
             }
 
-            if (btnId.startsWith('end_search_')){
+            if (btnId.startsWith('end_search_')) {
               const phoneNumber = btnId.replace("end_search_", "")
               let enrollments: CourseEnrollment[] = await fetchEnrollments(destination)
               let active: CourseEnrollment[] = enrollments.filter(e => e.active)
@@ -472,7 +473,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   }
                 })
 
-              }else{
+              } else {
                 agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
                   to: phoneNumber,
                   type: "interactive",
@@ -495,7 +496,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
                   }
                 })
               }
-              await redisClient.set(`${config.redisBaseKey}user:${destination}`, JSON.stringify({assistant: userData?.assisstant, search: false, status: false }))
+              await redisClient.set(`${config.redisBaseKey}user:${destination}`, JSON.stringify({ assistant: userData?.assisstant, search: false, status: false }))
 
             }
             break
@@ -651,7 +652,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
         case "'SEArCh'":
         case "'SEArcH'":
           if (enrollment) {
-            startSearch(destination,enrollment.team)
+            startSearch(destination, enrollment.team)
           }
           break
         case "HELP":
@@ -911,7 +912,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           // await sendWelcome("4f260e57-d4d7-45e1-aa17-7754362f7115", destination, messageid)
           break
         default:
-          let userData:any = await redisClient.get(`${config.redisBaseKey}user:${destination}`)
+          let userData: any = await redisClient.get(`${config.redisBaseKey}user:${destination}`)
           userData = JSON.parse(userData)
           if (userData && userData.search && enrollment) {
             handleSearch(destination, response, enrollment.team)
