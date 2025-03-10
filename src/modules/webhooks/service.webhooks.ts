@@ -2,8 +2,8 @@ import httpStatus from 'http-status'
 import OpenAI from 'openai'
 import ApiError from '../errors/ApiError'
 import { BlockInterface } from '../courses/interfaces.blocks'
-import { QuizInterface } from '../courses/interfaces.quizzes'
-import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C } from './interfaces.webhooks'
+import { QuestionTypes, QuizInterface } from '../courses/interfaces.quizzes'
+import { AFTERNOON, CONTINUE, CourseEnrollment, EVENING, InteractiveMessage, MORNING, Message, QUIZ_A, QUIZ_B, QUIZ_C, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_NO, QUIZ_YES, RESUME_COURSE_TOMORROW, ReplyButton, SCHEDULE_RESUMPTION, START, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C, YES, NO, ASSESSMENT_YES, ASSESSMENT_NO } from './interfaces.webhooks'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -68,7 +68,7 @@ export enum CourseFlowMessageType {
   STARTASSESSMENT = 'start-of-assessment',
   ENDASSESSMENT = 'end-of-assessment',
   ASSESSMENT = 'assessment',
-  SEARCH ='search',
+  SEARCH = 'search',
   BLOCKFOLLOWUPQUIZ = 'block-follow-up-quiz'
 }
 
@@ -262,8 +262,6 @@ export const generateCourseFlow = async function (courseId: string) {
             }
 
             const blockData = await Blocks.findById(blockId)
-            let blockQuizData = null
-            let quiz = null
 
             if (blockData) {
               let flo: CourseFlowItem = {
@@ -273,20 +271,7 @@ export const generateCourseFlow = async function (courseId: string) {
                 lesson: lessonData
               }
               content += ` \n\n*Section ${blockIndex + 1}: ${blockData.title.trim()}* \n\n${convertToWhatsAppString(he.decode(blockData.content))}`
-              if (blockData.quiz) {
-                quiz = await Quizzes.findById(blockData.quiz)
-                if (quiz) {
-                  if(quiz.choices.length === 3){
-                    blockQuizData = `The question below is used to access your understanding of the section above`+ `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`+ `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
-                    flo.quiz = quiz
-                    flo.type = CourseFlowMessageType.BLOCK
-                  }else{
-                    content = content + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
-                    flo.quiz = quiz
-                    flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
-                  }
-                }
-              }
+
               if (blockData.bodyMedia && blockData.bodyMedia.url) {
                 flo.mediaType = blockData.bodyMedia.mediaType
                 flo.mediaUrl = blockData.bodyMedia.url
@@ -320,15 +305,32 @@ export const generateCourseFlow = async function (courseId: string) {
                 }
               } else {
                 flo.content = content
+                flo.type = CourseFlowMessageType.BLOCK
                 flow.push(flo)
-                let floCopy = {...flo}
-                if(blockQuizData && quiz){
-                  floCopy.content = blockQuizData
-                  floCopy.quiz = quiz
-                  floCopy.type = CourseFlowMessageType.BLOCKFOLLOWUPQUIZ
-                  flow.push(floCopy)
+              }
+
+              if (blockData.quiz) {
+                let quiz = await Quizzes.findById(blockData.quiz)
+                if (quiz) {
+                  if (quiz.choices.length === 3 && quiz.questionType === QuestionTypes.OBJECTIVE) {
+                    flo.content = `The question below is used to access your understanding of the section above` + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}` + `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]} \n\nC: ${quiz.choices[2]}`
+                    flo.quiz = quiz
+                    flo.type = CourseFlowMessageType.BLOCKFOLLOWUPQUIZ
+                    flow.push(flo)
+                  } else if (quiz.choices.length === 2 && quiz.questionType === QuestionTypes.OBJECTIVE) {
+                    flo.content = `The question below is used to access your understanding of the section above` + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}` + `\n\nChoices: \n\nA: ${quiz.choices[0]} \n\nB: ${quiz.choices[1]}`
+                    flo.quiz = quiz
+                    flo.type = CourseFlowMessageType.BLOCKFOLLOWUPQUIZ
+                    flow.push(flo)
+                  } else {
+                    flo.content = `The question below is used to access your understanding of the section above` + `\n\n${convertToWhatsAppString(he.decode(quiz.question))}`
+                    flo.quiz = quiz
+                    flo.type = CourseFlowMessageType.BLOCKWITHQUIZ
+                    flow.push(flo)
+                  }
                 }
               }
+
               blockIndex++
             }
           }
@@ -345,13 +347,21 @@ export const generateCourseFlow = async function (courseId: string) {
           for (let quizId of lessonData.quizzes) {
             const quizData = await Quizzes.findById(quizId)
             if (quizData) {
-              let content = `End of lesson quiz ${quizIndex + 1}/${quizzes.length}\n\nQuestion:\n${convertToWhatsAppString(he.decode(quizData.question))}\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]} \n\nC: ${quizData.choices[2]}`
+              let content = `End of lesson quiz ${quizIndex + 1}/${quizzes.length}\n\nQuestion:\n${convertToWhatsAppString(he.decode(quizData.question))}`
+
+              if (quizData.choices.length === 3 && quizData.questionType === QuestionTypes.OBJECTIVE) {
+                content = content + `\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]} \n\nC: ${quizData.choices[2]}`
+              } else if (quizData.choices.length === 2 && quizData.questionType === QuestionTypes.OBJECTIVE) {
+                content = content + `\n\nChoices: \n\nA: ${quizData.choices[0]} \n\nB: ${quizData.choices[1]}`
+              }
+
               flow.push({
                 type: CourseFlowMessageType.QUIZ,
                 content,
                 lesson: lessonData,
                 quiz: quizData
               })
+
               quizIndex++
             }
 
@@ -792,7 +802,7 @@ export const handleRemindMeTrigger = async function () {
   }
 }
 
-export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string, messageId: string, team: string ): Promise<void> => {
+export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
     let buttons: ReplyButton[] = []
     if (data.type === CourseFlowMessageType.BLOCK) {
@@ -804,22 +814,76 @@ export const sendBlockContent = async (data: CourseFlowItem, phoneNumber: string
         }
       })
     } else {
-      buttons = [
-        {
-          type: "reply",
-          reply: {
-            id: QUIZ_YES + `|${messageId}`,
-            title: "Yes"
-          }
-        },
-        {
-          type: "reply",
-          reply: {
-            id: QUIZ_NO + `|${messageId}`,
-            title: "No"
-          }
-        },
-      ]
+      if (data.quiz?.questionType === QuestionTypes.TRUE_FALSE) {
+        buttons = [
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_YES + `|${messageId}`,
+              title: "True"
+            }
+          },
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_NO + `|${messageId}`,
+              title: "False"
+            }
+          },
+        ]
+      } else if (data.quiz?.questionType === QuestionTypes.YES_NO) {
+        buttons = [
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_YES + `|${messageId}`,
+              title: "Yes"
+            }
+          },
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_NO + `|${messageId}`,
+              title: "No"
+            }
+          },
+        ]
+      } else if (data.quiz?.questionType === QuestionTypes.POLARITY) {
+        buttons = [
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_YES + `|${messageId}`,
+              title: "Agree"
+            }
+          },
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_NO + `|${messageId}`,
+              title: "Disagree"
+            }
+          },
+        ]
+      } else {
+        buttons = [
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_YES + `|${messageId}`,
+              title: "Yes"
+            }
+          },
+          {
+            type: "reply",
+            reply: {
+              id: QUIZ_NO + `|${messageId}`,
+              title: "No"
+            }
+          },
+        ]
+      }
+
     }
     let payload: Message = {
       to: phoneNumber,
@@ -1068,6 +1132,79 @@ export async function fetchEnrollments (phoneNumber: string): Promise<CourseEnro
 
 export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
+    let buttons: ReplyButton[] = []
+    if (item && item.quiz?.choices.length === 3 && item.quiz.questionType === QuestionTypes.OBJECTIVE) {
+      buttons = [
+        {
+          type: "reply",
+          reply: {
+            id: QUIZ_A + `|${messageId}`,
+            title: "A"
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: QUIZ_B + `|${messageId}`,
+            title: "B"
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: QUIZ_C + `|${messageId}`,
+            title: "C"
+          }
+        }
+      ]
+    } else if (item && item.quiz?.choices.length === 2 && item.quiz.questionType === QuestionTypes.OBJECTIVE) {
+      buttons = [
+        {
+          type: "reply",
+          reply: {
+            id: QUIZ_A + `|${messageId}`,
+            title: "A"
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: QUIZ_B + `|${messageId}`,
+            title: "B"
+          }
+        }
+      ]
+    } else {
+      let optionA: string = "YES"
+      let optionB: string = "NO"
+
+      if (item.quiz?.questionType === QuestionTypes.TRUE_FALSE) {
+        optionA = "TRUE"
+        optionB = "FALSE"
+      }
+
+      if (item.quiz?.questionType === QuestionTypes.POLARITY) {
+        optionA = "AGREE"
+        optionB = "DISAGREE"
+      }
+
+      buttons = [
+        {
+          type: "reply",
+          reply: {
+            id: YES + `|${messageId}`,
+            title: optionA
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: NO + `|${messageId}`,
+            title: optionB
+          }
+        }
+      ]
+    }
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
       team,
@@ -1080,29 +1217,7 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
         },
         type: "button",
         action: {
-          buttons: [
-            {
-              type: "reply",
-              reply: {
-                id: QUIZ_A + `|${messageId}`,
-                title: "A"
-              }
-            },
-            {
-              type: "reply",
-              reply: {
-                id: QUIZ_B + `|${messageId}`,
-                title: "B"
-              }
-            },
-            {
-              type: "reply",
-              reply: {
-                id: QUIZ_C + `|${messageId}`,
-                title: "C"
-              }
-            }
-          ]
+          buttons: buttons
         }
       }
     })
@@ -1113,6 +1228,48 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
 
 export const sendBlockQuiz = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
+    let buttons: ReplyButton[] = [
+      {
+        type: "reply",
+        reply: {
+          id: BLOCK_QUIZ_A + `|${messageId}`,
+          title: "A"
+        }
+      },
+      {
+        type: "reply",
+        reply: {
+          id: BLOCK_QUIZ_B + `|${messageId}`,
+          title: "B"
+        }
+      },
+      {
+        type: "reply",
+        reply: {
+          id: BLOCK_QUIZ_C + `|${messageId}`,
+          title: "C"
+        }
+      }
+    ]
+
+    if (item.quiz?.choices && item.quiz?.choices.length < 3) {
+      buttons = [
+        {
+          type: "reply",
+          reply: {
+            id: BLOCK_QUIZ_A + `|${messageId}`,
+            title: "A"
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: BLOCK_QUIZ_B + `|${messageId}`,
+            title: "B"
+          }
+        }
+      ]
+    }
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
       team,
@@ -1125,29 +1282,7 @@ export const sendBlockQuiz = async (item: CourseFlowItem, phoneNumber: string, m
         },
         type: "button",
         action: {
-          buttons: [
-            {
-              type: "reply",
-              reply: {
-                id: BLOCK_QUIZ_A + `|${messageId}`,
-                title: "A"
-              }
-            },
-            {
-              type: "reply",
-              reply: {
-                id: BLOCK_QUIZ_B + `|${messageId}`,
-                title: "B"
-              }
-            },
-            {
-              type: "reply",
-              reply: {
-                id: BLOCK_QUIZ_C + `|${messageId}`,
-                title: "C"
-              }
-            }
-          ]
+          buttons: buttons
         }
       }
     })
@@ -1158,6 +1293,81 @@ export const sendBlockQuiz = async (item: CourseFlowItem, phoneNumber: string, m
 
 export const sendAssessment = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
+    let buttons: ReplyButton[] = []
+
+    if (item && item.quiz?.choices.length === 3 && item.quiz.questionType === QuestionTypes.OBJECTIVE) {
+      buttons = [
+        {
+          type: "reply",
+          reply: {
+            id: QUIZA_A + `|${messageId}`,
+            title: "A"
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: QUIZA_B + `|${messageId}`,
+            title: "B"
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: QUIZA_C + `|${messageId}`,
+            title: "C"
+          }
+        }
+      ]
+    } else if (item && item.quiz?.choices.length === 2 && item.quiz.questionType === QuestionTypes.OBJECTIVE) {
+      buttons = [
+        {
+          type: "reply",
+          reply: {
+            id: QUIZA_A + `|${messageId}`,
+            title: "A"
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: QUIZA_B + `|${messageId}`,
+            title: "B"
+          }
+        }
+      ]
+    } else {
+      let optionA: string = "YES"
+      let optionB: string = "NO"
+
+      if (item.quiz?.questionType === QuestionTypes.TRUE_FALSE) {
+        optionA = "TRUE"
+        optionB = "FALSE"
+      }
+
+      if (item.quiz?.questionType === QuestionTypes.POLARITY) {
+        optionA = "AGREE"
+        optionB = "DISAGREE"
+      }
+
+      buttons = [
+        {
+          type: "reply",
+          reply: {
+            id: ASSESSMENT_YES + `|${messageId}`,
+            title: optionA
+          }
+        },
+        {
+          type: "reply",
+          reply: {
+            id: ASSESSMENT_NO + `|${messageId}`,
+            title: optionB
+          }
+        }
+      ]
+    }
+
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
       team,
@@ -1170,29 +1380,7 @@ export const sendAssessment = async (item: CourseFlowItem, phoneNumber: string, 
         },
         type: "button",
         action: {
-          buttons: [
-            {
-              type: "reply",
-              reply: {
-                id: QUIZA_A + `|${messageId}`,
-                title: "A"
-              }
-            },
-            {
-              type: "reply",
-              reply: {
-                id: QUIZA_B + `|${messageId}`,
-                title: "B"
-              }
-            },
-            {
-              type: "reply",
-              reply: {
-                id: QUIZA_C + `|${messageId}`,
-                title: "C"
-              }
-            }
-          ]
+          buttons: buttons
         }
       }
     })
@@ -1982,9 +2170,9 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ph
       }
     }
     if (item && item.quiz) {
-      let correctAnswer = typeof item.quiz.choices[item.quiz.correctAnswerIndex] === 'string' 
-      ? item.quiz.choices[item.quiz.correctAnswerIndex] 
-      : item.quiz.choices[item.quiz.correctAnswerIndex]?.toString();
+      let correctAnswer = typeof item.quiz.choices[item.quiz.correctAnswerIndex] === 'string'
+        ? item.quiz.choices[item.quiz.correctAnswerIndex]
+        : item.quiz.choices[item.quiz.correctAnswerIndex]?.toString()
 
       if (payload.interactive) {
         if (correctAnswer === answer) {
@@ -2020,7 +2208,7 @@ export const handleBlockQuiz = async (answer: string, data: CourseEnrollment, ph
   redisClient.set(key, JSON.stringify({ ...updatedData }))
 }
 
-export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, phoneNumber: string, messageId: string): Promise<void> => {
+export const handleLessonQuiz = async (answer: string, data: CourseEnrollment, phoneNumber: string, messageId: string): Promise<void> => {
   const courseKey = `${config.redisBaseKey}courses:${data.id}`
   const courseFlow = await redisClient.get(courseKey)
   if (courseFlow) {
@@ -2055,7 +2243,9 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
       let updatedData: CourseEnrollment = { ...data, lastMessageId: messageId }
       let duration = 0, retakes = 0, saveStats = false, score = 0
       if (payload.interactive) {
-        if (item.quiz.correctAnswerIndex === answer) {
+        if (item.quiz.correctAnswerIndex.toString() === answer) {
+          console.log(item.quiz.correctAnswerIndex.toString(), 12345676543223)
+
           // send correct answer context
           payload.interactive['body'].text = `That is correct!. ${convertToWhatsAppString(he.decode(item.quiz.correctAnswerContext))}`
           // update stats(retakes and duration)
@@ -2072,37 +2262,89 @@ export const handleLessonQuiz = async (answer: number, data: CourseEnrollment, p
           score = 1
           // compute the score
         } else {
+
           // update quizAttempts
           updatedData.quizAttempts = data.quizAttempts + 1
           let textBody = `Not quite right!. \n\n${convertToWhatsAppString(he.decode(item.quiz.revisitChunk))}. \n\n`
           if (data.quizAttempts === 0) {
+
             textBody = `Not quite right!. \n\nHint: ${convertToWhatsAppString(he.decode(item.quiz.hint || ''))}. \n\nPlease try again: \n\n${item.content}`
             if (!item.quiz.hint || item.quiz.hint.length < 2) {
               textBody = `Not quite right!.\n\nPlease try again: \n\n${item.content}`
             }
-            payload.interactive.action.buttons = [
-              {
-                type: "reply",
-                reply: {
-                  id: QUIZ_A + `|${messageId}`,
-                  title: "A"
+
+            if (item && item.quiz?.choices.length === 3 && item.quiz.questionType === QuestionTypes.OBJECTIVE) {
+              payload.interactive.action.buttons = [
+                {
+                  type: "reply",
+                  reply: {
+                    id: QUIZ_A + `|${messageId}`,
+                    title: "A"
+                  }
+                },
+                {
+                  type: "reply",
+                  reply: {
+                    id: QUIZ_B + `|${messageId}`,
+                    title: "B"
+                  }
+                },
+                {
+                  type: "reply",
+                  reply: {
+                    id: QUIZ_C + `|${messageId}`,
+                    title: "C"
+                  }
                 }
-              },
-              {
-                type: "reply",
-                reply: {
-                  id: QUIZ_B + `|${messageId}`,
-                  title: "B"
+              ]
+            } else if (item && item.quiz?.choices.length === 2 && item.quiz.questionType === QuestionTypes.OBJECTIVE) {
+              payload.interactive.action.buttons = [
+                {
+                  type: "reply",
+                  reply: {
+                    id: QUIZ_A + `|${messageId}`,
+                    title: "A"
+                  }
+                },
+                {
+                  type: "reply",
+                  reply: {
+                    id: QUIZ_B + `|${messageId}`,
+                    title: "B"
+                  }
                 }
-              },
-              {
-                type: "reply",
-                reply: {
-                  id: QUIZ_C + `|${messageId}`,
-                  title: "C"
-                }
+              ]
+            } else {
+              let optionA: string = "YES"
+              let optionB: string = "NO"
+
+              if (item.quiz?.questionType === QuestionTypes.TRUE_FALSE) {
+                optionA = "TRUE"
+                optionB = "FALSE"
               }
-            ]
+
+              if (item.quiz?.questionType === QuestionTypes.POLARITY) {
+                optionA = "AGREE"
+                optionB = "DISAGREE"
+              }
+
+              payload.interactive.action.buttons = [
+                {
+                  type: "reply",
+                  reply: {
+                    id: YES + `|${messageId}`,
+                    title: optionA
+                  }
+                },
+                {
+                  type: "reply",
+                  reply: {
+                    id: NO + `|${messageId}`,
+                    title: optionB
+                  }
+                }
+              ]
+            }
           } else {
             retakes = updatedData.quizAttempts
             saveStats = true
@@ -2550,7 +2792,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
           // schedule an event in 24 hours to check again
-          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -2595,7 +2837,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
           // schedule an event in 24 hours to check again
-          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -2637,7 +2879,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
           // schedule an event in 24 hours to check again
-          // agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -2651,7 +2893,6 @@ export const exchangeFacebookToken = async function (code: string, team: string)
     console.log("Something Failed in this flow =>", (error as AxiosError)?.response?.data)
   }
 }
-
 
 export const reloadTemplates = async function (team: string) {
   try {
@@ -2696,7 +2937,7 @@ export const reloadTemplates = async function (team: string) {
           if (!optin_template || optin_template.status !== "APPROVED") {
             updatePayload.status = "PENDING"
             // schedule an event in 24 hours to check again
-            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+            agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
           } else {
             updatePayload.status = "CONFIRMED"
           }
@@ -2706,7 +2947,7 @@ export const reloadTemplates = async function (team: string) {
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
           // schedule an event in 24 hours to check again
-          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -2742,7 +2983,7 @@ export const reloadTemplates = async function (team: string) {
           if (!optin_template || optin_template.status !== "APPROVED") {
             updatePayload.status = "PENDING"
             // schedule an event in 24 hours to check again
-            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+            agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
           } else {
             updatePayload.status = "CONFIRMED"
           }
@@ -2752,7 +2993,7 @@ export const reloadTemplates = async function (team: string) {
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
           // schedule an event in 24 hours to check again
-          // agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -2785,7 +3026,7 @@ export const reloadTemplates = async function (team: string) {
           if (!optin_template || optin_template.status !== "APPROVED") {
             updatePayload.status = "PENDING"
             // schedule an event in 24 hours to check again
-            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+            agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
           } else {
             updatePayload.status = "CONFIRMED"
           }
@@ -2810,8 +3051,6 @@ export const reloadTemplates = async function (team: string) {
   }
 }
 
-
-
 export const handleDelayedFacebookStatus = async function (team: string) {
   try {
     let teamData = await teamService.fetchTeamById(team)
@@ -2831,7 +3070,7 @@ export const handleDelayedFacebookStatus = async function (team: string) {
         let optin_template = child_optin_template[0]
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
-          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -2841,7 +3080,7 @@ export const handleDelayedFacebookStatus = async function (team: string) {
         let optin_template = child_auth_template[0]
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
-          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -2851,7 +3090,7 @@ export const handleDelayedFacebookStatus = async function (team: string) {
         let optin_template = child_reg_success_template[0]
         if (!optin_template || optin_template.status !== "APPROVED") {
           // updatePayload.status = "PENDING"
-          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -2916,9 +3155,9 @@ export const handleHelp = async (phoneNumber: string, courseId: string): Promise
 
 export const handleSearch = async (phoneNumber: string, search: string, team: string): Promise<void> => {
   let userData: any = await redisClient.get(`${config.redisBaseKey}user:${phoneNumber}`)
-  if(userData){
+  if (userData) {
     userData = JSON.parse(userData)
-    if(!(userData.search && userData.status)){
+    if (!(userData.search && userData.status)) {
       agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
         to: phoneNumber,
         team: team,
@@ -2937,7 +3176,7 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
 
       If "completed courses content" cannot be used to answer the question, return an empty string. The response should contain only plain text, with no references, sources, citations, or special formatting.`
 
-// Create a conversation thread with the user query
+    // Create a conversation thread with the user query
     const thread = await openai.beta.threads.create({
       messages: [
         {
@@ -2945,20 +3184,20 @@ export const handleSearch = async (phoneNumber: string, search: string, team: st
           content: userQuery,
         },
       ],
-    });
+    })
 
     // Run the assistant using the assistant ID from Redis and poll for completion
     const run = await openai.beta.threads.runs.createAndPoll(thread.id, {
       assistant_id: userData.assistant,
-    });
+    })
 
     // Retrieve messages from the thread and get the assistant's latest response
     const messages = await openai.beta.threads.messages.list(thread.id, {
       run_id: run.id,
-    });
+    })
 
-    const message:any = messages?.data?.pop();
-    const messageContent = message?.content[0]?.text?.value || "Your question does not match any of your completed course";
+    const message: any = messages?.data?.pop()
+    const messageContent = message?.content[0]?.text?.value || "Your question does not match any of your completed course"
 
     agenda.now<Message>(SEND_WHATSAPP_MESSAGE, {
       to: phoneNumber,
@@ -2994,27 +3233,27 @@ export const startSearch = async (phoneNumber: string, team: string): Promise<vo
     const coursesCompleted: any[] = await Enrollments.find({
       phoneNumber: phoneNumber,
       completed: true
-    }, 'courseId');
+    }, 'courseId')
 
     const completedCourseContent: any[] = await Promise.all(
       coursesCompleted.map(async (course) => {
-        const courseContent = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`);
-        return courseContent;
+        const courseContent = await redisClient.get(`${config.redisBaseKey}courses:${course.courseId}`)
+        return courseContent
       })
-    );
+    )
 
-    const filePath = path.join(localFilePath, v4() + "-search-course-content.json");
+    const filePath = path.join(localFilePath, v4() + "-search-course-content.json")
     if (!fs.existsSync(localFilePath)) {
       fs.mkdirSync(localFilePath)
     }
 
     fs.writeFile(filePath, JSON.stringify(completedCourseContent), (err) => {
       if (err) {
-        console.error('Error writing to file:', err);
+        console.error('Error writing to file:', err)
       } else {
-        console.log('File saved successfully at:', filePath);
+        console.log('File saved successfully at:', filePath)
       }
-    });
+    })
 
     const fileStreams = [filePath].map((path) => fs.createReadStream(path))
 
