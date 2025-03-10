@@ -3,7 +3,10 @@ import { QueryResult } from '../paginate/paginate'
 
 export enum QuestionTypes {
   OBJECTIVE = "objectives",
-  SUBJECTIVE = "subjective"
+  SUBJECTIVE = "subjective",
+  TRUE_FALSE = "true_false",
+  YES_NO = "yes_no",
+  POLARITY =  "agree_disagree",
 }
 
 interface Quiz {

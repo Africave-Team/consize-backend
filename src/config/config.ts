@@ -4,6 +4,7 @@ import 'dotenv/config'
 const envVarsSchema = Joi.object()
   .keys({
     ENV: Joi.string().required(),
+    VERCEL_AUTH_TOKEN: Joi.string().required(),
     FACEBOOK_APP_ID: Joi.string().required(),
     WABA_ID: Joi.string().required(),
     FACEBOOK_APP_SECRET: Joi.string().required(),
@@ -51,6 +52,7 @@ const config = {
   env: envVars.NODE_ENV,
   server: envVars.ENV,
   port: envVars.PORT,
+  vercelToken: envVars.VERCEL_AUTH_TOKEN,
   whatsapp: {
     authTemplateName: envVars.WHATSAPP_AUTH_TEMPLATE_NAME,
     subscriptionKey: envVars.FACEBOOK_SECRET,

@@ -17,6 +17,13 @@ export enum CertificateMediaTypes {
     IMAGE = 'image',
     FONT = 'font'
 }
+
+export interface Domain {
+    host: string
+    internal: boolean
+    dnsVerified: boolean
+    vercelVerified: boolean
+}
 export interface TeamsInterface extends Document {
     _id: string
     name: string
@@ -41,6 +48,7 @@ export interface TeamsInterface extends Document {
         primary: string
         secondary: string
     },
+    domains: Domain[]
     createdAt?: Date
     updatedAt?: Date
 }

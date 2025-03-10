@@ -4,7 +4,7 @@ import { Request, Response } from 'express'
 import catchAsync from '../utils/catchAsync'
 import { agenda } from '../scheduler'
 import { ENROLL_STUDENT_DEFAULT_DATE, RESUME_TOMORROW, SEND_WHATSAPP_MESSAGE } from '../scheduler/MessageTypes'
-import { CONTINUE, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow, RESUME_COURSE_TOMORROW, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C } from './interfaces.webhooks'
+import { CONTINUE, QUIZA_A, QUIZA_B, QUIZA_C, QUIZ_A, QUIZ_B, QUIZ_C, QUIZ_NO, QUIZ_YES, Message, CERTIFICATES, COURSES, STATS, START, CourseEnrollment, SURVEY_A, SURVEY_B, SURVEY_C, TOMORROW, SCHEDULE_RESUMPTION, MORNING, AFTERNOON, EVENING, RESUME_COURSE, InteractiveMessageSectionRow, RESUME_COURSE_TOMORROW, BLOCK_QUIZ_A, BLOCK_QUIZ_B, BLOCK_QUIZ_C, NO, YES, ASSESSMENT_YES, ASSESSMENT_NO } from './interfaces.webhooks'
 import { convertToWhatsAppString, exchangeFacebookToken, fetchEnrollments, handleBlockQuiz, handleContinue, handleLessonQuiz, handleAssessment, handleSurveyFreeform, handleSurveyMulti, scheduleInactivityMessage, sendResumptionOptions, sendScheduleAcknowledgement, reloadTemplates, handleHelp, handleSearch, startSearch } from "./service.webhooks"
 import config from '../../config/config'
 import { redisClient } from '../redis'
@@ -169,12 +169,26 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
               scheduleInactivityMessage(enrollment, destination)
             }
             break
+          case NO:
+          case YES:
+            let response = "0"
+            if (btnId === NO) {
+              response = "1"
+            }
+            if (enrollment) {
+              const msgId = v4()
+              console.log(enrollment)
+              await handleLessonQuiz(response, enrollment, destination, msgId)
+              // schedule inactivity message
+              scheduleInactivityMessage(enrollment, destination)
+            }
+            break
           case QUIZ_A:
           case QUIZ_B:
           case QUIZ_C:
-            let answerResponse = 0
-            if (btnId === QUIZ_B) answerResponse = 1
-            if (btnId === QUIZ_C) answerResponse = 2
+            let answerResponse = "0"
+            if (btnId === QUIZ_B) answerResponse = "1"
+            if (btnId === QUIZ_C) answerResponse = "2"
             if (enrollment) {
               const msgId = v4()
               console.log(enrollment)
@@ -192,7 +206,7 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
             if (enrollment) {
               const msgId = v4()
               console.log(enrollment)
-              await handleBlockQuiz(blockAnswerResponse, enrollment, destination, msgId)
+              handleBlockQuiz(blockAnswerResponse, enrollment, destination, msgId)
               // schedule inactivity message
               scheduleInactivityMessage(enrollment, destination)
             }
@@ -200,8 +214,10 @@ export const whatsappWebhookMessageHandler = catchAsync(async (req: Request, res
           case QUIZA_A:
           case QUIZA_B:
           case QUIZA_C:
+          case ASSESSMENT_YES:
+          case ASSESSMENT_NO:
             let choice = 0
-            if (btnId === QUIZA_B) choice = 1
+            if (btnId === QUIZA_B || btnId === ASSESSMENT_NO) choice = 1
             if (btnId === QUIZA_C) choice = 2
             if (enrollment) {
               const msgId = v4()
