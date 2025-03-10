@@ -1228,7 +1228,7 @@ export const sendQuiz = async (item: CourseFlowItem, phoneNumber: string, messag
 
 export const sendBlockQuiz = async (item: CourseFlowItem, phoneNumber: string, messageId: string, team: string): Promise<void> => {
   try {
-    let  buttons: ReplyButton[] = [
+    let buttons: ReplyButton[] = [
       {
         type: "reply",
         reply: {
@@ -1252,7 +1252,7 @@ export const sendBlockQuiz = async (item: CourseFlowItem, phoneNumber: string, m
       }
     ]
 
-    if(item.quiz?.choices && item.quiz?.choices.length < 3){
+    if (item.quiz?.choices && item.quiz?.choices.length < 3) {
       buttons = [
         {
           type: "reply",
@@ -2792,7 +2792,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
           // schedule an event in 24 hours to check again
-          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -2837,7 +2837,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
           // schedule an event in 24 hours to check again
-          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -2879,7 +2879,7 @@ export const exchangeFacebookToken = async function (code: string, team: string)
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
           // schedule an event in 24 hours to check again
-          // agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -2937,7 +2937,7 @@ export const reloadTemplates = async function (team: string) {
           if (!optin_template || optin_template.status !== "APPROVED") {
             updatePayload.status = "PENDING"
             // schedule an event in 24 hours to check again
-            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+            agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
           } else {
             updatePayload.status = "CONFIRMED"
           }
@@ -2947,7 +2947,7 @@ export const reloadTemplates = async function (team: string) {
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
           // schedule an event in 24 hours to check again
-          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -2983,7 +2983,7 @@ export const reloadTemplates = async function (team: string) {
           if (!optin_template || optin_template.status !== "APPROVED") {
             updatePayload.status = "PENDING"
             // schedule an event in 24 hours to check again
-            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+            agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
           } else {
             updatePayload.status = "CONFIRMED"
           }
@@ -2993,7 +2993,7 @@ export const reloadTemplates = async function (team: string) {
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
           // schedule an event in 24 hours to check again
-          // agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -3026,7 +3026,7 @@ export const reloadTemplates = async function (team: string) {
           if (!optin_template || optin_template.status !== "APPROVED") {
             updatePayload.status = "PENDING"
             // schedule an event in 24 hours to check again
-            agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+            agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
           } else {
             updatePayload.status = "CONFIRMED"
           }
@@ -3070,7 +3070,7 @@ export const handleDelayedFacebookStatus = async function (team: string) {
         let optin_template = child_optin_template[0]
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
-          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -3080,7 +3080,7 @@ export const handleDelayedFacebookStatus = async function (team: string) {
         let optin_template = child_auth_template[0]
         if (!optin_template || optin_template.status !== "APPROVED") {
           updatePayload.status = "PENDING"
-          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
@@ -3090,7 +3090,7 @@ export const handleDelayedFacebookStatus = async function (team: string) {
         let optin_template = child_reg_success_template[0]
         if (!optin_template || optin_template.status !== "APPROVED") {
           // updatePayload.status = "PENDING"
-          agenda.schedule("in 5 hours", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
+          agenda.schedule("in 10 minutes", DELAYED_FACEBOOK_INTEGRATION, { teamId: team })
         } else {
           updatePayload.status = "CONFIRMED"
         }
