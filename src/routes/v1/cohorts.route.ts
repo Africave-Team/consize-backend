@@ -5,6 +5,7 @@ import { cohortsControllers, cohortsValidator } from "../../modules/cohorts"
 
 
 const router: Router = express.Router()
+router.get("/:id", cohortsControllers.getCohortById)
 router.use(auth())
 
 router.post("/", validate(cohortsValidator.createCohorts), cohortsControllers.createCohort)
