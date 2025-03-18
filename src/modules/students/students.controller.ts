@@ -24,7 +24,7 @@ export const bulkAddStudents = catchAsync(async (req: Request, res: Response) =>
 })
 
 export const checkStudentInfo = catchAsync(async (req: Request, res: Response) => {
-  const student = await studentService.findStudentByPhoneNumber(req.query['phoneNumber'] as string)
+  const student = await studentService.findStudentByPhoneNumber(req.query['phoneNumber'] as string, req.query['teamId'] as string)
   res.status(httpStatus.OK).send({ data: student, message: "Student phone number resolved" })
 })
 
